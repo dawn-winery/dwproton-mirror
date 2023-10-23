@@ -1,0 +1,79 @@
+name: _job_build
+
+on:
+  workflow_call:
+    inputs:
+      name:
+        required: true
+        type: string
+      cpu_arch:
+        required: true
+        type: string
+      cpu_tune:
+        required: true
+        type: string
+
+jobs:
+  proton:
+    name: Build ${{ inputs.name }}
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Prepare host
+      run: sudo apt update && sudo apt-get install -y ccache fontforge-nox
+
+    - name: Restore cache
+      id: ccache-restore
+      uses: actions/cache/restore@v4
+      with:
+        path: ~/.ccache
+        key: ccache-proton-${{ inputs.cpu_arch }}-${{ inputs.cpu_tune }}-${{ github.run_id }}
+        restore-keys: |
+          ccache-proton-${{ inputs.cpu_arch }}-${{ inputs.cpu_tune }}
+
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        fetch-tags: true
+        submodules: false
+
+    - name: Patch
+      run: |
+        git submodule update --init --filter=tree:0 --recursive
+        mkdir ./build
+
+    - name: Configure
+      working-directory: ./build
+      env:
+        CFLAGS: -O2 -march=${{ inputs.cpu_arch }} -mtune=${{ inputs.cpu_tune }}
+        RUSTFLAGS: -Copt-level=3 -Ctarget-cpu=nocona
+        USE_LTO: 0
+      run: |
+        ../configure.sh --build-name=${{ inputs.name }} --enable-ccache --container-engine=docker
+
+    - name: Make ${{ inputs.name }}
+      working-directory: ./build
+      run: |
+        make -j$(nproc) redist
+
+    - name: Save cache
+      id: ccache-save
+      if: always()
+      uses: actions/cache/save@v4
+      with:
+        path: ~/.ccache
+        key: ${{ steps.ccache-restore.outputs.cache-primary-key }}
+
+    - name: Upload artifact ${{ inputs.name }}.tar.xz
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.name }}.tar.xz
+        path: ./build/${{ inputs.name }}.tar.xz
+
+    - name: Upload artifact ${{ inputs.name }}.sha512sum
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.name }}.sha512sum
+        path: ./build/${{ inputs.name }}.sha512sum
+
