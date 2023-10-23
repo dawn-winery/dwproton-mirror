@@ -1,0 +1,80 @@
+name: Release
+
+on:
+  release:
+    types: [ published ]
+  push:
+    tags:
+      - 'cachyos-*-*-slr'
+
+concurrency:
+  group: ${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build
+    strategy:
+      matrix:
+        include:
+          - name: proton-${{ github.ref_name }}-x86_64
+            cpu_arch: nocona
+            cpu_tune: core-avx2
+          - name: proton-${{ github.ref_name }}-x86_64_v2
+            cpu_arch: x86-64-v2
+            cpu_tune: core-avx2
+          - name: proton-${{ github.ref_name }}-x86_64_v3
+            cpu_arch: x86-64-v3
+            cpu_tune: core-avx2
+          - name: proton-${{ github.ref_name }}-x86_64_v4
+            cpu_arch: x86-64-v4
+            cpu_tune: skylake-avx512
+    uses: ./.github/workflows/_job_build.yml
+    with:
+      name: ${{ matrix.name }}
+      cpu_arch: ${{ matrix.cpu_arch }}
+      cpu_tune: ${{ matrix.cpu_tune }}
+
+  release:
+    name: Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        fetch-tags: true
+    - name: Title
+      id: title
+      shell: bash
+      run: |
+        git fetch origin +refs/tags/*:refs/tags/*
+        python -c "v='${{ github.ref_name }}'.split('-');print('title='+'-'.join([v[1],v[2]]))" >> "$GITHUB_OUTPUT"
+    - name: Create
+      id: create
+      shell: bash
+      run: >-
+        gh
+        release create
+        ${{ github.ref_name }}
+        --latest
+        --title "Version ${{ steps.title.outputs.title }}"
+        --notes-from-tag
+        --verify-tag
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  upload:
+    name: Upload
+    needs: release
+    strategy:
+      matrix:
+        include:
+          - name: proton-${{ github.ref_name }}-x86_64
+          - name: proton-${{ github.ref_name }}-x86_64_v2
+          - name: proton-${{ github.ref_name }}-x86_64_v3
+          - name: proton-${{ github.ref_name }}-x86_64_v4
+    uses: ./.github/workflows/_job_upload.yml
+    with:
+      version: ${{ github.ref_name }}
+      name: ${{ matrix.name }}

@@ -1,0 +1,60 @@
+name: Snapshot
+
+on: workflow_dispatch
+
+concurrency:
+  group: ${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  version:
+    name: Version
+    runs-on: ubuntu-latest
+    outputs:
+      tag_abbrev: ${{ steps.version.outputs.tag_abbrev }}
+      tag_offset: ${{ steps.version.outputs.tag_offset }}
+      sha_short: ${{ steps.version.outputs.sha_short }}
+      full_desc: ${{ steps.version.outputs.full_desc }}
+      branch: ${{ steps.version.outputs.branch }}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        fetch-tags: true
+
+    - name: Version
+      id: version
+      shell: bash
+      run: |
+        tag_abbrev=$(git describe --tags --abbrev=0)
+        echo "tag_abbrev=$tag_abbrev" >> $GITHUB_OUTPUT
+        echo "tag_offset=$(git rev-list $tag_abbrev..HEAD --count)" >> $GITHUB_OUTPUT
+        echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+        echo "full_desc=$(git describe --long --tags)" >> $GITHUB_OUTPUT
+        echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_OUTPUT
+
+  build:
+    name: Build
+    needs: version
+    strategy:
+      matrix:
+        include:
+          - name: proton-${{ needs.version.outputs.full_desc }}-x86_64
+            cpu_arch: nocona
+            cpu_tune: core-avx2
+          - name: proton-${{ needs.version.outputs.full_desc }}-x86_64_v2
+            cpu_arch: x86-64-v2
+            cpu_tune: core-avx2
+          - name: proton-${{ needs.version.outputs.full_desc }}-x86_64_v3
+            cpu_arch: x86-64-v3
+            cpu_tune: core-avx2
+          - name: proton-${{ needs.version.outputs.full_desc }}-x86_64_v4
+            cpu_arch: x86-64-v4
+            cpu_tune: skylake-avx512
+    uses: ./.github/workflows/_job_build.yml
+    with:
+      name: ${{ matrix.name }}
+      cpu_arch: ${{ matrix.cpu_arch }}
+      cpu_tune: ${{ matrix.cpu_tune }}
+
