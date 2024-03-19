@@ -59,7 +59,7 @@ aarch64_CFLAGS := -march=armv8.2-a -mtune=cortex-x3
 arm64ec_CFLAGS := -march=armv8.2-a -mtune=cortex-x3
 
 CFLAGS  = -fwrapv -fno-strict-aliasing
-CFLAGS += -ggdb -ffunction-sections -fdata-sections -fno-omit-frame-pointer
+CFLAGS += -s -ffunction-sections -fdata-sections -fno-omit-frame-pointer
 CFLAGS += -ffile-prefix-map=$(CCACHE_BASEDIR)=.
 
 ifneq ($(SUPPRESS_WARNINGS),)
