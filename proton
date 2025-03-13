@@ -955,6 +955,9 @@ class CompatData:
                     pass
                 os.sync()
 
+            # Fix broken prefixes by replacing any faulty values in registry
+            get_replace_reg_value(self.prefix_dir + "user.reg", "Software\\\\Wine\\\\Drivers", "Graphics", "\"x11,wayland\"")
+
             self.migrate_user_paths()
 
             if not file_exists(self.prefix_dir + "/dosdevices/c:", follow_symlinks=False):
@@ -1824,6 +1827,7 @@ class Session:
         self.check_environment("PROTON_USE_NTSYNC", "ntsync")
         self.check_environment("PROTON_FORCE_LARGE_ADDRESS_AWARE", "forcelgadd")
         self.check_environment("PROTON_OLD_GL_STRING", "oldglstr")
+        self.check_environment("PROTON_ENABLE_WAYLAND", "enablewayland")
         self.check_environment("PROTON_HIDE_NVIDIA_GPU", "hidenvgpu")
         self.check_environment("PROTON_HIDE_VANGOGH_GPU", "hidevggpu")
         self.check_environment("PROTON_HIDE_INTEL_GPU", "hideintelgpu")
@@ -1879,6 +1883,12 @@ class Session:
             self.env["MESA_EXTENSION_MAX_YEAR"] = "2003"
             #nvidia override
             self.env["__GL_ExtensionStringVersion"] = "17700"
+
+        if "enablewayland" in self.compat_config:
+            if self.env.get("WAYLAND_DISPLAY", False):
+                self.dlloverrides["winex11.drv"] = ""
+                self.dlloverrides["winewayland.drv"] = "b"
+                self.env.pop("DISPLAY", "")
 
         if os.environ.get("SteamGameId", 0) in [
                 "661920", #Claybook
