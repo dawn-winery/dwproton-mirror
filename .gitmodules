@@ -35,6 +35,9 @@
 [submodule "libxml2"]
 	path = libxml2
 	url = https://gitlab.gnome.org/GNOME/libxml2.git
+[submodule "libxkbcommon"]
+	path = libxkbcommon
+	url = https://github.com/xkbcommon/libxkbcommon.git
 [submodule "gstreamer"]
 	path = gstreamer
 	url = https://github.com/GStreamer/gstreamer.git
