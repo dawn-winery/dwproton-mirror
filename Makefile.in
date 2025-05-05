@@ -198,6 +198,21 @@ $(eval $(call rules-meson,dav1d,i386,unix))
 $(eval $(call rules-meson,dav1d,x86_64,unix))
 $(eval $(call rules-meson,dav1d,aarch64,unix))
 
+##
+## xkbcommon
+##
+
+LIBXKBCOMMON_MESON_ARGS := \
+	-Denable-xkbregistry=true \
+	-Denable-docs=false \
+	-Denable-x11=false \
+	-Denable-bash-completion=false \
+	-Denable-wayland=false
+
+$(eval $(call rules-source,libxkbcommon,$(SRCDIR)/libxkbcommon))
+$(eval $(call rules-meson,libxkbcommon,i386,unix))
+$(eval $(call rules-meson,libxkbcommon,x86_64,unix))
+$(eval $(call rules-meson,libxkbcommon,aarch64,unix))
 
 ##
 ## gst-orc
@@ -974,6 +989,8 @@ WINE_DEPENDS = gst_orc gstreamer gst_base ffmpeg
 WINE_i386_DEPENDS = vkd3d
 WINE_x86_64_DEPENDS = vkd3d
 endif
+
+WINE_DEPENDS += libxkbcommon
 
 WINE_i386_LIBDIR = $(WINE_i386_DST)/lib
 WINE_x86_64_LIBDIR = $(WINE_x86_64_DST)/lib
