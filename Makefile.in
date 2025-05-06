@@ -500,6 +500,15 @@ FFMPEG_CONFIGURE_ARGS := \
 
 FFMPEG_CONFIGURE_ARGS += \
 	$(FFMPEG_LTO) \
+	--enable-encoders \
+	--enable-decoders \
+	--enable-muxers \
+	--enable-demuxers \
+	--enable-hwaccels \
+	--enable-parsers \
+	--enable-filters \
+	--enable-bsfs \
+	--enable-decoder=valve* \
 	--enable-decoder=indeo5 \
 	--enable-decoder=adpcm_ms \
 	--enable-decoder=mpegvideo \
@@ -838,6 +847,7 @@ WINE_AUTOCONF_ARGS = \
 WINE_AUTOCONF_ARGS += \
   --with-x \
   --with-gstreamer \
+  --with-ffmpeg \
   --without-oss \
 
 WINE_x86_64_AUTOCONF_ARGS = \
