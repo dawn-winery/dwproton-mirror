@@ -1837,6 +1837,7 @@ class Session:
         self.check_environment("PROTON_FORCE_LARGE_ADDRESS_AWARE", "forcelgadd")
         self.check_environment("PROTON_OLD_GL_STRING", "oldglstr")
         self.check_environment("PROTON_ENABLE_WAYLAND", "enablewayland")
+        self.check_environment("PROTON_ENABLE_HDR", "enablehdr")
         self.check_environment("PROTON_HIDE_NVIDIA_GPU", "hidenvgpu")
         self.check_environment("PROTON_HIDE_VANGOGH_GPU", "hidevggpu")
         self.check_environment("PROTON_HIDE_INTEL_GPU", "hideintelgpu")
@@ -1897,6 +1898,8 @@ class Session:
             if self.env.get("WAYLAND_DISPLAY", False):
                 self.dlloverrides["winex11.drv"] = ""
                 self.dlloverrides["winewayland.drv"] = "b"
+                if "enablehdr" in self.compat_config:
+                    self.env["DXVK_HDR"] = "1"
                 self.env.pop("DISPLAY", "")
 
         if os.environ.get("SteamGameId", 0) in [
