@@ -1863,9 +1863,9 @@ class Session:
             if self.env.get("WAYLAND_DISPLAY", False):
                 self.dlloverrides["winex11.drv"] = ""
                 self.dlloverrides["winewayland.drv"] = "b"
+                self.env["WINE_WAYLAND_HACKS"] = "1"
                 if "enablehdr" in self.compat_config:
                     self.env["DXVK_HDR"] = "1"
-                self.env.pop("DISPLAY", "")
 
         if os.environ.get("SteamGameId", 0) in [
                 "661920", #Claybook
