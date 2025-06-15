@@ -1823,6 +1823,7 @@ class Session:
                 self.dlloverrides["winex11.drv"] = ""
                 self.dlloverrides["winewayland.drv"] = "b"
                 self.env["WINE_WAYLAND_HACKS"] = "1"
+                self.env["PROTON_USE_XALIA"] = "0"
                 if "enablehdr" in self.compat_config:
                     self.env["DXVK_HDR"] = "1"
 
