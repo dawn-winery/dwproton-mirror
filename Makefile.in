@@ -1597,7 +1597,7 @@ endif
 ##
 
 default_pfx: wine gst_good gst_bad gst_libav gst_plugins_rs lsteamclient steamexe vrclient wineopenxr $(WINEOPENXR64_JSON) dxvk dxvk-nvapi vkd3d-proton
-	find $(DST_LIBDIR)/wine -type f -execdir chmod a-w '{}' '+'
+	find $(DST_LIBDIR)/wine -type f -execdir chmod go-w '{}' '+'
 	rm -rf $(abspath $(DIST_PREFIX))
 	rm -rf $(abspath $(DIST_PREFIX_ARM64))
 ifneq ($(findstring x86_64,$(unix_ARCHS)),)
