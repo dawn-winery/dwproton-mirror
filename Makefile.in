@@ -61,6 +61,7 @@ arm64ec_CFLAGS := -march=armv8.2-a -mtune=cortex-x3
 CFLAGS  = -fwrapv -fno-strict-aliasing
 CFLAGS += -s -ffunction-sections -fdata-sections -fno-omit-frame-pointer
 CFLAGS += -ffile-prefix-map=$(CCACHE_BASEDIR)=.
+CFLAGS += -D_TIME_BITS=64 -D_FILE_OFFSET_BITS=64
 
 ifneq ($(SUPPRESS_WARNINGS),)
 	CFLAGS += -w
