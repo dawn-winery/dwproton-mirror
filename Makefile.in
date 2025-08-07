@@ -168,6 +168,7 @@ include $(SRC)/make/rules-wine-requests.mk
 include $(SRC)/make/rules-wine-tools.mk
 include $(SRC)/make/rules-cargo.mk
 include $(SRC)/make/rules-arm64x-forwarder.mk
+include $(SRC)/make/rules-nvidia-libs.mk
 
 
 ##
@@ -1199,6 +1200,133 @@ $(OBJ)/.dxvk-nvapi-post-source:
 	rm -rf $(DST_LIBDIR)/wine/nvapi/version
 	echo "$(shell git -C $(SRCDIR) submodule status -- dxvk-nvapi)" > $(DST_LIBDIR)/wine/nvapi/version
 	touch $@
+
+
+ifneq ($(WITHOUT_NVIDIA_LIBS),1)
+
+##
+## nvcuda
+##
+
+NVCUDA_i386_MESON_ARGS = \
+  --cross-file=$(NVCUDA_SRC)/build-wine32.txt \
+  --libdir=lib/wine/nvidia-libs/nvcuda/i386-windows
+
+NVCUDA_x86_64_MESON_ARGS = \
+  --cross-file=$(NVCUDA_SRC)/build-wine64.txt \
+  --libdir=lib/wine/nvidia-libs/nvcuda/x86_64-windows
+
+NVCUDA_DEPENDS = wine
+NVCUDA_HOST_DEPENDS = wine
+
+$(eval $(call rules-source,nvcuda,$(SRCDIR)/nvidia-libs/nvcuda))
+$(eval $(call rules-nvidia-libs,nvcuda,i386,windows))
+$(eval $(call rules-nvidia-libs,nvcuda,x86_64,windows))
+
+$(OBJ)/.nvcuda-post-source:
+	mkdir -p $(DST_LIBDIR)/wine/nvidia-libs/nvcuda
+	rm -rf $(DST_LIBDIR)/wine/nvidia-libs/nvcuda/version
+	echo "$(shell git -C $(SRCDIR) submodule status -- nvidia-libs/nvcuda)" > $(DST_LIBDIR)/wine/nvidia-libs/nvcuda/version
+	touch $@
+
+default_pfx: nvcuda
+
+##
+## nvenc
+##
+
+NVENC_i386_MESON_ARGS = \
+  --cross-file=$(NVENC_SRC)/build-wine32.txt \
+  --libdir=lib/wine/nvidia-libs/nvenc/i386-windows
+
+NVENC_x86_64_MESON_ARGS = \
+  --cross-file=$(NVENC_SRC)/build-wine64.txt \
+  --libdir=lib/wine/nvidia-libs/nvenc/x86_64-windows
+
+NVENC_DEPENDS = wine
+NVENC_HOST_DEPENDS = wine
+
+$(eval $(call rules-source,nvenc,$(SRCDIR)/nvidia-libs/nvenc))
+$(eval $(call rules-nvidia-libs,nvenc,i386,windows))
+$(eval $(call rules-nvidia-libs,nvenc,x86_64,windows))
+
+$(OBJ)/.nvenc-post-source:
+	mkdir -p $(DST_LIBDIR)/wine/nvidia-libs/nvenc
+	rm -rf $(DST_LIBDIR)/wine/nvidia-libs/nvenc/version
+	echo "$(shell git -C $(SRCDIR) submodule status -- nvidia-libs/nvenc)" > $(DST_LIBDIR)/wine/nvidia-libs/nvenc/version
+	touch $@
+
+default_pfx: nvenc
+
+##
+## nvml_so
+##
+
+NVML_SO_x86_64_MESON_ARGS = \
+  --cross-file=$(NVML_SO_SRC)/cross-wine64.txt \
+  --libdir=lib/wine/nvidia-libs/nvml
+
+NVML_SO_DEPENDS = wine
+NVML_SO_HOST_DEPENDS = wine
+
+$(eval $(call rules-source,nvml_so,$(SRCDIR)/nvidia-libs/wine-nvml))
+$(eval $(call rules-nvidia-libs,nvml_so,x86_64,unix))
+
+$(OBJ)/.nvml_so-post-source:
+	cd $(NVML_SO_SRC)/src && ./make_nvml
+	mkdir -p $(DST_LIBDIR)/wine/nvidia-libs/nvml
+	rm -rf $(DST_LIBDIR)/wine/nvidia-libs/nvml/version
+	echo "$(shell git -C $(SRCDIR) submodule status -- nvidia-libs/wine-nvml)" > $(DST_LIBDIR)/wine/nvidia-libs/nvml/version
+	touch $@
+
+default_pfx: nvml_so
+
+##
+## nvml_dll
+##
+
+NVML_DLL_x86_64_MESON_ARGS = \
+  --cross-file=$(NVML_DLL_SRC)/cross-mingw64.txt \
+  --libdir=lib/wine/nvidia-libs/nvml
+
+NVML_DLL_DEPENDS = wine
+NVML_DLL_HOST_DEPENDS = wine
+
+$(eval $(call rules-source,nvml_dll,$(SRCDIR)/nvidia-libs/wine-nvml))
+$(eval $(call rules-nvidia-libs,nvml_dll,x86_64,windows))
+
+$(OBJ)/.nvml_dll-post-source:
+	cd $(NVML_DLL_SRC)/src && ./make_nvml
+	mkdir -p $(DST_LIBDIR)/wine/nvidia-libs/nvml
+	rm -rf $(DST_LIBDIR)/wine/nvidia-libs/nvml/version
+	echo "$(shell git -C $(SRCDIR) submodule status -- nvidia-libs/wine-nvml)" > $(DST_LIBDIR)/wine/nvidia-libs/nvml/version
+	touch $@
+
+default_pfx: nvml_dll
+
+##
+## nvoptix
+##
+
+NVOPTIX_x86_64_MESON_ARGS = \
+  --cross-file=$(NVOPTIX_SRC)/build-wine64.txt \
+  --libdir=lib/wine/nvidia-libs/nvoptix/x86_64-windows
+
+NVOPTIX_DEPENDS = wine
+NVOPTIX_HOST_DEPENDS = wine
+
+$(eval $(call rules-source,nvoptix,$(SRCDIR)/nvidia-libs/wine-nvoptix))
+$(eval $(call rules-nvidia-libs,nvoptix,x86_64,windows))
+
+$(OBJ)/.nvoptix-post-source:
+	mkdir -p $(DST_LIBDIR)/wine/nvidia-libs/nvoptix
+	rm -rf $(DST_LIBDIR)/wine/nvidia-libs/nvoptix/version
+	echo "$(shell git -C $(SRCDIR) submodule status -- nvidia-libs/wine-nvoptix)" > $(DST_LIBDIR)/wine/nvidia-libs/nvoptix/version
+	touch $@
+
+default_pfx: nvoptix
+
+endif # WITHOUT_NVIDIA_LIBS
 
 
 ##
