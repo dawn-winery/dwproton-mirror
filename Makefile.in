@@ -504,6 +504,7 @@ FFMPEG_CONFIGURE_ARGS += \
 	--enable-demuxers \
 	--enable-hwaccels \
 	--enable-parsers \
+	--enable-protocols \
 	--enable-filters \
 	--enable-bsfs \
 	--enable-zlib \
@@ -539,17 +540,12 @@ FFMPEG_CONFIGURE_ARGS += \
 	--enable-decoder=flac \
 	--enable-decoder=alac \
 	--enable-decoder=pcm* \
-	--enable-decoder=valve* \
 	--enable-decoder=apng \
 	--enable-decoder=libvpx_vp8 \
 	--enable-decoder=libvpx_vp9 \
 	--enable-encoder=aac \
 	--enable-encoder=h264_vaapi \
 	--enable-encoder=hevc_vaapi \
-	--enable-encoder=h264_nvenc \
-	--enable-encoder=hevc_nvenc \
-	--enable-encoder=h264_amf \
-	--enable-encoder=hevc_amf \
 	--enable-demuxer=aac \
 	--enable-demuxer=gif \
 	--enable-demuxer=ogg \
@@ -559,9 +555,7 @@ FFMPEG_CONFIGURE_ARGS += \
 	--enable-demuxer=wav \
 	--enable-demuxer=flv \
 	--enable-demuxer=apng \
-	--enable-demuxer=mp4 \
 	--enable-demuxer=xwma \
-	--enable-muxer=aac \
 	--enable-muxer=flv \
 	--enable-muxer=mp4 \
 	--enable-muxer=dash \
@@ -569,9 +563,10 @@ FFMPEG_CONFIGURE_ARGS += \
 	--enable-parser=h264 \
 	--enable-parser=hevc \
 	--enable-filter=scale \
-	--enable-filter=scale_cuda \
 	--enable-protocol=file \
+	--enable-protocol=rtp \
 	--enable-protocol=rtmp \
+	--enable-protocol=rtsp \
 
 FFMPEG_i386-unix_CONFIGURE_ARGS := \
 	--cross-prefix=i686-linux-gnu- \
