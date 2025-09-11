@@ -2090,6 +2090,7 @@ class Session:
         )
 
         if "fsr4" in enabled_upscalers:
+            self.env["DISABLE_LAYER_MESA_ANTI_LAG"] = "1"
             self.env["FSR4_UPGRADE"] = "1"
             if "fsr4rdna3" in self.compat_config:
                 self.env["DXIL_SPIRV_CONFIG"] = "wmma_rdna3_workaround"
