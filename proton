@@ -36,6 +36,7 @@ from ctypes import c_size_t
 from ctypes import c_ssize_t
 
 from filelock import FileLock
+from utilities import setup_local_shader_cache
 from random import randrange
 
 #To enable debug logging, copy "user_settings.sample.py" to "user_settings.py"
@@ -1424,6 +1425,8 @@ def default_compat_config():
             ret.add("fnad3d11")
 
     #options to also be enabled for prerequisite setup steps
+    if "STEAM_COMPAT_SHADER_PATH" in os.environ:
+        ret.add("localshadercache")
     if "STEAM_COMPAT_APP_ID" in os.environ:
         appid = os.environ["STEAM_COMPAT_APP_ID"]
 
@@ -1668,6 +1671,7 @@ class Session:
         self.check_environment("PROTON_DISABLE_NVAPI", "disablenvapi")
         self.check_environment("PROTON_FORCE_NVAPI", "forcenvapi")
         self.check_environment("PROTON_HIDE_APU", "hideapu")
+        self.check_environment("PROTON_LOCAL_SHADER_CACHE", "localshadercache")
 
         if "noesync" in self.compat_config:
             self.env.pop("WINEESYNC", "")
@@ -1684,6 +1688,9 @@ class Session:
             self.env["MESA_EXTENSION_MAX_YEAR"] = "2003"
             #nvidia override
             self.env["__GL_ExtensionStringVersion"] = "17700"
+
+        if "localshadercache" in self.compat_config:
+            setup_local_shader_cache(self.env)
 
         if os.environ.get("SteamGameId", 0) in [
                 "661920", #Claybook
