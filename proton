@@ -41,7 +41,7 @@ from random import randrange
 #To enable debug logging, copy "user_settings.sample.py" to "user_settings.py"
 #and edit it if needed.
 
-CURRENT_PREFIX_VERSION="10.1000-200"
+CURRENT_PREFIX_VERSION="CachyOS-10.1000-200"
 
 PFX="Proton: "
 ld_path_var = "LD_LIBRARY_PATH"
