@@ -1865,7 +1865,7 @@ class Session:
         self.check_environment("PROTON_DXVK_GPLASYNC", "dxvkgplasync")
         self.check_environment("PROTON_NO_ESYNC", "noesync")
         self.check_environment("PROTON_NO_FSYNC", "nofsync")
-        self.check_environment("PROTON_USE_NTSYNC", "ntsync")
+        self.check_environment("PROTON_NO_NTSYNC", "nontsync")
         self.check_environment("PROTON_FORCE_LARGE_ADDRESS_AWARE", "forcelgadd")
         self.check_environment("PROTON_OLD_GL_STRING", "oldglstr")
         self.check_environment("PROTON_HIDE_NVIDIA_GPU", "hidenvgpu")
@@ -1929,10 +1929,11 @@ class Session:
         else:
             self.env["WINEFSYNC"] = "1"
 
-        if "ntsync" in self.compat_config:
-            self.env.pop("WINE_DISABLE_FAST_SYNC", "")
+        if "nontsync" in self.compat_config:
+            self.env.pop("WINENTSYNC", "")
+            self.env["WINENTSYNC"] = "0"
         else:
-            self.env["WINE_DISABLE_FAST_SYNC"] = "1"
+            self.env["WINENTSYNC"] = "1"
 
         if "oldglstr" in self.compat_config:
             #mesa override
