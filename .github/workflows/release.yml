@@ -1,109 +1,77 @@
 name: Release
-
 on:
-  release:
-    types: [ published ]
+  workflow_dispatch:
   push:
     tags:
-      - 'cachyos-*-*-slr'
-
-concurrency:
-  group: ${{ github.ref_name }}
-  cancel-in-progress: true
-
+      - 'dwproton*'
 jobs:
-  build:
-    name: Build
-    strategy:
-      matrix:
-        include:
-          - name: proton-${{ github.ref_name }}-x86_64
-            cflags: -O2 -march=nocona -mtune=core-avx2
-            rustflags: -Copt-level=3 -Ctarget-cpu=nocona
-            runner: 'ubuntu-24.04'
-          - name: proton-${{ github.ref_name }}-x86_64_v2
-            cflags: -O2 -march=x86-64-v2 -mtune=core-avx2
-            rustflags: -Copt-level=3 -Ctarget-cpu=nocona
-            runner: 'ubuntu-24.04'
-          - name: proton-${{ github.ref_name }}-x86_64_v3
-            cflags: -O2 -march=x86-64-v3 -mtune=core-avx2
-            rustflags: -Copt-level=3 -Ctarget-cpu=nocona
-            runner: 'ubuntu-24.04'
-          - name: proton-${{ github.ref_name }}-x86_64_v4
-            cflags: -O2 -march=x86-64-v4 -mtune=skylake-avx512
-            rustflags: -Copt-level=3 -Ctarget-cpu=nocona
-            runner: 'ubuntu-24.04'
-          - name: proton-${{ github.ref_name }}-x86_64-llvm
-            cflags: -O3 -march=nocona -mtune=core-avx2
-            rustflags: -Copt-level=3 -Ctarget-cpu=nocona
-            configure: '--proton-sdk-image=sherrydck/proton-sdk-llvm-mingw:latest'
-            runner: 'ubuntu-24.04'
-          - name: proton-${{ github.ref_name }}-x86_64_v2-llvm
-            cflags: -O3 -march=x86-64-v2 -mtune=core-avx2
-            rustflags: -Copt-level=3 -Ctarget-cpu=nocona
-            configure: '--proton-sdk-image=sherrydck/proton-sdk-llvm-mingw:latest'
-            runner: 'ubuntu-24.04'
-          - name: proton-${{ github.ref_name }}-x86_64_v3-llvm
-            cflags: -O3 -march=x86-64-v3 -mtune=core-avx2
-            rustflags: -Copt-level=3 -Ctarget-cpu=nocona
-            configure: '--proton-sdk-image=sherrydck/proton-sdk-llvm-mingw:latest'
-            runner: 'ubuntu-24.04'
-          - name: proton-${{ github.ref_name }}-x86_64_v4-llvm
-            cflags: -O3 -march=x86-64-v4 -mtune=skylake-avx512
-            rustflags: -Copt-level=3 -Ctarget-cpu=nocona
-            configure: '--proton-sdk-image=sherrydck/proton-sdk-llvm-mingw:latest'
-            runner: 'ubuntu-24.04'
-          - name: proton-${{ github.ref_name }}-arm64
-            configure: '--proton-sdk-image=sherrydck/proton-sdk-arm64:latest --target-arch=arm64'
-            runner: 'ubuntu-24.04-arm'
-    uses: ./.github/workflows/_job_build.yml
-    with:
-      name: ${{ matrix.name }}
-      cflags: ${{ matrix.cflags }}
-      rustflags: ${{ matrix.rustflags }}
-      configure: ${{ matrix.configure }}
-      runner: ${{ matrix.runner }}
-
+  build-x86_64:
+    name: Build x86_64
+    runs-on: trixie
+    steps:
+      - name: Restore cache
+        id: ccache-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.ccache
+          key: ccache-proton-${{ github.run_id }}
+          restore-keys: |
+            ccache-proton-
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          submodules: false
+      - name: Patch
+        run: |
+          git submodule update --init --filter=tree:0 --recursive
+          mkdir ./build
+      - name: Configure
+        working-directory: ./build
+        env:
+          RUSTFLAGS: -Copt-level=3 -Ctarget-cpu=nocona
+          USE_LTO: 0
+        run: |
+          ../configure.sh --build-name=${{ github.ref_name }}-x86_64 --enable-ccache --without-tts
+      - name: Make dwproton
+        working-directory: ./build
+        run: |
+          make -j$(nproc) redist
+      - name: Save cache
+        id: ccache-save
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.ccache
+          key: ${{ steps.ccache-restore.outputs.cache-primary-key }}
+      - name: Upload artifact ${{ github.ref_name }}-x86_64.tar.xz
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ github.ref_name }}-x86_64.tar.xz
+          path: ./build/${{ github.ref_name }}-x86_64.tar.xz
+      - name: Upload artifact ${{ github.ref_name }}-x86_64.sha512sum
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ github.ref_name }}-x86_64.sha512sum
+          path: ./build/${{ github.ref_name }}-x86_64.sha512sum
   release:
     name: Release
-    needs: build
-    runs-on: ubuntu-latest
+    needs: [build-x86_64]
+    runs-on: trixie
+    if: github.ref_type == 'tag'
     steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-        fetch-tags: true
-    - name: Title
-      id: title
-      shell: bash
-      run: |
-        git fetch origin +refs/tags/*:refs/tags/*
-        python -c "v='${{ github.ref_name }}'.split('-');print('title='+'-'.join([v[1],v[2]]))" >> "$GITHUB_OUTPUT"
-    - name: Create
-      id: create
-      shell: bash
-      run: >-
-        gh
-        release create
-        ${{ github.ref_name }}
-        --latest
-        --title "Version ${{ steps.title.outputs.title }}"
-        --notes-from-tag
-        --verify-tag
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  upload:
-    name: Upload
-    needs: release
-    strategy:
-      matrix:
-        include:
-          - name: proton-${{ github.ref_name }}-x86_64
-          - name: proton-${{ github.ref_name }}-x86_64_v2
-          - name: proton-${{ github.ref_name }}-x86_64_v3
-          - name: proton-${{ github.ref_name }}-x86_64_v4
-    uses: ./.github/workflows/_job_upload.yml
-    with:
-      version: ${{ github.ref_name }}
-      name: ${{ matrix.name }}
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: ./artifacts
+      - name: Merge
+        run: |
+          mkdir upload
+          mv ./artifacts/*/* ./upload
+      - name: Create release
+        uses: actions/forgejo-release@v2.7.3
+        with:
+          direction: upload
+          tag: ${{ github.ref_name }}
+          release-dir: ./upload
