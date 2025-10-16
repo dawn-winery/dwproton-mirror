@@ -1,3 +1,54 @@
+# dwproton
+
+Dawn Winery's custom Proton fork with fixes for various games :xdd:
+
+Features:
+- Based on [Proton-CachyOS](https://github.com/CachyOS/proton-cachyos)
+- Includes latest fixes for anime games by the Dawn Winery team :pog:
+- Many QoL additions, including [dxvk-gplasync](https://gitlab.com/Ph42oN/dxvk-gplasync)
+- Includes fixes for high CPU usage in HoYo games
+
+<img width="451" height="561" alt="image" src="https://i.imgur.com/Xy28DJF.png" />
+
+New environmental variables
+------------
+
+- dwproton patches:
+  - `PROTON_USE_WINEALSA=1`: allows using winealsa, might fix audio cracklings in games
+  - `PROTON_DXVK_GPLASYNC=1`: enables dvxk-gplasync
+  - `PROTON_NO_NTSYNC=1`: disables NTsync, fallbacks to fsync
+  - `PROTON_DISABLE_AEDEBUG=1`: disables AeDebug, fixes issues with specific games
+  - `PROTON_MAP_SYSCALLS=1`: fixes games expecing syscalls numbers to [match Windows'](https://github.com/ValveSoftware/wine/commit/68a334c522925e81c65ebe24e09eacfc7750620d)
+
+- Spritz patches:
+  - `WINE_USE_TAKE_FOCUS=1`: enables a fix for games dropping inputs after alt-tab
+  - `WINE_DISABLE_DISCONNECT=1`: disable the disconnecting trick enabled by default for certain games
+  - `WINE_ENABLE_DISCONNECT=1`: enable the disconnecting trick for any game
+
+Recommended to use `UMU_USE_STEAM=1` when launching GI/ZZZ outside of Steam.
+
+"Special" environmental variables
+------------
+- `WINE_CANONICAL_HOLE="skip_volatile_check"`: boosts performance up to 200% !!!! (:xdd:)
+  - Might also reverse engineer in 18 hours.
+
+Installation
+------------
+
+You can either use [ProtonPlus](https://github.com/Vysp3r/ProtonPlus) that now also includes dwproton (thanks!) or install and extract manually to `compatilibitytools.d` in your Steam folder.
+
+Building locally
+------------
+To build your own **dwproton** (make sure you have Docker setup):
+```
+git clone --recurse-submodules https://github.com/dawn-winery/dwproton.git
+cd dwproton
+mkdir build && cd build
+../configure.sh --build-name=dwproton-local --container-engine=docker --enable-ccache
+make -j$(nproc) redist
+```
+You can also add your own patches by just editing `apply.sh` and following its structure.
+
 Introduction
 ------------
 
