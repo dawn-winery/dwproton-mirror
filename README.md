@@ -1,3 +1,46 @@
+# dwproton
+
+Dawn Winery's custom Proton fork with fixes for various games :xdd:
+
+Features:
+- Based on [Proton-CachyOS](https://github.com/CachyOS/proton-cachyos)
+- Includes latest fixes for games by the Dawn Winery team :pog:
+- Many QoL additions, including [dxvk-gplasync](https://gitlab.com/Ph42oN/dxvk-gplasync)
+- Includes fixes for high CPU usage in HoYo games
+- Breaks Marvel Rivals 🚀
+
+<img width="451" height="561" alt="image" src="https://github.com/user-attachments/assets/cbdc69f9-8d23-45b6-814a-63b75026c30c" />
+
+New environmental variables
+------------
+- `PROTON_DXVK_GPLASYNC=1`: enables dvxk-gplasync
+- `PROTON_NO_NTSYNC=1`: disables NTsync, fallbacks to fsync
+- `PROTON_DISABLE_AEDEBUG=1`: disables AeDebug, fixes issues with specific games
+- `PROTON_MAP_SYSCALLS=1`: fixes games expecing syscalls numbers to [match Windows'](https://github.com/ValveSoftware/wine/commit/68a334c522925e81c65ebe24e09eacfc7750620d)
+- `WINE_USE_TAKE_FOCUS=1`: enables a fix for games dropping inputs after alt-tab
+- `WINE_DISABLE_DISCONNECT=1`: disable the disconnecting trick enabled by default for certain games
+- `WINE_ENABLE_DISCONNECT=1`: enable the disconnecting trick for any game
+
+Recommended to use `UMU_USE_STEAM=1` when launching GI/ZZZ outside of Steam.
+
+"Special" environmental variables
+------------
+- `WINE_CANONICAL_HOLE="skip_volatile_check"`: boosts performance up to 200% !!!! (:xdd:)
+  - Might also reverse engineer in 18 hours.
+
+Building locally
+------------
+To build your own **dwproton** (make sure you have Docker setup):
+```
+git clone --recurse-submodules https://github.com/dawn-winery/dwproton.git
+cd dwproton
+./patches/apply.sh
+mkdir build && cd build
+../configure.sh --build-name=dwproton-local --container-engine=docker --enable-ccache
+make -j$(nproc) redist
+```
+You can also add your own patches by just editing `apply.sh` and following its structure.
+
 Introduction
 ------------
 
