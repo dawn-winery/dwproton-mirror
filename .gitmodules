@@ -39,6 +39,9 @@
 [submodule "libxkbcommon"]
 	path = libxkbcommon
 	url = https://github.com/xkbcommon/libxkbcommon.git
+[submodule "libpcap"]
+	path = libpcap
+	url = https://github.com/the-tcpdump-group/libpcap.git
 [submodule "gstreamer"]
 	path = gstreamer
 	url = https://github.com/GStreamer/gstreamer.git
