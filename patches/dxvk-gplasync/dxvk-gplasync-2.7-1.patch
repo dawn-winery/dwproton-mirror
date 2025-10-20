@@ -1,0 +1,263 @@
+diff --git a/meson.build b/meson.build
+index 20b86953..3fce41af 100644
+--- a/meson.build
++++ b/meson.build
+@@ -199,7 +199,7 @@ glsl_generator = generator(
+ )
+ 
+ dxvk_version = vcs_tag(
+-  command: ['git', 'describe', '--dirty=+'],
++  command: ['git', 'describe', '--dirty=-1-gplasync'],
+   input:  'version.h.in',
+   output: 'version.h',
+ )
+diff --git a/src/dxvk/dxvk_context.cpp b/src/dxvk/dxvk_context.cpp
+index a599ea62..bdff3af3 100644
+--- a/src/dxvk/dxvk_context.cpp
++++ b/src/dxvk/dxvk_context.cpp
+@@ -6075,7 +6075,8 @@ namespace dxvk {
+                          DxvkContextFlag::GpDirtyDepthBias));
+ 
+     // Retrieve and bind actual Vulkan pipeline handle
+-    auto pipelineInfo = m_state.gp.pipeline->getPipelineHandle(m_state.gp.state);
++    auto pipelineInfo = m_state.gp.pipeline->getPipelineHandle(m_state.gp.state,
++      this->checkAsyncCompilationCompat());
+ 
+     if (unlikely(!pipelineInfo.handle))
+       return false;
+@@ -6714,7 +6715,7 @@ namespace dxvk {
+   }
+ 
+ 
+-  void DxvkContext::updateRenderTargets() {
++  void DxvkContext::updateRenderTargets(bool isDraw) {
+     if (m_flags.test(DxvkContextFlag::GpDirtyRenderTargets)) {
+       m_flags.clr(DxvkContextFlag::GpDirtyRenderTargets);
+ 
+@@ -6755,6 +6756,11 @@ namespace dxvk {
+ 
+       m_state.om.framebufferInfo = std::move(fbInfo);
+ 
++      if (isDraw) {
++        for (uint32_t i = 0; i < fbInfo.numAttachments(); i++)
++          fbInfo.getAttachment(i).view->setRtBindingFrameId(m_device->getCurrentFrameId());
++      }
++
+       m_flags.set(DxvkContextFlag::GpDirtyPipelineState);
+     } else if (m_flags.test(DxvkContextFlag::GpRenderPassNeedsFlush)) {
+       // End render pass to flush pending resolves
+@@ -6762,6 +6768,14 @@ namespace dxvk {
+     }
+   }
+ 
++  bool DxvkContext::checkAsyncCompilationCompat() const {
++    for (uint32_t i = 0; i < m_state.om.framebufferInfo.numAttachments(); i++) {
++      const auto& [view] = m_state.om.framebufferInfo.getAttachment(i);
++      if (!view->getRtBindingAsyncCompilationCompat())
++        return false;
++    }
++    return true;
++  }
+ 
+   void DxvkContext::applyRenderTargetLoadLayouts() {
+     for (uint32_t i = 0; i < MaxNumRenderTargets; i++)
+@@ -7428,7 +7442,7 @@ namespace dxvk {
+     // End render pass if there are pending resolves
+     if (m_flags.any(DxvkContextFlag::GpDirtyRenderTargets,
+                     DxvkContextFlag::GpRenderPassNeedsFlush))
+-      this->updateRenderTargets();
++      this->updateRenderTargets(true);
+ 
+     if (m_flags.test(DxvkContextFlag::GpXfbActive)) {
+       // If transform feedback is active and there is a chance that we might
+diff --git a/src/dxvk/dxvk_context.h b/src/dxvk/dxvk_context.h
+index 2389c0c9..ee0e2940 100644
+--- a/src/dxvk/dxvk_context.h
++++ b/src/dxvk/dxvk_context.h
+@@ -1723,7 +1723,7 @@ namespace dxvk {
+     DxvkFramebufferInfo makeFramebufferInfo(
+       const DxvkRenderTargets&      renderTargets);
+ 
+-    void updateRenderTargets();
++    void updateRenderTargets(bool isDraw = false);
+     
+     void applyRenderTargetLoadLayouts();
+ 
+@@ -1856,6 +1856,8 @@ namespace dxvk {
+     Rc<DxvkSampler> createBlitSampler(
+             VkFilter                  filter);
+ 
++    [[nodiscard]] bool checkAsyncCompilationCompat() const;
++
+     DxvkGraphicsPipeline* lookupGraphicsPipeline(
+       const DxvkGraphicsPipelineShaders&  shaders);
+ 
+diff --git a/src/dxvk/dxvk_graphics.cpp b/src/dxvk/dxvk_graphics.cpp
+index b9fbaadc..e799c866 100644
+--- a/src/dxvk/dxvk_graphics.cpp
++++ b/src/dxvk/dxvk_graphics.cpp
+@@ -1061,7 +1061,8 @@ namespace dxvk {
+ 
+ 
+   DxvkGraphicsPipelineHandle DxvkGraphicsPipeline::getPipelineHandle(
+-    const DxvkGraphicsPipelineStateInfo& state) {
++    const DxvkGraphicsPipelineStateInfo& state,
++    const bool                           async) {
+     DxvkGraphicsPipelineInstance* instance = this->findInstance(state);
+ 
+     if (unlikely(!instance)) {
+@@ -1069,11 +1070,22 @@ namespace dxvk {
+       if (!this->validatePipelineState(state, true))
+         return DxvkGraphicsPipelineHandle();
+ 
++      const bool useAsync = async && m_device->config().enableAsync && env::getEnvVar("DXVK_ASYNC") != "0";
++
+       // Prevent other threads from adding new instances and check again
+-      std::unique_lock<dxvk::mutex> lock(m_mutex);
++      std::unique_lock<dxvk::mutex> lock(useAsync ? m_asyncMutex : m_mutex);
+       instance = this->findInstance(state);
+ 
+       if (!instance) {
++        if (useAsync) {
++          m_async = true;
++          lock.unlock();
++
++          m_workers->compileGraphicsPipeline(this, state, DxvkPipelinePriority::High);
++
++          return DxvkGraphicsPipelineHandle();
++        }
++
+         // Keep pipeline object locked, at worst we're going to stall
+         // a state cache worker and the current thread needs priority.
+         bool canCreateBasePipeline = this->canCreateBasePipeline(state);
+@@ -1108,7 +1120,7 @@ namespace dxvk {
+ 
+       // Do not compile if this pipeline can be fast linked. This essentially
+       // disables the state cache for pipelines that do not benefit from it.
+-      if (this->canCreateBasePipeline(state))
++      if (!m_async && this->canCreateBasePipeline(state))
+         return;
+ 
+       // Prevent other threads from adding new instances and check again
+@@ -1384,6 +1396,8 @@ namespace dxvk {
+     if (handle)
+       m_fastPipelines.insert({ key, handle });
+ 
++    m_async = false;
++
+     return handle;
+   }
+ 
+diff --git a/src/dxvk/dxvk_graphics.h b/src/dxvk/dxvk_graphics.h
+index 3f0bcffe..e8875181 100644
+--- a/src/dxvk/dxvk_graphics.h
++++ b/src/dxvk/dxvk_graphics.h
+@@ -550,11 +550,13 @@ namespace dxvk {
+      * Retrieves a pipeline handle for the given pipeline
+      * state. If necessary, a new pipeline will be created.
+      * \param [in] state Pipeline state vector
++     * \param [in] async Compile asynchronously
+      * \returns Pipeline handle and handle type
+      */
+     DxvkGraphicsPipelineHandle getPipelineHandle(
+-      const DxvkGraphicsPipelineStateInfo&    state);
+-    
++      const DxvkGraphicsPipelineStateInfo&    state,
++            bool                              async);
++
+     /**
+      * \brief Compiles a pipeline
+      * 
+@@ -617,6 +619,11 @@ namespace dxvk {
+ 
+     alignas(CACHE_LINE_SIZE)
+     dxvk::mutex                                   m_mutex;
++    alignas(CACHE_LINE_SIZE)
++    dxvk::mutex                                   m_asyncMutex;
++
++    bool                                          m_async = false;
++
+     sync::List<DxvkGraphicsPipelineInstance>      m_pipelines;
+     uint32_t                                      m_useCount = 0;
+ 
+diff --git a/src/dxvk/dxvk_image.h b/src/dxvk/dxvk_image.h
+index 63cba281..c3e2b347 100644
+--- a/src/dxvk/dxvk_image.h
++++ b/src/dxvk/dxvk_image.h
+@@ -274,6 +274,37 @@ namespace dxvk {
+           && this->info().format   == view->info().format;
+     }
+ 
++    /**
++     * \brief Sets render target usage frame number
++     *
++     * The image view will track internally when
++     * it was last used as a render target. This
++     * info is used for async shader compilation.
++     * \param [in] frameId Frame number+     */
++    void setRtBindingFrameId(const uint32_t frameId) {
++      if (frameId != m_rtBindingFrameId) {
++        if (frameId == m_rtBindingFrameId + 1)
++          m_rtBindingFrameCount += 1;
++        else
++          m_rtBindingFrameCount = 0;
++
++        m_rtBindingFrameId = frameId;
++      }
++    }
++
++    /**
++     * \brief Checks for async pipeline compatibility
++     *
++     * Asynchronous pipeline compilation may be enabled if the
++     * render target has been drawn to in the previous frames.
++     * \param [in] frameId Current frame ID
++     * \returns \c true if async compilation is supported
++     */
++    [[nodiscard]] bool getRtBindingAsyncCompilationCompat() const {
++      return m_rtBindingFrameCount >= 5;
++    }
++
++
+     /**
+      * \brief Checks whether this view overlaps with another one
+      *
+@@ -327,6 +358,9 @@ namespace dxvk {
+ 
+     std::array<const DxvkDescriptor*, ViewCount> m_views = { };
+ 
++    uint32_t m_rtBindingFrameId    = 0;
++    uint32_t m_rtBindingFrameCount = 0;
++
+     const DxvkDescriptor* createView(VkImageViewType type) const;
+ 
+     void updateViews();
+diff --git a/src/dxvk/dxvk_options.cpp b/src/dxvk/dxvk_options.cpp
+index 76eb57fa..89209ef7 100644
+--- a/src/dxvk/dxvk_options.cpp
++++ b/src/dxvk/dxvk_options.cpp
+@@ -3,6 +3,7 @@
+ namespace dxvk {
+ 
+   DxvkOptions::DxvkOptions(const Config& config) {
++    enableAsync           = config.getOption<bool>    ("dxvk.enableAsync",            true);
+     enableDebugUtils      = config.getOption<bool>    ("dxvk.enableDebugUtils",       false);
+     enableMemoryDefrag    = config.getOption<Tristate>("dxvk.enableMemoryDefrag",     Tristate::Auto);
+     numCompilerThreads    = config.getOption<int32_t> ("dxvk.numCompilerThreads",     0);
+diff --git a/src/dxvk/dxvk_options.h b/src/dxvk/dxvk_options.h
+index a0d07d38..d9c1e453 100644
+--- a/src/dxvk/dxvk_options.h
++++ b/src/dxvk/dxvk_options.h
+@@ -29,6 +29,9 @@ namespace dxvk {
+     /// Enables pipeline lifetime tracking
+     Tristate trackPipelineLifetime = Tristate::Auto;
+ 
++    /// Enable async pipelines
++    bool enableAsync = true;
++
+     /// Shader-related options
+     Tristate useRawSsbo = Tristate::Auto;
+ 
+-- 
+2.45.3
+
