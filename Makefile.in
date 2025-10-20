@@ -214,6 +214,28 @@ $(eval $(call rules-meson,libxkbcommon,i386,unix))
 $(eval $(call rules-meson,libxkbcommon,x86_64,unix))
 $(eval $(call rules-meson,libxkbcommon,aarch64,unix))
 
+
+##
+## libpcap
+##
+
+LIBPCAP_CONFIGURE_ARGS := \
+	--enable-shared \
+	--disable-static \
+	--disable-usb \
+	--disable-netmap \
+	--disable-bluetooth \
+	--disable-dbus \
+	--disable-rdma \
+	--with-pcap=linux \
+	--without-libnl
+
+$(eval $(call rules-source,libpcap,$(SRCDIR)/libpcap))
+$(eval $(call rules-configure,libpcap,i386,unix))
+$(eval $(call rules-configure,libpcap,x86_64,unix))
+$(eval $(call rules-configure,libpcap,aarch64,unix))
+
+
 ##
 ## gst-orc
 ##
@@ -986,7 +1008,7 @@ WINE_i386_DEPENDS = vkd3d
 WINE_x86_64_DEPENDS = vkd3d
 endif
 
-WINE_DEPENDS += libxkbcommon
+WINE_DEPENDS += libxkbcommon libpcap
 
 WINE_i386_LIBDIR = $(WINE_i386_DST)/lib
 WINE_x86_64_LIBDIR = $(WINE_x86_64_DST)/lib
