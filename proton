@@ -1133,9 +1133,12 @@ class CompatData:
                             prefix=self.prefix_dir, track_file=tracked_files, link_debug=True)
 
                 use_dxvk_sarek = "dxvksarek" in g_session.compat_config and os.path.isdir(g_proton.lib_dir + "wine/dxvk-sarek")
+                use_dxvk_llasync = "dxvkllasync" in g_session.compat_config and os.path.isdir(g_proton.lib_dir + "wine/dxvk-llasync")
                 if use_dxvk_sarek:
                     use_nvapi = False
                     dxvk_path = "dxvk-sarek/"
+                elif use_dxvk_llasync:
+                    dxvk_path = "dxvk-llasync/"
                 else:
                     dxvk_path = "dxvk/"
 
@@ -1830,6 +1833,8 @@ class Session:
         self.check_environment("PROTON_NO_D3D11", "nod3d11")
         self.check_environment("PROTON_NO_D3D10", "nod3d10")
         self.check_environment("PROTON_DXVK_SAREK", "dxvksarek")
+        self.check_environment("PROTON_DXVK_LLASYNC", "dxvkllasync")
+        self.check_environment("PROTON_DXVK_LOWLATENCY", "dxvklowlatency")
         self.check_environment("PROTON_NO_ESYNC", "noesync")
         self.check_environment("PROTON_NO_FSYNC", "nofsync")
         self.check_environment("PROTON_USE_NTSYNC", "ntsync")
@@ -1881,6 +1886,16 @@ class Session:
             self.env["PROTON_NO_STEAMINPUT"] = "1"
             if "SDL_GAMECONTROLLER_IGNORE_DEVICES" in self.env:
                 del self.env["SDL_GAMECONTROLLER_IGNORE_DEVICES"]
+
+        if "dxvklowlatency" in self.compat_config:
+            self.compat_config.add("dxvkllasync")
+            self.env["DXVK_ASYNC"] = "0"
+            append_to_env_str(self.env, "DXVK_CONFIG", "dxvk.enableAsync=False", ";")
+
+        if "dxvkllasync" in self.compat_config:
+            threads = os.cpu_count() - (2 if os.cpu_count() > 4 else (1 if os.cpu_count() > 2 else 0))
+            append_to_env_str(self.env, "DXVK_CONFIG", f"dxvk.numCompilerThreads={threads}", ";")
+            append_to_env_str(self.env, "DXVK_CONFIG", "dxvk.enableGraphicsPipelineLibrary=Auto", ";")
 
         if "nvidialibs" in self.compat_config:
             self.compat_config.add("nvcuda")
