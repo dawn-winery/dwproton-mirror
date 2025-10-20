@@ -23,6 +23,9 @@
 [submodule "dxvk"]
 	path = dxvk
 	url = https://github.com/doitsujin/dxvk.git
+[submodule "dxvk-gplasync"]
+	path = dxvk-gplasync
+	url = https://github.com/doitsujin/dxvk.git
 [submodule "dxvk-sarek"]
 	path = dxvk-sarek
 	url = https://github.com/pythonlover02/DXVK-Sarek.git
