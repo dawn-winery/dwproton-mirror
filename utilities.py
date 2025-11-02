@@ -142,6 +142,7 @@ def __check_upscaler_files(
             version = version_fd.read()
         version = json.loads(version)
     except Exception as e:
+        log.crit(f'Error while reading version file "{version_file}"')
         log.crit(str(e))
         return False
 
@@ -204,6 +205,7 @@ def __download_upscaler_files(
             if temp.exists():
                 temp.unlink(missing_ok=True)
         except Exception as e:
+            log.crit(f'Error while downloading file "{file.name}"')
             log.crit(str(e))
             if file.exists():
                 file.unlink(missing_ok=True)
