@@ -1135,7 +1135,7 @@ class CompatData:
                     try_copy(g_proton.default_pfx_dir + "drive_c/windows/syswow64/" + f + ".dll", "drive_c/windows/syswow64",
                             prefix=self.prefix_dir, track_file=tracked_files, link_debug=True)
 
-                use_dxvk_sarek = "dxvksarek" in g_session.compat_config
+                use_dxvk_sarek = "dxvksarek" in g_session.compat_config and os.path.isdir(g_proton.lib_dir + "wine/dxvk-sarek")
                 if use_dxvk_sarek:
                     dxvk_path = "dxvk-sarek/"
                 else:
