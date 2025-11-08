@@ -1139,7 +1139,7 @@ class CompatData:
                             prefix=self.prefix_dir, track_file=tracked_files, link_debug=True)
 
                 use_dxvk_sarek = "dxvksarek" in g_session.compat_config and os.path.isdir(g_proton.lib_dir + "wine/dxvk-sarek")
-                use_dxvk_gplasync = "dxvkgplasync" in g_session.compat_config
+                use_dxvk_gplasync = "dxvkgplasync" in g_session.compat_config and os.path.isdir(g_proton.lib_dir + "wine/dxvk-gplasync")
                 if use_dxvk_sarek:
                     use_nvapi = False
                     dxvk_path = "dxvk-sarek/"
