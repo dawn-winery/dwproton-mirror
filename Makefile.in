@@ -114,6 +114,7 @@ else
 	MINGW_TYPE := clang
 	# TODO: move this to a configure option
 	i386_SANITY_FLAGS := -mstack-alignment=4
+	WITHOUT_NVIDIA_LIBS := 1
 endif
 
 OBJCOPY := $(TOOLCHAIN_PREFIX)objcopy
