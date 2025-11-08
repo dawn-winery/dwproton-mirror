@@ -52,14 +52,14 @@ DEPLOY_DIR := ./deploy
 REDIST_DIR := ./redist
 
 HOST_CFLAGS    ?= -O2 -march=nocona -mtune=core-avx2
-CCOS_CFLAGS    := $(HOST_CFLAGS) -pipe -fvect-cost-model=cheap -fno-semantic-interposition -fipa-pta
-i386_CFLAGS    := -mstackrealign $(CCOS_CFLAGS) -mprefer-avx128 -mno-avx512f -mfpmath=sse
-x86_64_CFLAGS  := -mcmodel=small $(CCOS_CFLAGS) -mprefer-avx128 -mno-avx512f -mfpmath=sse
+CCOS_CFLAGS    := $(HOST_CFLAGS) -pipe -mno-avx512f
+i386_CFLAGS    := -mstackrealign $(CCOS_CFLAGS) -mfpmath=sse
+x86_64_CFLAGS  := -mcmodel=small $(CCOS_CFLAGS) -mfpmath=sse
 aarch64_CFLAGS := -march=armv8.2-a -mtune=cortex-x3
 arm64ec_CFLAGS := -march=armv8.2-a -mtune=cortex-x3
 
 CFLAGS  = -fwrapv -fno-strict-aliasing
-CFLAGS += -s -ffunction-sections -fdata-sections -fno-omit-frame-pointer
+CFLAGS += -ffunction-sections -fdata-sections -fno-omit-frame-pointer
 CFLAGS += -ffile-prefix-map=$(CCACHE_BASEDIR)=.
 CFLAGS += -D_TIME_BITS=64 -D_FILE_OFFSET_BITS=64
 
@@ -115,6 +115,8 @@ ifeq ($(shell cc --version|grep 'clang'),)
 	TOOLCHAIN_PREFIX :=
 	OBJCOPY_FLAGS  := -p
 	MINGW_TYPE := gcc
+	CFLAGS += -s -mprefer-avx128
+	CFLAGS += -fvect-cost-model=cheap -fno-semantic-interposition -fipa-pta
 else
 	# CLANG-specific flags
 	TOOLCHAIN_PREFIX := llvm-
