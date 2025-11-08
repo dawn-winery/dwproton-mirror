@@ -18,22 +18,18 @@ jobs:
       matrix:
         include:
           - name: proton-${{ github.ref_name }}-x86_64
-            cpu_arch: nocona
-            cpu_tune: core-avx2
+            cflags: -O2 -march=nocona -mtune=core-avx2
           - name: proton-${{ github.ref_name }}-x86_64_v2
-            cpu_arch: x86-64-v2
-            cpu_tune: core-avx2
+            cflags: -O2 -march=x86-64-v2 -mtune=core-avx2
           - name: proton-${{ github.ref_name }}-x86_64_v3
-            cpu_arch: x86-64-v3
-            cpu_tune: core-avx2
+            cflags: -O2 -march=x86-64-v3 -mtune=core-avx2
           - name: proton-${{ github.ref_name }}-x86_64_v4
-            cpu_arch: x86-64-v4
-            cpu_tune: skylake-avx512
+            cflags: -O2 -march=x86-64-v4 -mtune=skylake-avx512
     uses: ./.github/workflows/_job_build.yml
     with:
       name: ${{ matrix.name }}
-      cpu_arch: ${{ matrix.cpu_arch }}
-      cpu_tune: ${{ matrix.cpu_tune }}
+      cflags: ${{ matrix.cflags }}
+      configure: ${{ matrix.configure }}
 
   release:
     name: Release
