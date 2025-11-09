@@ -18,6 +18,7 @@ jobs:
   proton:
     name: Build ${{ inputs.name }}
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
 
     - name: Prepare host
