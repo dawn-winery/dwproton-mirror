@@ -95,11 +95,6 @@ jobs:
           - name: proton-${{ github.ref_name }}-x86_64_v2
           - name: proton-${{ github.ref_name }}-x86_64_v3
           - name: proton-${{ github.ref_name }}-x86_64_v4
-          - name: proton-${{ github.ref_name }}-x86_64-llvm
-          - name: proton-${{ github.ref_name }}-x86_64_v2-llvm
-          - name: proton-${{ github.ref_name }}-x86_64_v3-llvm
-          - name: proton-${{ github.ref_name }}-x86_64_v4-llvm
-          - name: proton-${{ github.ref_name }}-arm64
     uses: ./.github/workflows/_job_upload.yml
     with:
       version: ${{ github.ref_name }}
