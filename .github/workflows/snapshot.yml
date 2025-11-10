@@ -1,6 +1,11 @@
 name: Snapshot
 
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'cachyos_*_*/main'
+      - 'cachyos_*_*/dev'
 
 concurrency:
   group: ${{ github.ref_name }}
