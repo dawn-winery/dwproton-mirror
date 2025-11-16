@@ -62,7 +62,7 @@ jobs:
     - name: Make ${{ inputs.name }}
       working-directory: ./build
       run: |
-        make -j$(nproc) redist
+        make redist
 
     - name: Save cache
       id: ccache-save
