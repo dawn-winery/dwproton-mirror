@@ -37,6 +37,7 @@ from ctypes import c_ssize_t
 
 from filelock import FileLock
 from utilities import setup_local_shader_cache
+from utilities import setup_frame_rate
 from random import randrange
 
 #To enable debug logging, copy "user_settings.sample.py" to "user_settings.py"
@@ -1639,6 +1640,9 @@ class Session:
 
             if self.env["PROTON_LOG"] != "1":
                 append_to_env_str(self.env, "WINEDEBUG", self.env["PROTON_LOG"], ",")
+
+        # HACK: handle DXVK_FRAME_RATE and VKD3D_FRAME_RATE through DXVK_CONFIG
+        setup_frame_rate(self.env, append_to_env_str)
 
         #for performance, logging is disabled by default; override with user_settings.py
         self.env.setdefault("WINEDEBUG", "-all")
