@@ -53,6 +53,9 @@ jobs:
             rustflags: -Copt-level=3 -Ctarget-cpu=nocona
             configure: '--proton-sdk-image=sherrydck/proton-sdk-llvm-mingw:latest'
             runner: 'ubuntu-24.04'
+          - name: proton-${{ github.ref_name }}-arm64
+            configure: '--proton-sdk-image=sherrydck/proton-sdk-arm64:latest --target-arch=arm64'
+            runner: 'ubuntu-24.04-arm'
     uses: ./.github/workflows/_job_build.yml
     with:
       name: ${{ matrix.name }}
@@ -104,6 +107,7 @@ jobs:
           - name: proton-${{ github.ref_name }}-x86_64_v2-llvm
           - name: proton-${{ github.ref_name }}-x86_64_v3-llvm
           - name: proton-${{ github.ref_name }}-x86_64_v4-llvm
+          - name: proton-${{ github.ref_name }}-arm64
     uses: ./.github/workflows/_job_upload.yml
     with:
       version: ${{ github.ref_name }}
