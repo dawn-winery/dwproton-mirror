@@ -7,17 +7,26 @@ on:
         required: true
         type: string
       cflags:
-        required: true
+        required: false
         type: string
+        default: ''
+      rustflags:
+        required: false
+        type: string
+        default: ''
       configure:
         required: false
         type: string
         default: ''
+      runner:
+        required: false
+        type: string
+        default: 'ubuntu-24.04'
 
 jobs:
   proton:
     name: Build ${{ inputs.name }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner }}
     continue-on-error: true
     steps:
 
@@ -88,7 +97,7 @@ jobs:
       working-directory: ./build
       env:
         CFLAGS: ${{ inputs.cflags }}
-        RUSTFLAGS: -Copt-level=3 -Ctarget-cpu=nocona
+        RUSTFLAGS: ${{ inputs.rustflags }}
         USE_LTO: 0
       run: |
         ../configure.sh --build-name=${{ inputs.name }} --container-engine=docker ${{ inputs.configure }}
