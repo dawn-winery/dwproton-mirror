@@ -151,6 +151,13 @@ include $(SRC)/make/rules-cargo.mk
 
 
 ##
+## patches
+##
+
+$(eval $(call rules-source,patches,$(SRCDIR)/patches))
+
+
+##
 ## dav1d
 ##
 
