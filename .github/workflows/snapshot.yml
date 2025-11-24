@@ -95,3 +95,32 @@ jobs:
       rustflags: ${{ matrix.rustflags }}
       configure: ${{ matrix.configure }}
       runner: ${{ matrix.runner }}
+
+  test:
+    name: Test
+    needs: [version, build]
+    strategy:
+      matrix:
+        include:
+          - name: proton-${{ needs.version.outputs.full_desc }}-x86_64
+            runner: 'ubuntu-24.04'
+          - name: proton-${{ needs.version.outputs.full_desc }}-x86_64_v2
+            runner: 'ubuntu-24.04'
+          - name: proton-${{ needs.version.outputs.full_desc }}-x86_64_v3
+            runner: 'ubuntu-24.04'
+          - name: proton-${{ needs.version.outputs.full_desc }}-x86_64_v4
+            runner: 'ubuntu-24.04'
+          - name: proton-${{ needs.version.outputs.full_desc }}-x86_64-llvm
+            runner: 'ubuntu-24.04'
+          - name: proton-${{ needs.version.outputs.full_desc }}-x86_64_v2-llvm
+            runner: 'ubuntu-24.04'
+          - name: proton-${{ needs.version.outputs.full_desc }}-x86_64_v3-llvm
+            runner: 'ubuntu-24.04'
+          - name: proton-${{ needs.version.outputs.full_desc }}-x86_64_v4-llvm
+            runner: 'ubuntu-24.04'
+          - name: proton-${{ needs.version.outputs.full_desc }}-arm64
+            runner: 'ubuntu-24.04-arm'
+    uses: ./.github/workflows/_job_test.yml
+    with:
+      name: ${{ matrix.name }}
+      runner: ${{ matrix.runner }}
