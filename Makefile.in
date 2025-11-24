@@ -163,6 +163,13 @@ include $(SRC)/make/rules-arm64x-forwarder.mk
 
 
 ##
+## patches
+##
+
+$(eval $(call rules-source,patches,$(SRCDIR)/patches))
+
+
+##
 ## dav1d
 ##
 
