@@ -1,0 +1,84 @@
+From ac8d87176eb3c4c9de5eb18e56159f6439ff624d Mon Sep 17 00:00:00 2001
+From: Stelios Tsampas <loathingkernel@gmail.com>
+Date: Mon, 24 Nov 2025 13:49:28 +0200
+Subject: [PATCH] Makefile: add TARGET_ARCH option to adjust target LIBDIR
+
+---
+ Makefile    | 16 ++++++++++------
+ __init__.py |  5 ++++-
+ 2 files changed, 14 insertions(+), 7 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index c93f1c7..65493cc 100644
+--- a/Makefile
++++ b/Makefile
+@@ -6,8 +6,12 @@ DSTDIR := $(shell realpath $(DIST))
+ TARGET_DIR := $(DSTDIR)
+ 
+ BASEDIR       := /files
+-i386_LIBDIR    = $(BASEDIR)/lib/i386-linux-gnu
+-x86_64_LIBDIR  = $(BASEDIR)/lib/x86_64-linux-gnu
++
++TARGET_ARCH ?= x86_64
++LIBDIR := $(BASEDIR)/lib/x86_64-linux-gnu
++ifeq ($(TARGET_ARCH),arm64)
++	LIBDIR := $(BASEDIR)/lib/aarch64-linux-gnu
++endif
+ 
+ .PHONY: all
+ 
+@@ -51,7 +55,7 @@ $(OBJDIR)/.build-cabextract-dist: | $(OBJDIR)/libmspack
+ 	$(info :: Building cabextract )
+ 	cd $(OBJDIR)/libmspack/cabextract && \
+ 	autoreconf -fiv -I /usr/share/gettext/m4/ && \
+-	./configure --prefix=$(BASEDIR) --libdir=$(x86_64_LIBDIR) && \
++	./configure --prefix=$(BASEDIR) --libdir=$(LIBDIR) && \
+ 	make
+ 	touch $(@)
+ 
+@@ -73,7 +77,7 @@ $(OBJDIR)/.build-libmspack-dist: | $(OBJDIR)/libmspack
+ 	$(info :: Building libmspack )
+ 	cd $(OBJDIR)/libmspack/libmspack && \
+ 	autoreconf -vfi && \
+-	./configure --prefix=$(BASEDIR) --libdir=$(x86_64_LIBDIR) --disable-static && \
++	./configure --prefix=$(BASEDIR) --libdir=$(LIBDIR) --disable-static && \
+ 	sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool && \
+ 	make
+ 	touch $(@)
+@@ -87,8 +91,8 @@ libmspack-install: libmspack-dist
+ 	cd $(OBJDIR)/libmspack/libmspack && \
+ 	make DESTDIR=$(TARGET_DIR) install
+ 	rm -r $(TARGET_DIR)$(BASEDIR)/include
+-	rm -r $(TARGET_DIR)$(BASEDIR)/lib/x86_64-linux-gnu/pkgconfig
+-	rm    $(TARGET_DIR)$(BASEDIR)/lib/x86_64-linux-gnu/libmspack.la
++	rm -r $(TARGET_DIR)$(LIBDIR)/pkgconfig
++	rm    $(TARGET_DIR)$(LIBDIR)/libmspack.la
+ 
+ #
+ # unzip
+diff --git a/__init__.py b/__init__.py
+index 8397fae..61dea51 100644
+--- a/__init__.py
++++ b/__init__.py
+@@ -21,6 +21,9 @@ i386_lib_dir: str = (
+ x86_64_lib_dir: str = (
+     f'{os.path.dirname(os.path.realpath(__file__))}/files/lib/x86_64-linux-gnu'
+ )
++aarch64_lib_dir: str = (
++    f'{os.path.dirname(os.path.realpath(__file__))}/files/lib/aarch64-linux-gnu'
++)
+ 
+ 
+ # This is needed for protonfixes
+@@ -60,7 +63,7 @@ def setup(
+ ) -> None:
+     """Setup PATH and LD_LIBRARY_PATH to include protonfixes's binary and library paths"""
+     func(env, bin_path_var, bin_dir, ':')
+-    func(env, lib_path_var, f'{x86_64_lib_dir}:{i386_lib_dir}', ':')
++    func(env, lib_path_var, f'{x86_64_lib_dir}:{aarch64_lib_dir}:{i386_lib_dir}', ':')
+ 
+ 
+ def winetricks(env: dict, wine_bin: str, wineserver_bin: str) -> None:
+-- 
+2.52.0
+
