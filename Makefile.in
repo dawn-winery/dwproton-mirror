@@ -2047,7 +2047,9 @@ $(eval $(call rules-common,protonfixes,x86_64,unix))
 $(eval $(call rules-common,protonfixes,aarch64,unix))
 
 $(OBJ)/.protonfixes-post-source: patches-source
-	patch -d $(PROTONFIXES_SRC) -Np1 -i $(PATCHES_SRC)/protonfixes/*
+	for patch in $(PATCHES_SRC)/protonfixes/*.patch; do \
+		patch -d $(PROTONFIXES_SRC) -Np1 -i "$$patch"; \
+	done
 	touch $@
 
 $(OBJ)/.protonfixes-x86_64-build:

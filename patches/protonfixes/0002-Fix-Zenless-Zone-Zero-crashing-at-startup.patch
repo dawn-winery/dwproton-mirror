@@ -1,0 +1,23 @@
+From 375951c420b9eb569f4aa8e341d20a846c34a9b6 Mon Sep 17 00:00:00 2001
+From: NelloKudo <marshnelloosu@gmail.com>
+Date: Thu, 27 Nov 2025 15:01:26 +0100
+Subject: [PATCH] Fix Zenless Zone Zero crashing at startup.
+
+Since latest update, Zenless also implemented the same steam.exe
+check as Genshin.
+---
+ gamefixes-umu/umu-zenlesszonezero.py | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/gamefixes-umu/umu-zenlesszonezero.py b/gamefixes-umu/umu-zenlesszonezero.py
+index f2570337..bb1c2c98 100644
+--- a/gamefixes-umu/umu-zenlesszonezero.py
++++ b/gamefixes-umu/umu-zenlesszonezero.py
+@@ -6,3 +6,7 @@
+ def main() -> None:
+     """Needs gamedrive fix to detect proper install space"""
+     util.set_game_drive(True)
++    """By default umu runs games on start.exe outside steam.
++    However, Zenless's AC needs the game to be run from steam.exe to run on Linux.
++    """
++    util.set_environment('UMU_USE_STEAM', '1')
