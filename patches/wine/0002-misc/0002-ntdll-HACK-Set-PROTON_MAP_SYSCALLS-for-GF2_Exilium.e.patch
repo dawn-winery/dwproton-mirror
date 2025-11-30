@@ -1,0 +1,26 @@
+From b391d7a35fa3c1b585435adfa075bb43265de13f Mon Sep 17 00:00:00 2001
+From: NelloKudo <marshnelloosu@gmail.com>
+Date: Sun, 30 Nov 2025 16:39:13 +0100
+Subject: [PATCH 2/6] ntdll: HACK: Set PROTON_MAP_SYSCALLS for GF2_Exilium.exe
+
+---
+ dlls/ntdll/unix/loader.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/dlls/ntdll/unix/loader.c b/dlls/ntdll/unix/loader.c
+index 41e3f902f20..b4c301a9fa8 100644
+--- a/dlls/ntdll/unix/loader.c
++++ b/dlls/ntdll/unix/loader.c
+@@ -2254,6 +2254,9 @@ static void hacks_init(void)
+     else if (main_argc > 1 && (strstr(main_argv[1], "Yakuza5.exe") ))
+         disable_sfn = TRUE;
+ 
++    if (main_argc > 1 && (strstr(main_argv[1], "GF2_Exilium.exe")) )
++        setenv( "PROTON_MAP_SYSCALLS", "1", 0 );
++
+     env_str = getenv("WINE_SIMULATE_ASYNC_READ");
+     if (env_str)
+         ac_odyssey = !!atoi(env_str);
+-- 
+2.52.0
+
