@@ -1,0 +1,31 @@
+From 97a93fa3c628796cf449329fe9ceb74818660224 Mon Sep 17 00:00:00 2001
+From: NelloKudo <marshnelloosu@gmail.com>
+Date: Sun, 30 Nov 2025 16:31:32 +0100
+Subject: [PATCH 1/2] ntdll: Also map Windows syscall numbers with
+ PROTON_MAP_SYSCALLS.
+
+More games (even non-steam ones) seems to have this funny behavior due to
+protection systems: this makes it easier to use it with any application.
+---
+ dlls/ntdll/unix/signal_x86_64.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/dlls/ntdll/unix/signal_x86_64.c b/dlls/ntdll/unix/signal_x86_64.c
+index 25c51632280..7c086142372 100644
+--- a/dlls/ntdll/unix/signal_x86_64.c
++++ b/dlls/ntdll/unix/signal_x86_64.c
+@@ -2061,8 +2061,9 @@ static void install_bpf(struct sigaction *sig_act)
+ 
+     {
+         const char *sgi = getenv("SteamGameId");
+-        if (sgi && (!strcmp(sgi, "1174180") || !strcmp(sgi, "1404210") || !strcmp(sgi, "1418100") || !strcmp(sgi, "2767030")
+-                    || !strcmp(sgi, "2853730") || !strcmp( sgi, "298110" )))
++        const char *map_syscalls = getenv("PROTON_MAP_SYSCALLS");
++        if ((map_syscalls && atoi(map_syscalls)) || (sgi && (!strcmp(sgi, "1174180") || !strcmp(sgi, "1404210") || !strcmp(sgi, "1418100") || !strcmp(sgi, "2767030")
++    || !strcmp(sgi, "2853730") || !strcmp( sgi, "298110" ))))
+         {
+             /* Use specific signal handler. */
+             sig_act->sa_sigaction = sigsys_handler_rdr2;
+-- 
+2.52.0
+
