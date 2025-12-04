@@ -9,7 +9,8 @@ Features:
 - Includes fixes for high CPU usage in HoYo games
 - Breaks Marvel Rivals 🚀
 
-<img width="451" height="561" alt="image" src="https://github.com/user-attachments/assets/cbdc69f9-8d23-45b6-814a-63b75026c30c" />
+<img width="451" height="561" alt="image" src="https://i.imgur.com/Xy28DJF.png" />
+
 
 New environmental variables
 ------------
