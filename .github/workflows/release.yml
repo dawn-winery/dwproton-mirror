@@ -20,39 +20,31 @@ jobs:
           - name: proton-${{ github.ref_name }}-x86_64
             cflags: -O2 -march=nocona -mtune=core-avx2
             rustflags: -Copt-level=3 -Ctarget-cpu=nocona
-            runner: 'ubuntu-24.04'
           - name: proton-${{ github.ref_name }}-x86_64_v2
             cflags: -O2 -march=x86-64-v2 -mtune=core-avx2
             rustflags: -Copt-level=3 -Ctarget-cpu=nocona
-            runner: 'ubuntu-24.04'
           - name: proton-${{ github.ref_name }}-x86_64_v3
             cflags: -O2 -march=x86-64-v3 -mtune=core-avx2
             rustflags: -Copt-level=3 -Ctarget-cpu=nocona
-            runner: 'ubuntu-24.04'
           - name: proton-${{ github.ref_name }}-x86_64_v4
             cflags: -O2 -march=x86-64-v4 -mtune=skylake-avx512
             rustflags: -Copt-level=3 -Ctarget-cpu=nocona
-            runner: 'ubuntu-24.04'
           - name: proton-${{ github.ref_name }}-x86_64-llvm
             cflags: -O3 -march=nocona -mtune=core-avx2
             rustflags: -Copt-level=3 -Ctarget-cpu=nocona
             configure: '--proton-sdk-image=sherrydck/proton-sdk-llvm-mingw:latest'
-            runner: 'ubuntu-24.04'
           - name: proton-${{ github.ref_name }}-x86_64_v2-llvm
             cflags: -O3 -march=x86-64-v2 -mtune=core-avx2
             rustflags: -Copt-level=3 -Ctarget-cpu=nocona
             configure: '--proton-sdk-image=sherrydck/proton-sdk-llvm-mingw:latest'
-            runner: 'ubuntu-24.04'
           - name: proton-${{ github.ref_name }}-x86_64_v3-llvm
             cflags: -O3 -march=x86-64-v3 -mtune=core-avx2
             rustflags: -Copt-level=3 -Ctarget-cpu=nocona
             configure: '--proton-sdk-image=sherrydck/proton-sdk-llvm-mingw:latest'
-            runner: 'ubuntu-24.04'
           - name: proton-${{ github.ref_name }}-x86_64_v4-llvm
             cflags: -O3 -march=x86-64-v4 -mtune=skylake-avx512
             rustflags: -Copt-level=3 -Ctarget-cpu=nocona
             configure: '--proton-sdk-image=sherrydck/proton-sdk-llvm-mingw:latest'
-            runner: 'ubuntu-24.04'
           - name: proton-${{ github.ref_name }}-arm64
             configure: '--proton-sdk-image=sherrydck/proton-sdk-arm64:latest --target-arch=arm64'
             runner: 'ubuntu-24.04-arm'
@@ -62,7 +54,7 @@ jobs:
       cflags: ${{ matrix.cflags }}
       rustflags: ${{ matrix.rustflags }}
       configure: ${{ matrix.configure }}
-      runner: ${{ matrix.runner }}
+      runner: ${{ matrix.runner != '' && matrix.runner || 'ubuntu-24.04' }}
 
   release:
     name: Release
