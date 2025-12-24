@@ -1,0 +1,27 @@
+From bc7b84f17b9e04f9f1f0427eb16ca7ceb5dcacf8 Mon Sep 17 00:00:00 2001
+From: Stelios Tsampas <loathingkernel@gmail.com>
+Date: Wed, 24 Dec 2025 15:50:46 +0200
+Subject: [PATCH 3/3] chore: format with ruff
+
+---
+ util.py | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/util.py b/util.py
+index bfb2457..4df1938 100644
+--- a/util.py
++++ b/util.py
+@@ -343,8 +343,8 @@ def protontricks(verb: str) -> bool:
+             # make sure proton waits for winetricks to finish
+             for idx, arg in enumerate(sys.argv):
+                 if 'waitforexitandrun' not in arg:
+-                    if arg == "run":
+-                        sys.argv[idx] = "waitforexitandrun"
++                    if arg == 'run':
++                        sys.argv[idx] = 'waitforexitandrun'
+                         log.debug(str(sys.argv))
+                         break
+ 
+-- 
+2.52.0
+
