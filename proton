@@ -1898,7 +1898,7 @@ class Session:
             if self.env.get("WAYLAND_DISPLAY", False):
                 self.dlloverrides["winex11.drv"] = ""
                 self.dlloverrides["winewayland.drv"] = "b"
-                self.env["WINE_WAYLAND_HACKS"] = "1"
+                self.env.setdefault("WINE_WAYLAND_HACKS", "1")
                 self.env["PROTON_USE_XALIA"] = "0"
                 if "PROTON_NO_STEAMINPUT" not in self.env:
                     self.env["PROTON_NO_STEAMINPUT"] = "1"
