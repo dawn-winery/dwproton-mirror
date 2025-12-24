@@ -362,6 +362,16 @@ def setup_openvr_paths():
         json.dump(contents, file, indent=3)
 
 
+def is_driver_loaded(d):
+    try:
+        with open('/proc/modules') as f:
+            drivers = set([line.partition(' ')[0] for line in f.read().splitlines()])
+            if drivers.intersection(d):
+                return True
+            else:
+                return False
+    except OSError:
+        return False
 
 # Function to find the installed location of DLL files for use by Wine/Proton
 # from the NVIDIA Linux driver
@@ -1920,6 +1930,7 @@ class Session:
                     del self.env["SDL_GAMECONTROLLER_IGNORE_DEVICES"]
                 if "hdr" in self.compat_config:
                     self.env["DXVK_HDR"] = "1"
+                    self.env.setdefault("ENABLE_HDR_WSI", str(int(is_driver_loaded({'nvidia'}))))
 
         if os.environ.get("SteamGameId", 0) in [
                 "661920", #Claybook
