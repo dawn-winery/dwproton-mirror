@@ -1,0 +1,25 @@
+From 78f5a5d7bd6781d9d306972bb679d6f3102c7c43 Mon Sep 17 00:00:00 2001
+From: Stelios Tsampas <loathingkernel@gmail.com>
+Date: Wed, 24 Dec 2025 15:50:38 +0200
+Subject: [PATCH 2/3] upscalers: add MLFG enablement switch
+
+---
+ upscalers.py | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/upscalers.py b/upscalers.py
+index 9f7e0bb..6a5ab93 100644
+--- a/upscalers.py
++++ b/upscalers.py
+@@ -413,6 +413,8 @@ def setup_upscalers(
+ 
+     if 'fsr4' in loaddll_replace:
+         env['FSR4_UPGRADE'] = '1'
++        if 'mlfg' in compat_config:
++            env['MLFG_UPGRADE'] = '1'
+         if 'fsr4rdna3' in compat_config:
+             env['DXIL_SPIRV_CONFIG'] = 'wmma_rdna3_workaround'
+ 
+-- 
+2.52.0
+
