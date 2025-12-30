@@ -76,3 +76,6 @@
 [submodule "FEX"]
 	path = FEX
 	url = https://github.com/FEX-Emu/FEX/
+[submodule "d7vk"]
+	path = d7vk
+	url = https://github.com/WinterSnowfall/d7vk.git
