@@ -1,0 +1,26 @@
+From 99370dd7f97b632795886a1410182ac6305cb9d4 Mon Sep 17 00:00:00 2001
+From: NelloKudo <marshnelloosu@gmail.com>
+Date: Wed, 31 Dec 2025 12:34:08 +0100
+Subject: [PATCH] Update CEF fix for Duet Night Abyss
+
+dotnet48 acts problematic on some setups after the 1.1 game update: disabling dcomp
+seems to fix the CEF issues the same way, while also being much faster.
+---
+ gamefixes-egs/umu-3950020.py | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/gamefixes-egs/umu-3950020.py b/gamefixes-egs/umu-3950020.py
+index 8f92f35..09e1f39 100644
+--- a/gamefixes-egs/umu-3950020.py
++++ b/gamefixes-egs/umu-3950020.py
+@@ -4,5 +4,5 @@ from protonfixes import util
+ 
+ 
+ def main() -> None:
+-    """Installing dotnet48 fixes CEF issues (e.g. in-game news not loading)"""
+-    util.protontricks('dotnet48')
++    """CEF tries to use dcomp by default which only has stubs, this triggers a fallback to a different backend"""
++    util.winedll_override('dcomp', util.OverrideOrder.DISABLED)
+-- 
+2.52.0
+
