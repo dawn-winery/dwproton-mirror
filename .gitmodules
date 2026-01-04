@@ -1,15 +1,47 @@
 [submodule "wine"]
 	path = wine
-	url = ../wine
+	url = https://github.com/CachyOS/wine-cachyos.git
+[submodule "meson"]
+	path = meson
+	url = https://github.com/mesonbuild/meson.git
+[submodule "nvidia-libs/dxvk-nvapi"]
+	path = nvidia-libs/dxvk-nvapi
+	url = https://github.com/SveSop/dxvk-nvapi.git
+	branch = experimental
+[submodule "nvidia-libs/nvcuda"]
+	path = nvidia-libs/nvcuda
+	url = https://github.com/SveSop/nvcuda.git
+[submodule "nvidia-libs/nvenc"]
+	path = nvidia-libs/nvenc
+	url = https://github.com/SveSop/nvenc.git
+[submodule "nvidia-libs/wine-nvml"]
+	path = nvidia-libs/wine-nvml
+	url = https://github.com/Saancreed/wine-nvml.git
+[submodule "nvidia-libs/wine-nvoptix"]
+	path = nvidia-libs/wine-nvoptix
+	url = https://github.com/SveSop/wine-nvoptix.git
 [submodule "dxvk"]
 	path = dxvk
 	url = https://github.com/doitsujin/dxvk.git
+[submodule "dxvk-gplasync"]
+	path = dxvk-gplasync
+	url = https://github.com/doitsujin/dxvk.git
+[submodule "dxvk-sarek"]
+	path = dxvk-sarek
+	url = https://github.com/pythonlover02/DXVK-Sarek.git
+	branch = async
 [submodule "openvr"]
 	path = openvr
 	url = https://github.com/ValveSoftware/openvr
 [submodule "fonts/liberation-fonts"]
 	path = fonts/liberation-fonts
 	url = https://github.com/liberationfonts/liberation-fonts
+[submodule "libxkbcommon"]
+	path = libxkbcommon
+	url = https://github.com/xkbcommon/libxkbcommon.git
+[submodule "libpcap"]
+	path = libpcap
+	url = https://github.com/the-tcpdump-group/libpcap.git
 [submodule "gstreamer"]
 	path = gstreamer
 	url = https://github.com/GStreamer/gstreamer.git
