@@ -2,6 +2,8 @@
 
 Dawn Winery's custom Proton fork with fixes for various games :xdd:
 
+Need Help? [Join us on Discord](https://discord.gg/ck37X6UWBp)
+
 Features:
 - Based on [Proton-CachyOS](https://github.com/CachyOS/proton-cachyos)
 - Includes latest fixes for anime games by the Dawn Winery team :pog:
