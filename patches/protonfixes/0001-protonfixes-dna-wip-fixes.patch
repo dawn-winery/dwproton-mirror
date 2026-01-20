@@ -1,0 +1,53 @@
+From 674a5d047e2ff3dd4b83c1668c71a1f9407bb6bd Mon Sep 17 00:00:00 2001
+From: Dylan Donnell <dylan.donnell@student.griffith.ie>
+Date: Tue, 20 Jan 2026 00:27:02 +0000
+Subject: [PATCH 1/2] add game drive env var for Duet Night Abyss
+
+---
+ gamefixes-steam/3950020.py | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/gamefixes-steam/3950020.py b/gamefixes-steam/3950020.py
+index 09e1f39b..874cafb6 100644
+--- a/gamefixes-steam/3950020.py
++++ b/gamefixes-steam/3950020.py
+@@ -6,3 +6,4 @@
+ def main() -> None:
+     """CEF tries to use dcomp by default which only has stubs, this triggers a fallback to a different backend"""
+     util.winedll_override('dcomp', util.OverrideOrder.DISABLED)
++    util.set_environment('PROTON_SET_GAME_DRIVE', '1')
+
+From f625004b9af43cb481cb2bddee7c220b84e29f30 Mon Sep 17 00:00:00 2001
+From: Dylan Donnell <dylan.donnell@student.griffith.ie>
+Date: Tue, 20 Jan 2026 00:42:41 +0000
+Subject: [PATCH 2/2] disable libGLESv2 on wayland
+
+---
+ gamefixes-steam/3950020.py | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/gamefixes-steam/3950020.py b/gamefixes-steam/3950020.py
+index 874cafb6..fd45c02b 100644
+--- a/gamefixes-steam/3950020.py
++++ b/gamefixes-steam/3950020.py
+@@ -1,9 +1,20 @@
+ """Game fix for Duet Night Abyss"""
+ 
++import os
++
+ from protonfixes import util
+ 
+ 
++def _is_env_one(name: str) -> bool:
++    return os.environ.get(name, '') == '1'
++
++
+ def main() -> None:
+     """CEF tries to use dcomp by default which only has stubs, this triggers a fallback to a different backend"""
+     util.winedll_override('dcomp', util.OverrideOrder.DISABLED)
++
+     util.set_environment('PROTON_SET_GAME_DRIVE', '1')
++
++    """News tab freezes upon spawn on winewayland, disabling libGLES fixes it """
++    if _is_env_one('PROTON_USE_WAYLAND') or _is_env_one('PROTON_ENABLE_WAYLAND'):
++        util.winedll_override('libGLESv2', util.OverrideOrder.DISABLED)
