@@ -42,6 +42,9 @@
 [submodule "libxkbcommon"]
 	path = libxkbcommon
 	url = https://github.com/xkbcommon/libxkbcommon.git
+[submodule "wayland-protocols"]
+	path = wayland-protocols
+	url = https://gitlab.freedesktop.org/wayland/wayland-protocols.git
 [submodule "libpcap"]
 	path = libpcap
 	url = https://github.com/the-tcpdump-group/libpcap.git
