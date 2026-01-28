@@ -192,6 +192,23 @@ $(eval $(call rules-meson,dav1d,i386,unix))
 $(eval $(call rules-meson,dav1d,x86_64,unix))
 $(eval $(call rules-meson,dav1d,aarch64,unix))
 
+
+##
+## libxml2
+##
+
+LIBXML2_MESON_ARGS := \
+	-Ddocs=disabled \
+	-Dicu=disabled \
+	-Dlegacy=enabled \
+	-Dpython=disabled
+
+$(eval $(call rules-source,libxml2,$(SRCDIR)/libxml2))
+$(eval $(call rules-meson,libxml2,i386,unix))
+$(eval $(call rules-meson,libxml2,x86_64,unix))
+$(eval $(call rules-meson,libxml2,aarch64,unix))
+
+
 ##
 ## xkbcommon
 ##
@@ -202,6 +219,8 @@ LIBXKBCOMMON_MESON_ARGS := \
 	-Denable-x11=false \
 	-Denable-bash-completion=false \
 	-Denable-wayland=false
+
+LIBXKBCOMMON_DEPENDS = libxml2
 
 $(eval $(call rules-source,libxkbcommon,$(SRCDIR)/libxkbcommon))
 $(eval $(call rules-meson,libxkbcommon,i386,unix))
@@ -396,6 +415,7 @@ GST_GOOD_x86_64_MESON_ARGS = \
 	-Dspeex=enabled \
 
 GST_GOOD_DEPENDS = gst_orc gstreamer gst_base
+GST_GOOD_DEPENDS += libxml2
 GST_GOOD_HOST_DEPENDS = gst_orc
 
 $(eval $(call rules-source,gst_good,$(SRCDIR)/gstreamer/subprojects/gst-plugins-good/))
@@ -523,6 +543,7 @@ GST_BAD_x86_64_MESON_ARGS = \
 	-Dttml=enabled \
 
 GST_BAD_DEPENDS = gst_orc gstreamer gst_base
+GST_BAD_DEPENDS += libxml2
 GST_BAD_HOST_DEPENDS = gst_orc
 
 $(eval $(call rules-source,gst_bad,$(SRCDIR)/gstreamer/subprojects/gst-plugins-bad/))
@@ -1002,7 +1023,7 @@ WINE_i386_DEPENDS = vkd3d
 WINE_x86_64_DEPENDS = vkd3d
 endif
 
-WINE_DEPENDS += libxkbcommon libpcap
+WINE_DEPENDS += libxml2 libxkbcommon libpcap
 
 WINE_i386_LIBDIR = $(WINE_i386_DST)/lib
 WINE_x86_64_LIBDIR = $(WINE_x86_64_DST)/lib
