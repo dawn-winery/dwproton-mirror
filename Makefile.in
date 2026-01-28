@@ -229,6 +229,17 @@ $(eval $(call rules-meson,libxkbcommon,aarch64,unix))
 
 
 ##
+## wayland-protocols
+##
+
+WAYLAND_PROTOCOLS_MESON_ARGS := \
+	-Dtests=false
+
+$(eval $(call rules-source,wayland-protocols,$(SRCDIR)/wayland-protocols))
+$(eval $(call rules-meson,wayland-protocols,aarch64,unix))
+
+
+##
 ## libpcap
 ##
 
@@ -357,6 +368,7 @@ GST_BASE_MESON_ARGS += \
 
 GST_BASE_LDFLAGS = -lm
 GST_BASE_DEPENDS = gst_orc graphene gstreamer
+GST_BASE_aarch64_DEPENDS = wayland-protocols
 GST_BASE_HOST_DEPENDS = gst_orc
 
 $(eval $(call rules-source,gst_base,$(SRCDIR)/gstreamer/subprojects/gst-plugins-base))
@@ -544,6 +556,7 @@ GST_BAD_x86_64_MESON_ARGS = \
 
 GST_BAD_DEPENDS = gst_orc gstreamer gst_base
 GST_BAD_DEPENDS += libxml2
+GST_BAD_aarch64_DEPENDS = wayland-protocols
 GST_BAD_HOST_DEPENDS = gst_orc
 
 $(eval $(call rules-source,gst_bad,$(SRCDIR)/gstreamer/subprojects/gst-plugins-bad/))
