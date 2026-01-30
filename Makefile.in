@@ -61,7 +61,8 @@ arm64ec_CFLAGS := -march=armv8.2-a -mtune=cortex-x3
 CFLAGS  = -fwrapv -fno-strict-aliasing
 CFLAGS += -ffunction-sections -fdata-sections -fno-omit-frame-pointer
 CFLAGS += -ffile-prefix-map=$(CCACHE_BASEDIR)=.
-CFLAGS += -D_TIME_BITS=64 -D_FILE_OFFSET_BITS=64
+i386_CFLAGS += -D_TIME_BITS=64 -D_FILE_OFFSET_BITS=64
+x86_64_CFLAGS += -D_TIME_BITS=64 -D_FILE_OFFSET_BITS=64
 
 ifneq ($(SUPPRESS_WARNINGS),)
 	CFLAGS += -w
@@ -115,8 +116,10 @@ ifeq ($(shell cc --version|grep 'clang'),)
 	TOOLCHAIN_PREFIX :=
 	OBJCOPY_FLAGS  := -p
 	MINGW_TYPE := gcc
-	CFLAGS += -s -mprefer-avx128
-	CFLAGS += -fvect-cost-model=cheap -fno-semantic-interposition -fipa-pta
+	i386_CFLAGS += -s -mprefer-avx128
+	i386_CFLAGS += -fvect-cost-model=cheap -fno-semantic-interposition -fipa-pta
+	x86_64_CFLAGS += -s -mprefer-avx128
+	x86_64_CFLAGS += -fvect-cost-model=cheap -fno-semantic-interposition -fipa-pta
 	i386_SANITY_FLAGS := -mpreferred-stack-boundary=2
 else
 	# CLANG-specific flags
