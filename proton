@@ -1153,7 +1153,7 @@ class CompatData:
                             prefix=self.prefix_dir, track_file=tracked_files, link_debug=True, optional=optional)
                     g_session.dlloverrides[f] = "n"
 
-                use_dxvk_ddraw = "dxvkddraw" in g_session.compat_config
+                use_dxvk_ddraw = "dxvkddraw" in g_session.compat_config and os.path.isdir(g_proton.lib_dir + "wine/d7vk")
                 if use_dxvk_ddraw:
                     try_copy(g_proton.default_pfx_dir + "drive_c/windows/syswow64/ddraw.dll", "drive_c/windows/syswow64/ddraw_.dll",
                             prefix=self.prefix_dir, track_file=tracked_files, link_debug=True)
