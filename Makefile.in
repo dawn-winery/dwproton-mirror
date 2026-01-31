@@ -340,8 +340,14 @@ GST_GOOD_MESON_ARGS += \
 	-Dxingmux=enabled \
 	-Dy4m=enabled \
 	-Dadaptivedemux2=enabled \
-	-Dflac=enabled \
 	-Djpeg=enabled \
+
+GST_GOOD_i386_MESON_ARGS = \
+	-Dflac=enabled \
+	-Dspeex=enabled \
+
+GST_GOOD_x86_64_MESON_ARGS = \
+	-Dflac=enabled \
 	-Dspeex=enabled \
 
 GST_GOOD_DEPENDS = gst_orc gstreamer gst_base
@@ -443,22 +449,33 @@ GST_BAD_MESON_ARGS += \
 	-Dshm=enabled \
 	-Duvch264=enabled \
 	-Dv4l2codecs=enabled \
-	-Daes=enabled \
 	-Dbz2=enabled \
-	-Dclosedcaption=enabled \
-	-Dcolormanagement=enabled \
 	-Ddash=enabled \
-	-Ddtls=enabled \
-	-Dopenal=enabled \
 	-Dopus=enabled \
 	-Dsctp=enabled \
 	-Dsmoothstreaming=enabled \
-	-Dsndfile=enabled \
-	-Dttml=enabled \
 	-Dwayland=disabled \
 	-Dx11=disabled \
 	-Dwebp=enabled \
 	-Dorc=enabled
+
+GST_BAD_i386_MESON_ARGS = \
+	-Daes=enabled \
+	-Dclosedcaption=enabled \
+	-Dcolormanagement=enabled \
+	-Ddtls=enabled \
+	-Dopenal=enabled \
+	-Dsndfile=enabled \
+	-Dttml=enabled \
+
+GST_BAD_x86_64_MESON_ARGS = \
+	-Daes=enabled \
+	-Dclosedcaption=enabled \
+	-Dcolormanagement=enabled \
+	-Ddtls=enabled \
+	-Dopenal=enabled \
+	-Dsndfile=enabled \
+	-Dttml=enabled \
 
 GST_BAD_DEPENDS = gst_orc gstreamer gst_base
 GST_BAD_HOST_DEPENDS = gst_orc
