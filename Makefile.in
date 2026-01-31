@@ -339,10 +339,14 @@ GST_GOOD_MESON_ARGS += \
 	-Dflx=enabled \
 	-Dxingmux=enabled \
 	-Dy4m=enabled \
+	-Djpeg=enabled \
+
+ifneq ($(TARGET_STEAMRT),steamrt4)
+GST_GOOD_MESON_ARGS += \
 	-Dadaptivedemux2=enabled \
 	-Dflac=enabled \
-	-Djpeg=enabled \
-	-Dspeex=enabled \
+	-Dspeex=enabled
+endif
 
 GST_GOOD_DEPENDS = gst_orc gstreamer gst_base
 GST_GOOD_HOST_DEPENDS = gst_orc
@@ -443,22 +447,26 @@ GST_BAD_MESON_ARGS += \
 	-Dshm=enabled \
 	-Duvch264=enabled \
 	-Dv4l2codecs=enabled \
-	-Daes=enabled \
 	-Dbz2=enabled \
+	-Dopus=enabled \
+	-Dsctp=enabled \
+	-Dwebp=enabled \
+	-Dwayland=disabled \
+	-Dx11=disabled \
+	-Dorc=enabled
+
+ifneq ($(TARGET_STEAMRT),steamrt4)
+GST_BAD_MESON_ARGS += \
+	-Daes=enabled \
 	-Dclosedcaption=enabled \
 	-Dcolormanagement=enabled \
 	-Ddash=enabled \
 	-Ddtls=enabled \
 	-Dopenal=enabled \
-	-Dopus=enabled \
-	-Dsctp=enabled \
 	-Dsmoothstreaming=enabled \
 	-Dsndfile=enabled \
-	-Dttml=enabled \
-	-Dwayland=disabled \
-	-Dx11=disabled \
-	-Dwebp=enabled \
-	-Dorc=enabled
+	-Dttml=enabled
+endif
 
 GST_BAD_DEPENDS = gst_orc gstreamer gst_base
 GST_BAD_HOST_DEPENDS = gst_orc
