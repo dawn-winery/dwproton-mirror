@@ -1,3 +1,55 @@
+# dwproton
+
+Dawn Winery's custom Proton fork with fixes for various games :xdd:
+
+Need help? [Join us on Discord!](https://discord.gg/ck37X6UWBp)
+
+Features:
+- Based on [Proton-CachyOS](https://github.com/CachyOS/proton-cachyos), including all its latest features!
+- Includes latest fixes for anime games by the Dawn Winery team 🍷
+- Includes fixes for games compatibility from [Proton-EM](https://github.com/Etaash-mathamsetty/Proton)!
+- Many QoL additions like [dxvk-gplasync](https://gitlab.com/Ph42oN/dxvk-gplasync) and some useful env. vars!
+  - **dxvk-gplasync** is not recommended to be used in multiplayer games, more info at [upstream](https://gitlab.com/Ph42oN/dxvk-gplasync#use-at-your-own-risk-in-games-with-anticheat)!
+  - You can read more about the DXVK forks available in: [DXVK.md](docs/DXVK.md)
+
+Make sure to leave a star to [Proton-CachyOS](https://github.com/CachyOS/proton-cachyos) and [Proton-EM](https://github.com/Etaash-mathamsetty/Proton) for their huge help with development!
+
+<img width="451" height="561" alt="image" src="https://i.imgur.com/Xy28DJF.png" />
+
+New environment variables
+------------
+
+- dwproton patches:
+  - `PROTON_DXVK_GPLASYNC=1`: enables dxvk-gplasync
+  - `PROTON_DXVK_LLASYNC=1`: enables both **gplasync** and **lowlatency** functionalities in DXVK
+  - `PROTON_USE_WINEALSA=1`: allows using winealsa, might fix audio crackling in games
+
+- Spritz patches:
+  - `WINE_USE_TAKE_FOCUS=1`: enables a fix for games dropping inputs after alt-tab
+  - `WINE_DISABLE_DISCONNECT=1`: disable the disconnecting trick enabled by default for certain games
+  - `WINE_ENABLE_DISCONNECT=1`: enable the disconnecting trick for any game
+
+We recommend using `UMU_USE_STEAM=1` when launching GI/ZZZ outside of Steam, if the automation doesn't work.
+
+Installation
+------------
+
+You can either use [ProtonPlus](https://github.com/Vysp3r/ProtonPlus) that now also includes dwproton (thanks!) or download latest build from [Releases](https://dawn.wine/dawn-winery/dwproton/releases) and extract manually to `compatibilitytools.d` in your Steam folder.
+
+<img src="https://i.imgur.com/13CQED2.png" />
+
+Building locally
+------------
+To build your own **dwproton** (make sure you have Docker setup):
+```
+git clone --recurse-submodules https://dawn.wine/dawn-winery/dwproton.git
+cd dwproton
+mkdir build && cd build
+../configure.sh --build-name=dwproton-local --container-engine=docker --enable-ccache --without-tts
+make -j$(nproc) redist
+```
+You can also add your own Wine patches by adding them to the `patches/wine` folder.
+
 Introduction
 ------------
 
