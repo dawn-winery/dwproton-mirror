@@ -74,7 +74,7 @@ jobs:
             rustflags: -Copt-level=3 -Ctarget-cpu=nocona
             configure: '--proton-sdk-image=sherrydck/proton-sdk-llvm-mingw:latest'
           - name: proton-${{ needs.version.outputs.full_desc }}-arm64
-            configure: '--target-arch=arm64'
+            configure: '--without-sarek --without-d7vk --target-arch=arm64'
             runner: 'ubuntu-24.04-arm'
     uses: ./.github/workflows/_job_build.yml
     with:
