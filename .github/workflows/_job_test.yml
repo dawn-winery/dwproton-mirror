@@ -40,10 +40,26 @@ jobs:
         run: |
           cat ${{ inputs.name }}.tar.xz | tar xvJf -
 
-      - name: Run test
-        run: >-
-          source
-          umu-launcher/venv/bin/activate &&
-          env WINEPREFIX=~/testpfx
-          PROTONPATH="$PWD/${{ inputs.name }}"
-          umu-run cmd.exe /c echo "This is a test"
+      - name: Run cmd.exe test
+        env:
+          WINEDLLOVERRIDES: "winemenubuilder.exe=d;mscoree=d;mshtml=d;winex11.drv=d;winewayland.drv=d;"
+        run: |
+          source umu-launcher/venv/bin/activate && env WINEPREFIX=~/testpfx PROTONPATH="$PWD/${{ inputs.name }}" umu-run cmd.exe /c echo "This is a test"
+
+      - name: Run vulkaninfo.exe test
+        env:
+          WINEDLLOVERRIDES: "winemenubuilder.exe=d;mscoree=d;mshtml=d;winex11.drv=d;winewayland.drv=d;"
+        run: |
+          wget "https://sdk.lunarg.com/sdk/download/1.4.335.0/windows/VulkanRT-X64-1.4.335.0-Components.zip"
+          unzip "VulkanRT-X64-1.4.335.0-Components.zip"
+          source umu-launcher/venv/bin/activate && env WINEPREFIX=~/testpfx PROTONPATH="$PWD/${{ inputs.name }}" umu-run "$PWD"/VulkanRT-X64-1.4.335.0-Components/x64/vulkaninfo.exe
+          source umu-launcher/venv/bin/activate && env WINEPREFIX=~/testpfx PROTONPATH="$PWD/${{ inputs.name }}" umu-run "$PWD"/VulkanRT-X64-1.4.335.0-Components/x86/vulkaninfo.exe
+
+      - name: Run D3d12info.exe test
+        env:
+          WINEDLLOVERRIDES: "winemenubuilder.exe=d;mscoree=d;mshtml=d;winex11.drv=d;winewayland.drv=d;"
+        run: |
+          wget "https://github.com/sawickiap/D3d12info/releases/download/v3.15.1/D3d12info.zip"
+          unzip "D3d12info.zip"
+          source umu-launcher/venv/bin/activate && env WINEPREFIX=~/testpfx PROTONPATH="$PWD/${{ inputs.name }}" umu-run "$PWD"/D3d12info/D3d12info.exe
+
