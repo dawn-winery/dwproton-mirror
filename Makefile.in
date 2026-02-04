@@ -55,8 +55,13 @@ HOST_CFLAGS    ?= -O2 -march=nocona -mtune=core-avx2
 CCOS_CFLAGS    := $(HOST_CFLAGS) -pipe -mno-avx512f
 i386_CFLAGS    := -mstackrealign $(CCOS_CFLAGS) -mfpmath=sse
 x86_64_CFLAGS  := -mcmodel=small $(CCOS_CFLAGS) -mfpmath=sse
+HOST_RUSTFLAGS   ?= -Copt-level=3 -Ctarget-cpu=nocona
+i386_RUSTFLAGS   := $(HOST_RUSTFLAGS)
+x86_64_RUSTFLAGS := $(HOST_RUSTFLAGS)
 aarch64_CFLAGS := -march=armv8.2-a -mtune=cortex-x3
 arm64ec_CFLAGS := -march=armv8.2-a -mtune=cortex-x3
+aarch64_RUSTFLAGS := -Copt-level=3 -Ctarget-cpu=armv8.2-a
+arm64ec_RUSTFLAGS := -Copt-level=3 -Ctarget-cpu=armv8.2-a
 
 CFLAGS  = -fwrapv -fno-strict-aliasing
 CFLAGS += -ffunction-sections -fdata-sections -fno-omit-frame-pointer
