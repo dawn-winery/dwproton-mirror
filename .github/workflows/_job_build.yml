@@ -66,21 +66,6 @@ jobs:
     - name: Prepare host
       run: sudo apt update && sudo apt-get install -y ccache fontforge-nox
 
-    - name: Cache identifier
-      id: ccache-id
-      run: |
-        checksum=$(echo "${{ inputs.cflags}} ${{ inputs.configure }}" | sha1sum | cut -d' ' -f1)
-        echo "checksum=$checksum" >> $GITHUB_OUTPUT
-
-    - name: Restore cache
-      id: ccache-restore
-      uses: actions/cache/restore@v4
-      with:
-        path: ~/.ccache
-        key: ccache-proton-${{ steps.ccache-id.outputs.checksum }}-${{ github.run_id }}
-        restore-keys: |
-          ccache-proton-${{ steps.ccache-id.outputs.checksum  }}
-
     - name: Checkout
       uses: actions/checkout@v4
       with:
@@ -101,6 +86,23 @@ jobs:
         USE_LTO: 0
       run: |
         ../configure.sh --build-name=${{ inputs.name }} --container-engine=docker ${{ inputs.configure }}
+
+    - name: Cache identifier
+      working-directory: ./build
+      id: ccache-id
+      run: |
+        image=$(make get-steamrt-image | tail -1)
+        checksum=$(echo "$image ${{ inputs.cflags }}" | sha1sum | cut -d' ' -f1)
+        echo "checksum=$checksum" >> $GITHUB_OUTPUT
+
+    - name: Restore cache
+      id: ccache-restore
+      uses: actions/cache/restore@v4
+      with:
+        path: ~/.ccache
+        key: ccache-proton-${{ steps.ccache-id.outputs.checksum }}-${{ github.run_id }}
+        restore-keys: |
+          ccache-proton-${{ steps.ccache-id.outputs.checksum }}
 
     - name: Make ${{ inputs.name }}
       working-directory: ./build
