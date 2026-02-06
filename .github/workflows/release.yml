@@ -29,6 +29,9 @@ jobs:
           - name: proton-${{ github.ref_name }}-x86_64_v4
             cflags: -O2 -march=x86-64-v4 -mtune=skylake-avx512
             rustflags: -Copt-level=3 -Ctarget-cpu=nocona
+          - name: proton-${{ github.ref_name }}-znver2
+            cflags: -O2 -march=znver2 -mtune=znver2
+            rustflags: -Copt-level=3 -Ctarget-cpu=znver2
           - name: proton-${{ github.ref_name }}-x86_64-llvm
             cflags: -O3 -march=nocona -mtune=core-avx2
             rustflags: -Copt-level=3 -Ctarget-cpu=nocona
