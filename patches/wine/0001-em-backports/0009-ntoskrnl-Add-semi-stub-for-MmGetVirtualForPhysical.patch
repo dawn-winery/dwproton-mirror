@@ -1,0 +1,48 @@
+From c2d6871376da3a761a141d7977fa011bc268d8dc Mon Sep 17 00:00:00 2001
+From: Etaash Mathamsetty
+ <45927311+Etaash-mathamsetty@users.noreply.github.com>
+Date: Tue, 22 Jul 2025 21:34:12 -0400
+Subject: [PATCH 09/18] ntoskrnl: Add semi-stub for MmGetVirtualForPhysical.
+
+---
+ dlls/ntoskrnl.exe/ntoskrnl.c        | 10 ++++++++++
+ dlls/ntoskrnl.exe/ntoskrnl.exe.spec |  2 +-
+ 2 files changed, 11 insertions(+), 1 deletion(-)
+
+diff --git a/dlls/ntoskrnl.exe/ntoskrnl.c b/dlls/ntoskrnl.exe/ntoskrnl.c
+index daa4cd16fe7..1d83a353fb6 100644
+--- a/dlls/ntoskrnl.exe/ntoskrnl.c
++++ b/dlls/ntoskrnl.exe/ntoskrnl.c
+@@ -3031,6 +3031,16 @@ PHYSICAL_ADDRESS WINAPI MmGetPhysicalAddress(void *virtual_address)
+     return ret;
+ }
+ 
++/***********************************************************************
++ *           MmGetVirtualForPhysical   (NTOSKRNL.EXE.@)
++ */
++void *WINAPI MmGetVirtualForPhysical(PHYSICAL_ADDRESS addr)
++{
++    ULONG_PTR ret = addr.QuadPart;
++    FIXME("(%p): semi-stub!\n", (void *)ret);
++    return (void *)ret;
++}
++
+ /***********************************************************************
+  *           MmMapIoSpace   (NTOSKRNL.EXE.@)
+  */
+diff --git a/dlls/ntoskrnl.exe/ntoskrnl.exe.spec b/dlls/ntoskrnl.exe/ntoskrnl.exe.spec
+index 9ced6c03fd0..25b4f2fece7 100644
+--- a/dlls/ntoskrnl.exe/ntoskrnl.exe.spec
++++ b/dlls/ntoskrnl.exe/ntoskrnl.exe.spec
+@@ -728,7 +728,7 @@
+ @ stdcall MmGetPhysicalAddress(ptr)
+ @ stub MmGetPhysicalMemoryRanges
+ @ stdcall MmGetSystemRoutineAddress(ptr)
+-@ stub MmGetVirtualForPhysical
++@ stdcall MmGetVirtualForPhysical(int64)
+ @ stub MmGrowKernelStack
+ @ stub MmHighestUserAddress
+ @ stdcall MmIsAddressValid(ptr)
+-- 
+2.53.0
+

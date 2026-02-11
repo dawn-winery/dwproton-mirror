@@ -1,0 +1,49 @@
+From 2ab941f2257205af2179c07b57836f635b6b5668 Mon Sep 17 00:00:00 2001
+From: Etaash Mathamsetty
+ <45927311+Etaash-mathamsetty@users.noreply.github.com>
+Date: Tue, 22 Jul 2025 17:45:10 -0400
+Subject: [PATCH 08/18] ntoskrnl: Add stub for
+ KeDeregisterBugCheckReasonCallback.
+
+---
+ dlls/ntoskrnl.exe/ntoskrnl.c        | 10 ++++++++++
+ dlls/ntoskrnl.exe/ntoskrnl.exe.spec |  2 +-
+ 2 files changed, 11 insertions(+), 1 deletion(-)
+
+diff --git a/dlls/ntoskrnl.exe/ntoskrnl.c b/dlls/ntoskrnl.exe/ntoskrnl.c
+index 5f688836222..daa4cd16fe7 100644
+--- a/dlls/ntoskrnl.exe/ntoskrnl.c
++++ b/dlls/ntoskrnl.exe/ntoskrnl.c
+@@ -2885,6 +2885,16 @@ BOOL WINAPI KeRegisterBugCheckReasonCallback(void *record, void *routine, ULONG
+     return TRUE;
+ }
+ 
++/***********************************************************************
++ *           KeDeregisterBugCheckReasonCallback   (NTOSKRNL.EXE.@)
++ */
++BOOL WINAPI KeDeregisterBugCheckReasonCallback(void *record)
++{
++    FIXME("%p stub!\n", record);
++
++    return TRUE;
++}
++
+ /***********************************************************************
+  *           IoRegisterFileSystem   (NTOSKRNL.EXE.@)
+  */
+diff --git a/dlls/ntoskrnl.exe/ntoskrnl.exe.spec b/dlls/ntoskrnl.exe/ntoskrnl.exe.spec
+index d5ad6749b45..9ced6c03fd0 100644
+--- a/dlls/ntoskrnl.exe/ntoskrnl.exe.spec
++++ b/dlls/ntoskrnl.exe/ntoskrnl.exe.spec
+@@ -554,7 +554,7 @@
+ @ stub KeDcacheFlushCount
+ @ stdcall KeDelayExecutionThread(long long ptr)
+ @ stub KeDeregisterBugCheckCallback
+-@ stub KeDeregisterBugCheckReasonCallback
++@ stdcall KeDeregisterBugCheckReasonCallback(ptr)
+ @ stub KeDetachProcess
+ @ stub KeDisconnectInterrupt
+ @ stdcall KeEnterCriticalRegion()
+-- 
+2.53.0
+
