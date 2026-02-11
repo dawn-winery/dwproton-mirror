@@ -1,0 +1,110 @@
+From 1507015752259cda695bb3a1258ad67378b1d1f3 Mon Sep 17 00:00:00 2001
+From: Quitting <quitthefake@gmail.com>
+Date: Sun, 15 Feb 2026 00:42:41 +0100
+Subject: [PATCH 09/11] ntoskrnl.exe: Add security cookie randomization for
+ drivers.
+
+On Windows, the kernel PE loader randomizes __security_cookie before calling
+DriverEntry. Wine loads drivers via LoadLibraryExW which does not do this for
+kernel images, leaving the cookie at its default MSVC value. The driver's
+__security_init_cookie then calls __fastfail(FAST_FAIL_GS_COOKIE_INIT).
+Fix this by randomizing the cookie after the image is mapped and relocated.
+---
+ dlls/ntoskrnl.exe/ntoskrnl.c | 60 +++++++++++++++++++++++++++++++++++-
+ 1 file changed, 59 insertions(+), 1 deletion(-)
+
+diff --git a/dlls/ntoskrnl.exe/ntoskrnl.c b/dlls/ntoskrnl.exe/ntoskrnl.c
+index ab8cd61c175..e9154fdba63 100644
+--- a/dlls/ntoskrnl.exe/ntoskrnl.c
++++ b/dlls/ntoskrnl.exe/ntoskrnl.c
+@@ -4080,6 +4080,55 @@ static inline void *get_rva( HMODULE module, DWORD va )
+     return (void *)((char *)module + va);
+ }
+ 
++/* On Windows, the kernel PE loader randomizes __security_cookie before calling
++ * DriverEntry. Wine loads drivers via LoadLibraryExW which does not do this for
++ * kernel images, leaving the cookie at its default MSVC value. The driver's
++ * __security_init_cookie then calls __fastfail(FAST_FAIL_GS_COOKIE_INIT).
++ * Fix this by randomizing the cookie after the image is mapped and relocated. */
++static void randomize_driver_security_cookie( HMODULE module )
++{
++    IMAGE_NT_HEADERS *nt;
++    const IMAGE_DATA_DIRECTORY *dir;
++    ULONG_PTR *cookie_ptr;
++    ULONG_PTR cookie;
++    LARGE_INTEGER counter;
++
++    nt = RtlImageNtHeader( module );
++    if (!nt) return;
++
++    if (nt->OptionalHeader.NumberOfRvaAndSizes <= IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG)
++        return;
++
++    dir = &nt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG];
++    if (!dir->VirtualAddress || !dir->Size)
++        return;
++
++    if (dir->Size < 96)
++        return;
++
++    cookie_ptr = *(ULONG_PTR **)((char *)module + dir->VirtualAddress + 88);
++    if (!cookie_ptr)
++        return;
++
++    /* only touch the default MSVC value or zero */
++    if (*cookie_ptr != 0x00002B992DDFA232ULL && *cookie_ptr != 0)
++        return;
++
++    /* use a 48-bit cookie as expected by MSVC /GS checks (top 16 bits must be zero). */
++#if defined(__i386__) || defined(__x86_64__)
++    cookie = (ULONG_PTR)__builtin_ia32_rdtsc();
++#else
++    NtQueryPerformanceCounter( &counter, NULL );
++    cookie = (ULONG_PTR)counter.QuadPart;
++#endif
++    cookie &= 0x0000FFFFFFFFFFFFULL;
++    if (cookie == 0x00002B992DDFA232ULL) cookie++;
++    if (!cookie) cookie = 1;
++
++    *cookie_ptr = cookie;
++    TRACE( "module %p: security cookie randomized\n", module );
++}
++
+ static void WINAPI ldr_notify_callback(ULONG reason, LDR_DLL_NOTIFICATION_DATA *data, void *context)
+ {
+     const IMAGE_DATA_DIRECTORY *relocs;
+@@ -4096,14 +4145,21 @@ static void WINAPI ldr_notify_callback(ULONG reason, LDR_DLL_NOTIFICATION_DATA *
+     module = data->Loaded.DllBase;
+     nt = RtlImageNtHeader( module );
+     base = (char *)nt->OptionalHeader.ImageBase;
+-    if (!(delta = (char *)module - base)) return;
++    if (!(delta = (char *)module - base))
++    {
++        randomize_driver_security_cookie( module );
++        return;
++    }
+ 
+     /* the loader does not apply relocations to non page-aligned binaries or executables,
+      * we have to do it ourselves */
+ 
+     NtQuerySystemInformation( SystemBasicInformation, &info, sizeof(info), NULL );
+     if (nt->OptionalHeader.SectionAlignment >= info.PageSize && (nt->FileHeader.Characteristics & IMAGE_FILE_DLL))
++    {
++        randomize_driver_security_cookie( module );
+         return;
++    }
+ 
+     if (nt->FileHeader.Characteristics & IMAGE_FILE_RELOCS_STRIPPED)
+     {
+@@ -4145,6 +4201,8 @@ static void WINAPI ldr_notify_callback(ULONG reason, LDR_DLL_NOTIFICATION_DATA *
+             return;
+         }
+     }
++
++    randomize_driver_security_cookie( module );
+ }
+ 
+ static WCHAR *get_windir_path( const WCHAR *path )
+-- 
+2.53.0
+
