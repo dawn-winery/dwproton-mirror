@@ -1,0 +1,57 @@
+From 4edbbe48f5064547afcaa02ca65bba6f16ea7bcd Mon Sep 17 00:00:00 2001
+From: Quitting <quitthefake@gmail.com>
+Date: Sun, 15 Feb 2026 00:29:46 +0100
+Subject: [PATCH 09/11] ntoskrnl.exe: Add stub for KeGetCurrentIrql.
+
+---
+ dlls/ntoskrnl.exe/ntoskrnl.c        | 14 ++++++++++++++
+ dlls/ntoskrnl.exe/ntoskrnl.exe.spec |  1 +
+ 2 files changed, 15 insertions(+)
+
+diff --git a/dlls/ntoskrnl.exe/ntoskrnl.c b/dlls/ntoskrnl.exe/ntoskrnl.c
+index 0eb4716de6c..af75054f0f6 100644
+--- a/dlls/ntoskrnl.exe/ntoskrnl.c
++++ b/dlls/ntoskrnl.exe/ntoskrnl.c
+@@ -54,6 +54,11 @@ typedef struct _KSERVICE_TABLE_DESCRIPTOR
+ 
+ KSERVICE_TABLE_DESCRIPTOR KeServiceDescriptorTable[4] = { { 0 } };
+ 
++#ifndef __WINE_KIRQL_DEFINED
++#define __WINE_KIRQL_DEFINED
++typedef unsigned char KIRQL;
++#endif
++
+ #define MAX_SERVICE_NAME 260
+ 
+ static TP_POOL *dpc_call_tp;
+@@ -2692,6 +2697,15 @@ PRKTHREAD WINAPI KeGetCurrentThread(void)
+     return thread;
+ }
+ 
++/***********************************************************************
++ *           KeGetCurrentIrql   (NTOSKRNL.EXE.@)
++ */
++KIRQL WINAPI KeGetCurrentIrql(void)
++{
++    /* Wine does not emulate real kernel IRQL; default to PASSIVE_LEVEL (0). */
++    return 0;
++}
++
+ /*****************************************************
+  *           PsLookupThreadByThreadId   (NTOSKRNL.EXE.@)
+  */
+diff --git a/dlls/ntoskrnl.exe/ntoskrnl.exe.spec b/dlls/ntoskrnl.exe/ntoskrnl.exe.spec
+index 34e0f3db011..4d91e50a115 100644
+--- a/dlls/ntoskrnl.exe/ntoskrnl.exe.spec
++++ b/dlls/ntoskrnl.exe/ntoskrnl.exe.spec
+@@ -565,6 +565,7 @@
+ @ stdcall KeGetCurrentProcessorNumber() NtGetCurrentProcessorNumber
+ @ stdcall KeGetCurrentProcessorNumberEx(ptr)
+ @ stdcall KeGetCurrentThread()
++@ stdcall KeGetCurrentIrql()
+ @ stub KeGetPreviousMode
+ @ stub KeGetRecommendedSharedDataAlignment
+ @ stub KeI386AbiosCall
+-- 
+2.53.0
+

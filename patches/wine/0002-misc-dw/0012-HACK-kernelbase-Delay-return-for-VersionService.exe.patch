@@ -1,0 +1,34 @@
+From ca61e2ffdc06e67df9da119de57f63d64eaf9aba Mon Sep 17 00:00:00 2001
+From: NelloKudo <marshnelloosu@gmail.com>
+Date: Tue, 10 Mar 2026 21:17:54 +0100
+Subject: [PATCH] HACK: kernelbase: Delay return for VersionService.exe.
+
+VersionService.exe, used in miniloader games launchers (e.g. Nikke), relies on using a pipe
+that by the time CreateProcess returns is not up yet: simply delaying the return workarounds the issue.
+---
+ dlls/kernelbase/process.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/dlls/kernelbase/process.c b/dlls/kernelbase/process.c
+index 1ea3dfa96ff..358276b79c2 100644
+--- a/dlls/kernelbase/process.c
++++ b/dlls/kernelbase/process.c
+@@ -984,6 +984,15 @@ BOOL WINAPI DECLSPEC_HOTPATCH CreateProcessInternalW( HANDLE token, const WCHAR
+     RtlDestroyProcessParameters( params );
+     if (tidy_cmdline != cmd_line) HeapFree( GetProcessHeap(), 0, tidy_cmdline );
+     HeapFree( GetProcessHeap(), 0, product_name );
++
++    /* HACK: delay return when VersionService.exe is involved to give it time to initialize */
++    if ((app_name && wcsstr( app_name, L"VersionService.exe" )) ||
++        (cmd_line && wcsstr( cmd_line, L"VersionService.exe" )))
++    {
++        FIXME( "HACK: sleeping 1000ms after launching VersionService.exe\n" );
++        Sleep( 1000 );
++    }
++
+     return set_ntstatus( status );
+ }
+ 
+-- 
+2.53.0
+
