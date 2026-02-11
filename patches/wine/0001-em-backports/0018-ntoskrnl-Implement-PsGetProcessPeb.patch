@@ -1,0 +1,47 @@
+From 14d84c3fee9e01963c35202968f4a999aa5fdb01 Mon Sep 17 00:00:00 2001
+From: Etaash Mathamsetty
+ <45927311+Etaash-mathamsetty@users.noreply.github.com>
+Date: Tue, 22 Jul 2025 15:26:51 -0400
+Subject: [PATCH 18/18] ntoskrnl: Implement PsGetProcessPeb.
+
+---
+ dlls/ntoskrnl.exe/ntoskrnl.c        | 9 +++++++++
+ dlls/ntoskrnl.exe/ntoskrnl.exe.spec | 2 +-
+ 2 files changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/dlls/ntoskrnl.exe/ntoskrnl.c b/dlls/ntoskrnl.exe/ntoskrnl.c
+index dbd3c95dfe7..0eb4716de6c 100644
+--- a/dlls/ntoskrnl.exe/ntoskrnl.c
++++ b/dlls/ntoskrnl.exe/ntoskrnl.c
+@@ -2575,6 +2575,15 @@ HANDLE WINAPI PsGetProcessId(PEPROCESS process)
+     return (HANDLE)process->info.UniqueProcessId;
+ }
+ 
++/*********************************************************************
++ *           PsGetProcessPeb    (NTOSKRNL.@)
++ */
++PEB *WINAPI PsGetProcessPeb(PEPROCESS process)
++{
++    TRACE( "%p -> %p\n", process, process->info.PebBaseAddress );
++    return process->info.PebBaseAddress;
++}
++
+ /*********************************************************************
+  *           PsGetProcessInheritedFromUniqueProcessId  (NTOSKRNL.@)
+  */
+diff --git a/dlls/ntoskrnl.exe/ntoskrnl.exe.spec b/dlls/ntoskrnl.exe/ntoskrnl.exe.spec
+index 079e8ecde0b..34e0f3db011 100644
+--- a/dlls/ntoskrnl.exe/ntoskrnl.exe.spec
++++ b/dlls/ntoskrnl.exe/ntoskrnl.exe.spec
+@@ -927,7 +927,7 @@
+ @ stdcall PsGetProcessImageFileName(ptr)
+ @ stdcall PsGetProcessInheritedFromUniqueProcessId(ptr)
+ @ stub PsGetProcessJob
+-@ stub PsGetProcessPeb
++@ stdcall PsGetProcessPeb(ptr)
+ @ stub PsGetProcessPriorityClass
+ @ stdcall PsGetProcessSectionBaseAddress(ptr)
+ @ stub PsGetProcessSecurityPort
+-- 
+2.53.0
+
