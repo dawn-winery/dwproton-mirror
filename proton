@@ -43,7 +43,7 @@ import protonfixes
 #To enable debug logging, copy "user_settings.sample.py" to "user_settings.py"
 #and edit it if needed.
 
-CURRENT_PREFIX_VERSION="CachyOS-10.1000-200"
+CURRENT_PREFIX_VERSION="dwproton-10.0-17"
 
 PFX="Proton: "
 ld_path_var = "LD_LIBRARY_PATH"
