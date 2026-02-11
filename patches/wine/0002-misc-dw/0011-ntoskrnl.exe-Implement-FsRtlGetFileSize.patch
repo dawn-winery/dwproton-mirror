@@ -1,0 +1,67 @@
+From 293c24b4bc77c6bc1b0ed65547b526de0b03fa6f Mon Sep 17 00:00:00 2001
+From: NelloKudo <marshnelloosu@gmail.com>
+Date: Sat, 7 Feb 2026 22:50:27 +0100
+Subject: [PATCH 11/12] ntoskrnl.exe: Implement FsRtlGetFileSize.
+
+---
+ dlls/ntoskrnl.exe/ntoskrnl.c        | 30 +++++++++++++++++++++++++++++
+ dlls/ntoskrnl.exe/ntoskrnl.exe.spec |  2 +-
+ 2 files changed, 31 insertions(+), 1 deletion(-)
+
+diff --git a/dlls/ntoskrnl.exe/ntoskrnl.c b/dlls/ntoskrnl.exe/ntoskrnl.c
+index 0eb4716de6c..958cb61731b 100644
+--- a/dlls/ntoskrnl.exe/ntoskrnl.c
++++ b/dlls/ntoskrnl.exe/ntoskrnl.c
+@@ -2461,6 +2461,36 @@ NTSTATUS WINAPI FsRtlRegisterUncProvider(PHANDLE MupHandle, PUNICODE_STRING Redi
+     return STATUS_NOT_IMPLEMENTED;
+ }
+ 
++/***********************************************************************
++ *           FsRtlGetFileSize   (NTOSKRNL.EXE.@)
++ */
++NTSTATUS WINAPI FsRtlGetFileSize(PFILE_OBJECT file_object, PLARGE_INTEGER file_size)
++{
++    FILE_STANDARD_INFORMATION info;
++    IO_STATUS_BLOCK io;
++    NTSTATUS status;
++    HANDLE handle;
++
++    TRACE("(%p, %p)\n", file_object, file_size);
++
++    if (!file_object || !file_size)
++        return STATUS_INVALID_PARAMETER;
++
++    status = ObOpenObjectByPointer(file_object, 0, NULL, FILE_READ_ATTRIBUTES, 
++                                   IoFileObjectType, KernelMode, &handle);
++
++    if (!NT_SUCCESS(status))
++        return status;
++
++    status = NtQueryInformationFile(handle, &io, &info, sizeof(info), FileStandardInformation);
++    
++    NtClose(handle);
++
++    if (NT_SUCCESS(status))
++        *file_size = info.EndOfFile;
++
++    return status;
++}
+ 
+ static void *create_process_object( HANDLE handle )
+ {
+diff --git a/dlls/ntoskrnl.exe/ntoskrnl.exe.spec b/dlls/ntoskrnl.exe/ntoskrnl.exe.spec
+index 34e0f3db011..b5a1ee3c96c 100644
+--- a/dlls/ntoskrnl.exe/ntoskrnl.exe.spec
++++ b/dlls/ntoskrnl.exe/ntoskrnl.exe.spec
+@@ -237,7 +237,7 @@
+ @ stub FsRtlFastUnlockSingle
+ @ stub FsRtlFindInTunnelCache
+ @ stub FsRtlFreeFileLock
+-@ stub FsRtlGetFileSize
++@ stdcall FsRtlGetFileSize(ptr ptr)
+ @ stub FsRtlGetNextFileLock
+ @ stub FsRtlGetNextLargeMcbEntry
+ @ stub FsRtlGetNextMcbEntry
+-- 
+2.53.0
+

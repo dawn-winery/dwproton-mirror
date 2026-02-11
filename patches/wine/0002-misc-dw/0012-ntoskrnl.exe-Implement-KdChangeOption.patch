@@ -1,0 +1,63 @@
+From 81535988e5b365b197dddea24e05ccfc6ae313f0 Mon Sep 17 00:00:00 2001
+From: NelloKudo <marshnelloosu@gmail.com>
+Date: Wed, 11 Feb 2026 14:39:55 +0100
+Subject: [PATCH 12/12] ntoskrnl.exe: Implement KdChangeOption.
+
+---
+ dlls/ntoskrnl.exe/ntoskrnl.c         | 12 ++++++++++++
+ dlls/ntoskrnl.exe/ntoskrnl.exe.spec  |  1 +
+ dlls/ntoskrnl.exe/ntoskrnl_private.h |  3 +++
+ 3 files changed, 16 insertions(+)
+
+diff --git a/dlls/ntoskrnl.exe/ntoskrnl.c b/dlls/ntoskrnl.exe/ntoskrnl.c
+index 958cb61731b..1cf3948ba54 100644
+--- a/dlls/ntoskrnl.exe/ntoskrnl.c
++++ b/dlls/ntoskrnl.exe/ntoskrnl.c
+@@ -4902,6 +4902,18 @@ NTSTATUS WINAPI KdEnableDebugger(void)
+     return STATUS_DEBUGGER_INACTIVE;
+ }
+ 
++NTSTATUS WINAPI KdChangeOption(KD_OPTION option, ULONG in_buffer_bytes, void *in_buffer,
++                                ULONG out_buffer_bytes, void *out_buffer, ULONG *out_bytes)
++{
++    FIXME("option %d, in_buffer_bytes %lu, in_buffer %p, out_buffer_bytes %lu, out_buffer %p, out_bytes %p stub.\n",
++          option, in_buffer_bytes, in_buffer, out_buffer_bytes, out_buffer, out_bytes);
++
++    if (out_bytes)
++        *out_bytes = 0;
++
++    return STATUS_SUCCESS;
++}
++
+ KPROCESSOR_MODE WINAPI ExGetPreviousMode(void)
+ {
+     TRACE("\n");
+diff --git a/dlls/ntoskrnl.exe/ntoskrnl.exe.spec b/dlls/ntoskrnl.exe/ntoskrnl.exe.spec
+index b5a1ee3c96c..2ddfbf337dd 100644
+--- a/dlls/ntoskrnl.exe/ntoskrnl.exe.spec
++++ b/dlls/ntoskrnl.exe/ntoskrnl.exe.spec
+@@ -528,6 +528,7 @@
+ @ stub KdDebuggerNotPresent
+ @ stdcall KdDisableDebugger()
+ @ stdcall KdEnableDebugger()
++@ stdcall KdChangeOption(long long ptr long ptr ptr)
+ @ stub KdEnteredDebugger
+ @ stub KdPollBreakIn
+ @ stub KdPowerTransition
+diff --git a/dlls/ntoskrnl.exe/ntoskrnl_private.h b/dlls/ntoskrnl.exe/ntoskrnl_private.h
+index 14d5a3a4e29..db97bf29203 100644
+--- a/dlls/ntoskrnl.exe/ntoskrnl_private.h
++++ b/dlls/ntoskrnl.exe/ntoskrnl_private.h
+@@ -80,6 +80,9 @@ typedef struct _PHYSICAL_MEMORY_RANGE {
+     LARGE_INTEGER NumberOfBytes;
+ } PHYSICAL_MEMORY_RANGE, *PPHYSICAL_MEMORY_RANGE;
+ 
++typedef enum _KD_OPTION {
++    KD_OPTION_SET_BLOCK_ENABLE,
++} KD_OPTION;
+ 
+ void *alloc_kernel_object( POBJECT_TYPE type, HANDLE handle, SIZE_T size, LONG ref );
+ NTSTATUS kernel_object_from_handle( HANDLE handle, POBJECT_TYPE type, void **ret );
+-- 
+2.53.0
+
