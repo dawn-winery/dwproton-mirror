@@ -215,6 +215,8 @@ $(eval $(call rules-meson,libxml2,x86_64,unix))
 $(eval $(call rules-meson,libxml2,aarch64,unix))
 
 
+ifneq ($(WITHOUT_WAYLAND_LIBS),1)
+
 ##
 ## xkbcommon
 ##
@@ -248,6 +250,10 @@ $(eval $(call rules-meson,wayland-protocols,x86_64,unix))
 $(eval $(call rules-meson,wayland-protocols,aarch64,unix))
 endif # TARGET_STEAMRT
 
+endif # WITHOUT_WAYLAND_LIBS
+
+
+ifneq ($(WITHOUT_LIBPCAP),1)
 
 ##
 ## libpcap
@@ -268,6 +274,8 @@ $(eval $(call rules-source,libpcap,$(SRCDIR)/libpcap))
 $(eval $(call rules-configure,libpcap,i386,unix))
 $(eval $(call rules-configure,libpcap,x86_64,unix))
 $(eval $(call rules-configure,libpcap,aarch64,unix))
+
+endif # WITHOUT_LIBPCAP
 
 
 ##
@@ -378,8 +386,10 @@ GST_BASE_MESON_ARGS += \
 
 GST_BASE_LDFLAGS = -lm
 GST_BASE_DEPENDS = gst_orc graphene gstreamer
+ifneq ($(WITHOUT_WAYLAND_LIBS),1)
 ifeq ($(TARGET_STEAMRT),steamrt4)
 GST_BASE_DEPENDS += wayland-protocols
+endif
 endif
 GST_BASE_HOST_DEPENDS = gst_orc
 
@@ -563,8 +573,10 @@ endif
 
 GST_BAD_DEPENDS = gst_orc gstreamer gst_base
 GST_BAD_DEPENDS += libxml2
+ifneq ($(WITHOUT_WAYLAND_LIBS),1)
 ifeq ($(TARGET_STEAMRT),steamrt4)
 GST_BAD_DEPENDS += wayland-protocols
+endif
 endif
 GST_BAD_HOST_DEPENDS = gst_orc
 
@@ -1051,7 +1063,13 @@ WINE_i386_DEPENDS = vkd3d
 WINE_x86_64_DEPENDS = vkd3d
 endif
 
-WINE_DEPENDS += libxml2 libxkbcommon libpcap
+WINE_DEPENDS += libxml2
+ifneq ($(WITHOUT_WAYLAND_LIBS),1)
+WINE_DEPENDS += libxkbcommon
+endif
+ifneq ($(WITHOUT_LIBPCAP),1)
+WINE_DEPENDS += libpcap
+endif
 
 WINE_i386_LIBDIR = $(WINE_i386_DST)/lib
 WINE_x86_64_LIBDIR = $(WINE_x86_64_DST)/lib
