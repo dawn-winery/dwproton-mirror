@@ -205,6 +205,12 @@ function configure() {
     if [[ -n "$arg_without_gplasync" ]]; then
       echo "WITHOUT_GPLASYNC := 1"
     fi
+    if [[ -n "$arg_without_wayland_libs" ]]; then
+      echo "WITHOUT_WAYLAND_LIBS := 1"
+    fi
+    if [[ -n "$arg_without_libpcap" ]]; then
+      echo "WITHOUT_LIBPCAP := 1"
+    fi
 
     echo "HOST_CFLAGS := ${CFLAGS:--O2 -march=nocona -mtune=core-avx2}"
     echo "HOST_RUSTFLAGS := ${RUSTFLAGS:--Copt-level=3 -Ctarget-cpu=nocona}"
@@ -236,6 +242,8 @@ arg_without_nvidia_libs=""
 arg_without_sarek=""
 arg_without_d7vk=""
 arg_without_gplasync=""
+arg_without_wayland_libs=""
+arg_without_libpcap=""
 arg_help=""
 invalid_args=""
 function parse_args() {
@@ -297,6 +305,10 @@ function parse_args() {
       arg_without_d7vk="1"
     elif [[ $arg = --without-gplasync ]]; then
       arg_without_gplasync="1"
+    elif [[ $arg = --without-wayland-libs ]]; then
+      arg_without_wayland_libs="1"
+    elif [[ $arg = --without-libpcap ]]; then
+      arg_without_libpcap="1"
     elif [[ $arg = --proton-sdk-image ]]; then
       val_used=1
       arg_protonsdk_image="$val"
@@ -365,6 +377,10 @@ usage() {
   "$1" "    --without-d7vk Disables d7vk"
   "$1" ""
   "$1" "    --without-gplasync Disables dxvk-gplasync"
+  "$1" ""
+  "$1" "    --without-wayland-libs Disables bundling wayland libraries. Wine is still built with Wayland support (for native builds)"
+  "$1" ""
+  "$1" "    --without-libpcap Disables bundling libpcap. Wine is still built with libpcap support (for native builds)"
   "$1" ""
   "$1" "  Steam Runtime"
   "$1" "    Proton builds that are to be installed & run under the steam client must be built with"
