@@ -199,6 +199,8 @@ $(eval $(call rules-meson,dav1d,x86_64,unix))
 $(eval $(call rules-meson,dav1d,aarch64,unix))
 
 
+ifneq ($(WITHOUT_WAYLAND_LIBS),1)
+
 ##
 ## libxml2
 ##
@@ -244,6 +246,10 @@ WAYLAND_PROTOCOLS_MESON_ARGS := \
 $(eval $(call rules-source,wayland-protocols,$(SRCDIR)/wayland-protocols))
 $(eval $(call rules-meson,wayland-protocols,aarch64,unix))
 
+endif # WITHOUT_WAYLAND_LIBS
+
+
+ifneq ($(WITHOUT_LIBPCAP),1)
 
 ##
 ## libpcap
@@ -264,6 +270,8 @@ $(eval $(call rules-source,libpcap,$(SRCDIR)/libpcap))
 $(eval $(call rules-configure,libpcap,i386,unix))
 $(eval $(call rules-configure,libpcap,x86_64,unix))
 $(eval $(call rules-configure,libpcap,aarch64,unix))
+
+endif # WITHOUT_LIBPCAP
 
 
 ##
@@ -374,7 +382,9 @@ GST_BASE_MESON_ARGS += \
 
 GST_BASE_LDFLAGS = -lm
 GST_BASE_DEPENDS = gst_orc graphene gstreamer
+ifneq ($(WITHOUT_WAYLAND_LIBS),1)
 GST_BASE_aarch64_DEPENDS = wayland-protocols
+endif
 GST_BASE_HOST_DEPENDS = gst_orc
 
 $(eval $(call rules-source,gst_base,$(SRCDIR)/gstreamer/subprojects/gst-plugins-base))
@@ -433,7 +443,9 @@ GST_GOOD_x86_64_MESON_ARGS = \
 	-Dspeex=enabled \
 
 GST_GOOD_DEPENDS = gst_orc gstreamer gst_base
+ifneq ($(WITHOUT_WAYLAND_LIBS),1)
 GST_GOOD_DEPENDS += libxml2
+endif
 GST_GOOD_HOST_DEPENDS = gst_orc
 
 $(eval $(call rules-source,gst_good,$(SRCDIR)/gstreamer/subprojects/gst-plugins-good/))
@@ -561,8 +573,10 @@ GST_BAD_x86_64_MESON_ARGS = \
 	-Dttml=enabled \
 
 GST_BAD_DEPENDS = gst_orc gstreamer gst_base
+ifneq ($(WITHOUT_WAYLAND_LIBS),1)
 GST_BAD_DEPENDS += libxml2
 GST_BAD_aarch64_DEPENDS = wayland-protocols
+endif
 GST_BAD_HOST_DEPENDS = gst_orc
 
 $(eval $(call rules-source,gst_bad,$(SRCDIR)/gstreamer/subprojects/gst-plugins-bad/))
@@ -1048,7 +1062,12 @@ WINE_i386_DEPENDS = vkd3d
 WINE_x86_64_DEPENDS = vkd3d
 endif
 
-WINE_DEPENDS += libxml2 libxkbcommon libpcap
+ifneq ($(WITHOUT_WAYLAND_LIBS),1)
+WINE_DEPENDS += libxml2 libxkbcommon
+endif
+ifneq ($(WITHOUT_LIBPCAP),1)
+WINE_DEPENDS += libpcap
+endif
 
 WINE_i386_LIBDIR = $(WINE_i386_DST)/lib
 WINE_x86_64_LIBDIR = $(WINE_x86_64_DST)/lib
