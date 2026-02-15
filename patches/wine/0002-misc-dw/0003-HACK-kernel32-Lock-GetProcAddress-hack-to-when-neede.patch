@@ -1,7 +1,7 @@
-From 266557a106462e8e4b74daec688ddd839eddd36e Mon Sep 17 00:00:00 2001
+From 363df36c4ee202e2c87418ea73cb87a0a5097625 Mon Sep 17 00:00:00 2001
 From: NelloKudo <marshnelloosu@gmail.com>
 Date: Sat, 24 Jan 2026 00:15:44 +0100
-Subject: [PATCH 03/12] HACK: kernel32: Lock GetProcAddress hack to when
+Subject: [PATCH 03/16] HACK: kernel32: Lock GetProcAddress hack to when
  needed.
 
 Can also be enabled with PROTON_ENABLE_INT3_HACK=1.

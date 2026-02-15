@@ -1,8 +1,8 @@
-From 66d15b2da0096a62a56f6b22885bc262dadf4311 Mon Sep 17 00:00:00 2001
+From aac41c7fc5fbf9afd642b41a23fc0d90ac950b6c Mon Sep 17 00:00:00 2001
 From: Etaash Mathamsetty
  <45927311+Etaash-mathamsetty@users.noreply.github.com>
 Date: Sun, 25 Jan 2026 16:11:18 -0600
-Subject: [PATCH 04/12] ntdll: Implement NtDelayExecution relative wait using
+Subject: [PATCH 04/16] ntdll: Implement NtDelayExecution relative wait using
  QPC.
 
 Some applications are very timing sensitive.

@@ -1,7 +1,7 @@
-From 81535988e5b365b197dddea24e05ccfc6ae313f0 Mon Sep 17 00:00:00 2001
+From f05dae9b4a9b795c3ef8a1e442929e8a97233080 Mon Sep 17 00:00:00 2001
 From: NelloKudo <marshnelloosu@gmail.com>
 Date: Wed, 11 Feb 2026 14:39:55 +0100
-Subject: [PATCH 12/12] ntoskrnl.exe: Implement KdChangeOption.
+Subject: [PATCH 15/16] ntoskrnl.exe: Implement KdChangeOption.
 
 ---
  dlls/ntoskrnl.exe/ntoskrnl.c         | 12 ++++++++++++
@@ -10,10 +10,10 @@ Subject: [PATCH 12/12] ntoskrnl.exe: Implement KdChangeOption.
  3 files changed, 16 insertions(+)
 
 diff --git a/dlls/ntoskrnl.exe/ntoskrnl.c b/dlls/ntoskrnl.exe/ntoskrnl.c
-index 958cb61731b..1cf3948ba54 100644
+index c815e94090a..cfda21c109e 100644
 --- a/dlls/ntoskrnl.exe/ntoskrnl.c
 +++ b/dlls/ntoskrnl.exe/ntoskrnl.c
-@@ -4902,6 +4902,18 @@ NTSTATUS WINAPI KdEnableDebugger(void)
+@@ -4916,6 +4916,18 @@ NTSTATUS WINAPI KdEnableDebugger(void)
      return STATUS_DEBUGGER_INACTIVE;
  }
  
@@ -33,7 +33,7 @@ index 958cb61731b..1cf3948ba54 100644
  {
      TRACE("\n");
 diff --git a/dlls/ntoskrnl.exe/ntoskrnl.exe.spec b/dlls/ntoskrnl.exe/ntoskrnl.exe.spec
-index b5a1ee3c96c..2ddfbf337dd 100644
+index 8954e210f20..60843917724 100644
 --- a/dlls/ntoskrnl.exe/ntoskrnl.exe.spec
 +++ b/dlls/ntoskrnl.exe/ntoskrnl.exe.spec
 @@ -528,6 +528,7 @@

@@ -1,15 +1,14 @@
-From 49939441fce617d5014ec0837809c6e6d1ca8c5b Mon Sep 17 00:00:00 2001
+From 8aaaaebd8deb3e76d038a097c8367297fc399d54 Mon Sep 17 00:00:00 2001
 From: NelloKudo <marshnelloosu@gmail.com>
 Date: Sat, 7 Feb 2026 22:35:47 +0100
-Subject: [PATCH 10/12] wdfldr.sys: Add semi-stub dll, implement
- WdfVersionBind.
+Subject: [PATCH 10/16] wdfldr.sys: Add stub dll.
 
 ---
- configure.ac                    |   1 +
- dlls/wdfldr.sys/Makefile.in     |   3 +
- dlls/wdfldr.sys/wdfldr.sys.spec |  10 ++
- dlls/wdfldr.sys/wdfldr_main.c   | 171 ++++++++++++++++++++++++++++++++
- 4 files changed, 185 insertions(+)
+ configure.ac                    |  1 +
+ dlls/wdfldr.sys/Makefile.in     |  3 ++
+ dlls/wdfldr.sys/wdfldr.sys.spec | 10 ++++
+ dlls/wdfldr.sys/wdfldr_main.c   | 92 +++++++++++++++++++++++++++++++++
+ 4 files changed, 106 insertions(+)
  create mode 100644 dlls/wdfldr.sys/Makefile.in
  create mode 100644 dlls/wdfldr.sys/wdfldr.sys.spec
  create mode 100644 dlls/wdfldr.sys/wdfldr_main.c
@@ -53,10 +52,10 @@ index 00000000000..51c5e2ba7d7
 +@ stub WdfVersionUnbindClass
 diff --git a/dlls/wdfldr.sys/wdfldr_main.c b/dlls/wdfldr.sys/wdfldr_main.c
 new file mode 100644
-index 00000000000..dd370237ed6
+index 00000000000..419c50b1b44
 --- /dev/null
 +++ b/dlls/wdfldr.sys/wdfldr_main.c
-@@ -0,0 +1,171 @@
+@@ -0,0 +1,92 @@
 +/*
 + * Copyright 2026 bluechxin
 + *
@@ -136,90 +135,11 @@ index 00000000000..dd370237ed6
 +    return debugstr_wn( us->Buffer, us->Length / sizeof(WCHAR) );
 +}
 +
-+static WDFLDR_CLIENT_INFO *find_client_info(DRIVER_OBJECT *driver)
-+{
-+    WDFLDR_CLIENT_INFO *info;
-+
-+    LIST_FOR_EACH_ENTRY(info, &client_list, WDFLDR_CLIENT_INFO, entry)
-+    {
-+        if (info->driver == driver)
-+            return info;
-+    }
-+    return NULL;
-+}
-+
 +NTSTATUS WINAPI WdfVersionBind(DRIVER_OBJECT *driver, UNICODE_STRING *reg_path, 
 +                                WDF_BIND_INFO *bind_info, PWDF_COMPONENT_GLOBALS *component_globals)
 +{
-+    WDFLDR_CLIENT_INFO *client_info;
-+    NTSTATUS status = STATUS_SUCCESS;
-+
-+    TRACE("%p %s version %u.%u.%u, %u functions\n", driver, debugstr_us(reg_path),
-+            bind_info->Version.Major, bind_info->Version.Minor, 
-+            bind_info->Version.Build, bind_info->FuncCount);
-+
-+    if (!driver || !reg_path || !bind_info || !component_globals)
-+        return STATUS_INVALID_PARAMETER;
-+
-+    if (bind_info->Size < sizeof(WDF_BIND_INFO))
-+        return STATUS_INVALID_PARAMETER;
-+
-+    EnterCriticalSection(&client_cs);
-+
-+    /* check if driver is already bound */
-+    if (find_client_info(driver))
-+    {
-+        status = STATUS_OBJECT_NAME_COLLISION;
-+        goto done;
-+    }
-+
-+    if (!(client_info = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(*client_info))))
-+    {
-+        status = STATUS_NO_MEMORY;
-+        goto done;
-+    }
-+
-+    client_info->registry_path.Length = reg_path->Length;
-+    client_info->registry_path.MaximumLength = reg_path->Length + sizeof(WCHAR);
-+    if (!(client_info->registry_path.Buffer = HeapAlloc(GetProcessHeap(), 0, 
-+                                                         client_info->registry_path.MaximumLength)))
-+    {
-+        HeapFree(GetProcessHeap(), 0, client_info);
-+        status = STATUS_NO_MEMORY;
-+        goto done;
-+    }
-+    memcpy(client_info->registry_path.Buffer, reg_path->Buffer, reg_path->Length);
-+    client_info->registry_path.Buffer[reg_path->Length / sizeof(WCHAR)] = 0;
-+
-+    client_info->driver = driver;
-+
-+    if (bind_info->FuncCount > 0)
-+    {
-+        if (!(client_info->func_table = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, 
-+                                                   bind_info->FuncCount * sizeof(void*))))
-+        {
-+            HeapFree(GetProcessHeap(), 0, client_info->registry_path.Buffer);
-+            HeapFree(GetProcessHeap(), 0, client_info);
-+            status = STATUS_NO_MEMORY;
-+            goto done;
-+        }
-+        
-+        /* fixme: actually populate the function table (?) */
-+    }
-+
-+    client_info->globals.Size = sizeof(WDF_COMPONENT_GLOBALS);
-+    client_info->globals.DriverObject = driver;
-+    client_info->globals.RegistryPath = &client_info->registry_path;
-+    client_info->globals.FuncTable = client_info->func_table;
-+
-+    *component_globals = &client_info->globals;
-+    
-+    list_add_tail(&client_list, &client_info->entry);
-+    TRACE("driver %p bound successfully \n", driver);
-+
-+done:
-+    LeaveCriticalSection(&client_cs);
-+    return status;
++    FIXME("%p %s %p %p stub!\n", driver, debugstr_us(reg_path), bind_info, component_globals);
++    return STATUS_SUCCESS;
 +}
 +
 +NTSTATUS WINAPI WdfVersionUnbind(UNICODE_STRING *reg_path, WDF_BIND_INFO *bind_info, 

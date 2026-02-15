@@ -1,7 +1,7 @@
-From 49c90c1292db5cec30fdb05648e7464737699bd0 Mon Sep 17 00:00:00 2001
+From 9d37975fd9c3bdf735cb01f68eb65c4c931b0bcd Mon Sep 17 00:00:00 2001
 From: NelloKudo <marshnelloosu@gmail.com>
 Date: Mon, 5 Jan 2026 17:04:43 +0100
-Subject: [PATCH 01/12] mmdevapi: Allow loading winealsa with
+Subject: [PATCH 01/16] mmdevapi: Allow loading winealsa with
  PROTON_USE_WINEALSA=1.
 
 ---
