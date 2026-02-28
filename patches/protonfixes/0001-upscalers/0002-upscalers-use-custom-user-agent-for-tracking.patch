@@ -1,0 +1,25 @@
+From 4d41c485bd07fa3efa1ca5fc10a75abfc40d54bb Mon Sep 17 00:00:00 2001
+From: Stelios Tsampas <loathingkernel@gmail.com>
+Date: Fri, 13 Feb 2026 12:55:55 +0200
+Subject: [PATCH 2/2] upscalers: use custom user-agent for tracking
+
+---
+ upscalers.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/upscalers.py b/upscalers.py
+index 84c3274..7d7e850 100644
+--- a/upscalers.py
++++ b/upscalers.py
+@@ -291,7 +291,7 @@ def __download_file(url: str, dst: Path, *, checksum: Union[str, None] = None) -
+     request = urllib.request.Request(
+         url,
+         headers={
+-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:40.0) Gecko/20100101 Firefox/40.0'
++            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:40.0) Gecko/20100101 Proton/10.0'
+         },
+     )
+     try:
+-- 
+2.53.0
+
