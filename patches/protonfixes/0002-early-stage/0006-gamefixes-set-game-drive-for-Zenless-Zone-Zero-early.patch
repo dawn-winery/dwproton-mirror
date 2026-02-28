@@ -1,0 +1,30 @@
+From 6bf79a11db248d708b694eef8cab7b4d46aa6c3e Mon Sep 17 00:00:00 2001
+From: Stelios Tsampas <loathingkernel@gmail.com>
+Date: Mon, 16 Feb 2026 12:54:26 +0200
+Subject: [PATCH 6/6] gamefixes: set game drive for Zenless Zone Zero early
+
+---
+ gamefixes-umu/umu-zenlesszonezero.py | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/gamefixes-umu/umu-zenlesszonezero.py b/gamefixes-umu/umu-zenlesszonezero.py
+index 06d38a5..4ac10d1 100644
+--- a/gamefixes-umu/umu-zenlesszonezero.py
++++ b/gamefixes-umu/umu-zenlesszonezero.py
+@@ -3,9 +3,12 @@
+ from protonfixes import util
+ 
+ 
+-def main() -> None:
++def early() -> None:
+     """Needs gamedrive fix to detect proper install space"""
+     util.set_game_drive(True)
++
++
++def main() -> None:
+     """By default umu runs games on start.exe outside steam.
+     However, Zenless's AC needs the game to be run from steam.exe to run on Linux.
+     """
+-- 
+2.53.0
+

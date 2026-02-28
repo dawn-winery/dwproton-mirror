@@ -1,0 +1,33 @@
+From ea72bfbe75187c980ef4d6cf09a3ca001686fe9a Mon Sep 17 00:00:00 2001
+From: Stelios Tsampas <loathingkernel@gmail.com>
+Date: Mon, 16 Feb 2026 00:01:02 +0200
+Subject: [PATCH 4/6] gamefix: set gamedrive early for Duet Night Abyss
+
+---
+ gamefixes-steam/3950020.py | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/gamefixes-steam/3950020.py b/gamefixes-steam/3950020.py
+index bd446fe..b51d034 100644
+--- a/gamefixes-steam/3950020.py
++++ b/gamefixes-steam/3950020.py
+@@ -9,12 +9,14 @@ def _is_env_one(name: str) -> bool:
+     return os.environ.get(name, '') == '1'
+ 
+ 
++def early() ->  None:
++    util.set_environment('PROTON_SET_GAME_DRIVE', '1')
++
++
+ def main() -> None:
+     """CEF tries to use dcomp by default which only has stubs, this triggers a fallback to a different backend"""
+     util.winedll_override('dcomp', util.OverrideOrder.DISABLED)
+ 
+-    util.set_environment('PROTON_SET_GAME_DRIVE', '1')
+-
+     """News tab freezes upon spawn on winewayland, disabling libGLES fixes it """
+     if _is_env_one('PROTON_USE_WAYLAND') or _is_env_one('PROTON_ENABLE_WAYLAND'):
+         util.winedll_override('libGLESv2', util.OverrideOrder.DISABLED)
+-- 
+2.53.0
+
