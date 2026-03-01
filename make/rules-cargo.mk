@@ -35,6 +35,8 @@ i386-unix_CARGO_ARGS := --target $(i386-unix_CARGO_TARGET)
 x86_64-unix_CARGO_ARGS := --target $(x86_64-unix_CARGO_TARGET)
 aarch64-unix_CARGO_ARGS := --target $(aarch64-unix_CARGO_TARGET)
 
+CARGO_RUSTFLAGS :=  $(foreach a,$(unix_ARCHS),CARGO_TARGET_$(call toupper,$($(a)-unix_CARGO_TARGET))_RUSTFLAGS="$($(a)_RUSTFLAGS)")
+
 # Used in rules-common.mk
 # We need to specify the linker explicitly for at least --target architecture as
 # well as host's architecture - some crates build things on host via build.rs
