@@ -24,7 +24,7 @@
 	path = dxvk
 	url = https://github.com/doitsujin/dxvk.git
 [submodule "dxvk-gplasync"]
-	path = dxvk-gplall
+	path = dxvk-llasync
 	url = https://github.com/doitsujin/dxvk.git
 [submodule "dxvk-sarek"]
 	path = dxvk-sarek
