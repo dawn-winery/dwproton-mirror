@@ -1153,12 +1153,12 @@ class CompatData:
                             prefix=self.prefix_dir, track_file=tracked_files, link_debug=True)
 
                 use_dxvk_sarek = "dxvksarek" in g_session.compat_config and os.path.isdir(g_proton.lib_dir + "wine/dxvk-sarek")
-                use_dxvk_gplall = "dxvkgplall" in g_session.compat_config and os.path.isdir(g_proton.lib_dir + "wine/dxvk-gplall")
+                use_dxvk_llasync = "dxvkllasync" in g_session.compat_config and os.path.isdir(g_proton.lib_dir + "wine/dxvk-llasync")
                 if use_dxvk_sarek:
                     use_nvapi = False
                     dxvk_path = "dxvk-sarek/"
-                elif use_dxvk_gplall:
-                    dxvk_path = "dxvk-gplall/"
+                elif use_dxvk_llasync:
+                    dxvk_path = "dxvk-llasync/"
                 else:
                     dxvk_path = "dxvk/"
 
@@ -1862,7 +1862,7 @@ class Session:
         self.check_environment("PROTON_NO_D3D11", "nod3d11")
         self.check_environment("PROTON_NO_D3D10", "nod3d10")
         self.check_environment("PROTON_DXVK_SAREK", "dxvksarek")
-        self.check_environment("PROTON_DXVK_GPLALL", "dxvkgplall")
+        self.check_environment("PROTON_DXVK_LLASYNC", "dxvkllasync")
         self.check_environment("PROTON_DXVK_GPLASYNC", "dxvkgplasync")
         self.check_environment("PROTON_DXVK_LOWLATENCY", "dxvklowlatency")
         self.check_environment("PROTON_NO_ESYNC", "noesync")
@@ -1920,11 +1920,11 @@ class Session:
                 del self.env["SDL_GAMECONTROLLER_IGNORE_DEVICES"]
 
         if "dxvklowlatency" in self.compat_config:
-            self.compat_config.add("dxvkgplall")
+            self.compat_config.add("dxvkllasync")
             append_to_env_str(self.env, "DXVK_CONFIG", "dxvk.enableAsync=False", ";")
 
         if "dxvkgplasync" in self.compat_config:
-            self.compat_config.add("dxvkgplall")
+            self.compat_config.add("dxvkllasync")
             append_to_env_str(self.env, "DXVK_CONFIG", "dxvk.framePace=max-frame-latency", ";")
 
         if "nvidialibs" in self.compat_config:
