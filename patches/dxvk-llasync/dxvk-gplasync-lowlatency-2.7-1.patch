@@ -1,7 +1,7 @@
 From 0f1a6689e5a9ec2c0919be78bae21179619a94f0 Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Tue, 18 Feb 2025 21:01:19 +0100
-Subject: [PATCH 01/61] [dxvk] Add config variables for frame pacing
+Subject: [PATCH 01/62] [dxvk] Add config variables for frame pacing
 
 ---
  dxvk.conf                 | 52 ++++++++++++++++++++++++++++++++++++++-
@@ -143,7 +143,7 @@ index a0d07d38..da0405e8 100644
 From 0ff2cf940c8ddafb2d6cee690347fe1619863809 Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Tue, 18 Feb 2025 21:18:22 +0100
-Subject: [PATCH 02/61] [dxvk] Add low-latency frame pacing
+Subject: [PATCH 02/62] [dxvk] Add low-latency frame pacing
 
 ---
  src/dxvk/dxvk_latency.h                       |   7 +
@@ -1115,7 +1115,7 @@ index f58db33e..95118f50 100644
 From 7e36d0f0edc2d25ef13086f3c54e96c5b081a9f4 Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Tue, 18 Feb 2025 21:39:01 +0100
-Subject: [PATCH 03/61] [dxvk] Integrate frame pacing
+Subject: [PATCH 03/62] [dxvk] Integrate frame pacing
 
 ---
  src/d3d11/d3d11_swapchain.cpp |  5 +++++
@@ -1372,7 +1372,7 @@ index 7c33a559..d5610afd 100644
 From be4d829bcd4ccbda392506d2aa9857a444eafc35 Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Tue, 18 Feb 2025 21:47:03 +0100
-Subject: [PATCH 04/61] [hud] Add render latency
+Subject: [PATCH 04/62] [hud] Add render latency
 
 ---
  src/d3d11/d3d11_swapchain.cpp  | 11 ++++++-
@@ -1634,7 +1634,7 @@ index ec9d46df..f4ef81c4 100644
 From a0cc76963f559c6eb04c79fc8b31d3469b0612e7 Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Wed, 19 Feb 2025 15:47:45 +0100
-Subject: [PATCH 05/61] Revert "[dxvk] Fix lack of forward progress guarantee
+Subject: [PATCH 05/62] Revert "[dxvk] Fix lack of forward progress guarantee
  in presenter"
 
 This reverts commit efeb15edbd6dc913030f0846cbc1b587f6fb7c5d.
@@ -1762,7 +1762,7 @@ index 8e403b24..afbe465c 100644
 From 6c153f9a2d957cfc492abac55a7cb52d075d299a Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Sat, 22 Feb 2025 18:21:02 +0100
-Subject: [PATCH 06/61] [dxvk] Improve low-latency frame pacing for cpu-limited
+Subject: [PATCH 06/62] [dxvk] Improve low-latency frame pacing for cpu-limited
  frames
 
 ---
@@ -1813,7 +1813,7 @@ index 06fdaf0d..ec1d4f54 100644
 From ad05df9640d888b05d83900fab4d68ed20c9fa1f Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Sun, 23 Feb 2025 09:54:07 +0100
-Subject: [PATCH 07/61] [dxvk] Allow for fps limit < 50 fps in low-latency mode
+Subject: [PATCH 07/62] [dxvk] Allow for fps limit < 50 fps in low-latency mode
 
 ---
  dxvk.conf                                              | 4 ++--
@@ -1900,7 +1900,7 @@ index 95fb79e7..f8866ff1 100644
 From 39c6c5fb2ac6e7e0e4a817cd1e68c12646f4785a Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Sun, 23 Feb 2025 10:00:50 +0100
-Subject: [PATCH 08/61] [dxvk] Remove dxvk.lowLatencyAllowCpuFramesOverlap
+Subject: [PATCH 08/62] [dxvk] Remove dxvk.lowLatencyAllowCpuFramesOverlap
  config variable
 
 ---
@@ -2038,7 +2038,7 @@ index 28f5f170..2d17df1c 100644
 From 537b8c41c13bf3a5253cf2f82bfbb30d51700874 Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Sun, 23 Feb 2025 15:09:59 +0100
-Subject: [PATCH 09/61] [dxvk] Optimize GPU start measurement for low-latency
+Subject: [PATCH 09/62] [dxvk] Optimize GPU start measurement for low-latency
  frame pacing
 
 In practice, this change affects oversubscribed threading situations where waking up the "dxvk-queue" thread potentially can cause delays in the 100s of microseconds. For a lot of situations this change isn't affecting measurements in a meaningful way. Possibly affects AMD where vkQueueSubmit execution time is non-zero.
@@ -2128,7 +2128,7 @@ index 0028e135..f3e04719 100644
 From 150935a9dd36eada156d522bef48d2a0689c1e60 Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Sun, 23 Feb 2025 15:25:34 +0100
-Subject: [PATCH 10/61] [dxvk] Removed redundant frameId tracking in frame
+Subject: [PATCH 10/62] [dxvk] Removed redundant frameId tracking in frame
  pacer
 
 ---
@@ -2237,7 +2237,7 @@ index f3e04719..1a8cf63f 100644
 From ead04549dd81bc667cd91725577a945049e0d252 Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Sun, 23 Feb 2025 23:07:52 +0100
-Subject: [PATCH 11/61] [dxvk] Improve robustness of frame pacer initialization
+Subject: [PATCH 11/62] [dxvk] Improve robustness of frame pacer initialization
 
 In d3d9 there were situations where the first frameId was 22, although in d3d11 it always started at 17. This did cause issues especially when waiting for fences which didn't get signaled for these frameIds.
 ---
@@ -2356,7 +2356,7 @@ index 1a8cf63f..38d740d1 100644
 From 38e3c08432c22a3ad789fc3a05153492b907ec3c Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Fri, 28 Feb 2025 08:05:46 +0100
-Subject: [PATCH 12/61] [dxvk] Optimize flush heuristic for low-latency
+Subject: [PATCH 12/62] [dxvk] Optimize flush heuristic for low-latency
 
 Possibly can be optimized more, but just changing these numbers already had a huge effect, especially for games having a small number of submissions to begin with.
 ---
@@ -2495,7 +2495,7 @@ index fb069cf0..6ea94f6d 100644
 From 6a96b094071a77ea3f6fb9f2568ee6c2404cbcef Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Fri, 28 Feb 2025 08:37:11 +0100
-Subject: [PATCH 13/61] [dxvk] Disallow flush for beginLatencyTracking's emitCs
+Subject: [PATCH 13/62] [dxvk] Disallow flush for beginLatencyTracking's emitCs
 
 Not sure if this does anything, but better be safe to correctly track when the first succeeding Cs will get executed.
 ---
@@ -2582,7 +2582,7 @@ index 0e0eb037..23c56f61 100644
 From d28b31be89b3ce1c9d20885abe2e30b4dee8ce02 Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Fri, 28 Feb 2025 08:39:40 +0100
-Subject: [PATCH 14/61] [dxvk] Improve low-latency frame pacing when gpuStart
+Subject: [PATCH 14/62] [dxvk] Improve low-latency frame pacing when gpuStart
  gets signaled earlier than expected
 
 ---
@@ -2660,7 +2660,7 @@ index 2d17df1c..9193f438 100644
 From ecaf1858167a43486e7e7ca28690990ff35afdd3 Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Fri, 28 Feb 2025 08:48:36 +0100
-Subject: [PATCH 15/61] [dxvk] Improve handling of cpu-frametime related
+Subject: [PATCH 15/62] [dxvk] Improve handling of cpu-frametime related
  stutters for low-latency frame pacing
 
 Stutters less this way because we increase the sensitivity to mark frames as outliers, so that they don't get used for predicting the next frame. The actual "optimal" threshold is still to be fine-tuned, but this one worked really well.
@@ -2750,7 +2750,7 @@ index 9193f438..24d8ab60 100644
 From dd48b4a2224203a8f2f970c02f0545b4d46ad53b Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Fri, 28 Feb 2025 11:23:02 +0100
-Subject: [PATCH 16/61] Revert "[dxvk] Remove
+Subject: [PATCH 16/62] Revert "[dxvk] Remove
  dxvk.lowLatencyAllowCpuFramesOverlap config variable"
 
 This reverts commit c802bdf42e993b467f8fa18b2db52da5841164d1 and makes small adjustments.
@@ -2904,7 +2904,7 @@ index 24d8ab60..59d10909 100644
 From e6f1d5678b75ec7c9eddfd32e4d564fbda578374 Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Fri, 14 Mar 2025 20:47:14 +0100
-Subject: [PATCH 17/61] [dxvk] Call vkWaitForPresentKHR for low-latency frame
+Subject: [PATCH 17/62] [dxvk] Call vkWaitForPresentKHR for low-latency frame
  pacing
 
 even when not using a FIFO present mode to match render latency measurements more closely to felt input lag. In a lot of cases the present-delay is negligible when using immediate presentation, but for example on Windows there was a large presentation overhead observed using exclusive fullscreen.
@@ -2943,7 +2943,7 @@ index baec4f10..05bf03c5 100644
 From 6112fc005d242f81609bbb3696b25ba444d445b8 Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Thu, 12 Jun 2025 12:59:02 +0200
-Subject: [PATCH 18/61] [dxvk] Remove dxvk_low_latency_* environment variables
+Subject: [PATCH 18/62] [dxvk] Remove dxvk_low_latency_* environment variables
 
 since we can just set them via DXVK_CONFIG as well
 ---
@@ -3018,7 +3018,7 @@ index 59d10909..03c4b427 100644
 From 9d5cc5b85e6dff1a685d4cb0bf0d9478ce0c6b01 Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Fri, 13 Jun 2025 10:04:28 +0200
-Subject: [PATCH 19/61] [hud] Mark dxvk version as low-latency in hud and log
+Subject: [PATCH 19/62] [hud] Mark dxvk version as low-latency in hud and log
  file
 
 ---
@@ -3059,7 +3059,7 @@ index 04b1b437..14a1e2a1 100644
 From 8ad0a449f0ba4478911f42c4c8f9d01ec3b1c979 Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Thu, 26 Jun 2025 18:57:09 +0200
-Subject: [PATCH 20/61] [dxvk] Add a warning when the user provides a wrong
+Subject: [PATCH 20/62] [dxvk] Add a warning when the user provides a wrong
  frame pace string
 
 ---
@@ -3088,7 +3088,7 @@ index 3ff8791a..034c75d5 100644
 From 2eccd4efb12161b1b3aa5e6d2b48ca8804f826a1 Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Thu, 26 Jun 2025 19:40:44 +0200
-Subject: [PATCH 21/61] [dxvk] Separate render latency and present latency
+Subject: [PATCH 21/62] [dxvk] Separate render latency and present latency
 
 Allows for better analysis.
 This change was needed because the present latency depends on driver and display server. Nvidia for example reports low values on vrr v-sync on x11, medium values on KDE Wayland and high values on Gnome Wayland. On xWayland, it doesn't provide any feedback at all.
@@ -3322,7 +3322,7 @@ index f4ef81c4..829a23cc 100644
 From 3655199dd8fd607973d69c2f2da13da5511674b6 Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Tue, 17 Jun 2025 12:34:40 +0200
-Subject: [PATCH 22/61] [dxvk] Pick V-Sync present mode for new VRR frame
+Subject: [PATCH 22/62] [dxvk] Pick V-Sync present mode for new VRR frame
  pacing mode
 
 ---
@@ -3478,7 +3478,7 @@ index 03c4b427..99a8fdf7 100644
 From 3e824ea8c539d12a2ae36b48dd675295077ff837 Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Mon, 23 Jun 2025 23:38:41 +0200
-Subject: [PATCH 23/61] [dxvk] Add low-latency VRR frame pacing mode
+Subject: [PATCH 23/62] [dxvk] Add low-latency VRR frame pacing mode
 
 ---
  src/dxvk/framepacer/dxvk_framepacer.cpp       | 18 ++++++++++
@@ -3633,7 +3633,7 @@ index 99a8fdf7..2bd1b7d9 100644
 From ea0e32008c3070bb7c4da5e14345790090089ee5 Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Tue, 24 Jun 2025 14:53:25 +0200
-Subject: [PATCH 24/61] [dxvk] Take presentation delay into account for VRR
+Subject: [PATCH 24/62] [dxvk] Take presentation delay into account for VRR
  pacing
 
 This is needed for Wine-Wayland since the driver reports different presentation delays (much more) than on x11. Might help in other situations too.
@@ -3812,7 +3812,7 @@ index 00000000..51e464b3
 From 224656e36909907bc0a79f64cb2999b272f4d55c Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Thu, 26 Jun 2025 15:49:29 +0200
-Subject: [PATCH 25/61] [dxvk] Limit presentation stats tracking to 5 seconds
+Subject: [PATCH 25/62] [dxvk] Limit presentation stats tracking to 5 seconds
  for VRR pacing
 
 so it adjust to the current situation.
@@ -4025,7 +4025,7 @@ index 00000000..ebadcd86
 From 3a0fde7a820a133fa6823029af10322cca32ca23 Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Sun, 6 Jul 2025 20:03:40 +0200
-Subject: [PATCH 26/61] [dxvk] Prevent presentation stats median drift for VRR
+Subject: [PATCH 26/62] [dxvk] Prevent presentation stats median drift for VRR
  pacing
 
 ---
@@ -4064,7 +4064,7 @@ index ce788b5a..81c2340b 100644
 From 45a9afded8cbe1283f85bb0f610662010e51a9ce Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Sun, 6 Jul 2025 20:19:11 +0200
-Subject: [PATCH 27/61] [dxvk] Sleep potentially twice before starting a frame
+Subject: [PATCH 27/62] [dxvk] Sleep potentially twice before starting a frame
  in low-latency modes
 
 ---
@@ -4191,7 +4191,7 @@ index 81c2340b..00a526b6 100644
 From b796e6d3cc1f274ea18c579fa257a9477453bd3a Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Sun, 6 Jul 2025 20:52:20 +0200
-Subject: [PATCH 28/61] [dxvk] Don't measure and display present latency for
+Subject: [PATCH 28/62] [dxvk] Don't measure and display present latency for
  Mailbox
 
 Mailbox latencies aren't reported truthfully by the driver (/Wayland WM?) to begin with and special treatment would be needed, because many frames might map to one present, from which we would need to select the best one.
@@ -4293,7 +4293,7 @@ index 839aabf0..6c51718a 100644
 From 15ae76e335869ccd63ceef5fbfd6ff54a2490f9b Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Mon, 7 Jul 2025 11:06:05 +0200
-Subject: [PATCH 29/61] [meta] Add readme for dxvk low-latency
+Subject: [PATCH 29/62] [meta] Add readme for dxvk low-latency
 
 ---
  README.md | 117 +++++++++++++++++++++++++++++++++++++++++++++++++++++-
@@ -4431,7 +4431,7 @@ index 2f8edf41..30a0dd7a 100644
 From ad6565b1235da6e00c3c4a20c1c32ee397121582 Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Mon, 7 Jul 2025 14:41:21 +0200
-Subject: [PATCH 30/61] [build] Don't use designated initializers to fix MSVC
+Subject: [PATCH 30/62] [build] Don't use designated initializers to fix MSVC
  build
 
 Well, it's a c++20 feature, but we still use c++17 and gcc is somehow fine with designated initializers.
@@ -4464,7 +4464,7 @@ index ebadcd86..b6174a9f 100644
 From ab3e42b21cb2dd00e92711b08144b36a0d68003b Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Tue, 15 Jul 2025 17:15:16 +0200
-Subject: [PATCH 31/61] [dxvk] Improve v-blank prediction for VRR pacing
+Subject: [PATCH 31/62] [dxvk] Improve v-blank prediction for VRR pacing
 
 ---
  .../dxvk_framepacer_mode_low_latency.h        | 50 +++++++++++++++----
@@ -4633,7 +4633,7 @@ index b6174a9f..ed32208c 100644
 From 9825b1a0262a05631d32c9e53dfed511d853549a Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Tue, 15 Jul 2025 17:37:09 +0200
-Subject: [PATCH 32/61] [dxvk] Collect GPU and V-Sync buffer stats
+Subject: [PATCH 32/62] [dxvk] Collect GPU and V-Sync buffer stats
 
 ---
  src/dxvk/framepacer/dxvk_framepacer.cpp       |  3 +-
@@ -4820,7 +4820,7 @@ index ed32208c..5ecdf701 100644
 From 5a69e18458fb81baba55c2dc8c2ca3f4e924accc Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Tue, 15 Jul 2025 18:36:54 +0200
-Subject: [PATCH 33/61] [hud] Add latency details
+Subject: [PATCH 33/62] [hud] Add latency details
 
 Showing GPU and V-Sync buffer stats
 ---
@@ -5369,7 +5369,7 @@ index d5610afd..48e37364 100644
 From 9e004b1ecb8e97a82c006418bfff259c81fc3cc7 Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Wed, 23 Jul 2025 14:49:23 +0200
-Subject: [PATCH 34/61] [dxvk] Track frame pacing buffer stats only on demand
+Subject: [PATCH 34/62] [dxvk] Track frame pacing buffer stats only on demand
 
 ---
  src/dxvk/framepacer/dxvk_framepacer.cpp | 17 +++++----
@@ -5560,7 +5560,7 @@ index 0c7a25b0..fdc742c6 100644
 From a3405ea20e09ac954d725de3947b57c069063881 Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Tue, 12 Aug 2025 16:30:00 +0200
-Subject: [PATCH 35/61] [dxvk] Add GpuProgress to track GPU submits in realtime
+Subject: [PATCH 35/62] [dxvk] Add GpuProgress to track GPU submits in realtime
  to improve low-latency frame pacing
 
 ---
@@ -5826,7 +5826,7 @@ index 00000000..c23bd3a6
 From f5a250f3c9fa45cd49d83c883158d77c88ceaac4 Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Tue, 12 Aug 2025 16:58:56 +0200
-Subject: [PATCH 36/61] [dxvk] Integrate GpuProgress into FramePacer
+Subject: [PATCH 36/62] [dxvk] Integrate GpuProgress into FramePacer
 
 ---
  src/dxvk/framepacer/dxvk_framepacer.cpp       |  5 ++++-
@@ -6043,7 +6043,7 @@ index 7658f073..65ab71e2 100644
 From bc575ef0909e2ecd800669a3062ab50a64a726fd Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Tue, 12 Aug 2025 18:06:34 +0200
-Subject: [PATCH 37/61] [dxvk] Store firstFrameId for frame pacing
+Subject: [PATCH 37/62] [dxvk] Store firstFrameId for frame pacing
 
 ... and remove dxgi dependency
 ---
@@ -6277,7 +6277,7 @@ index 65ab71e2..35ee6dba 100644
 From c2a7ff9915f98a08097cdb64348504c297e1bb72 Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Tue, 12 Aug 2025 19:42:52 +0200
-Subject: [PATCH 38/61] [dxvk] Integrate GpuProgress into low-latency frame
+Subject: [PATCH 38/62] [dxvk] Integrate GpuProgress into low-latency frame
  pacing
 
 ---
@@ -6666,7 +6666,7 @@ index f19b4039..caf2c561 100644
 From f512a53c2525de10c230de324d1484785b91fb1b Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Sun, 17 Aug 2025 11:55:18 +0200
-Subject: [PATCH 39/61] [dxvk] Change outlier detection for low-latency frame
+Subject: [PATCH 39/62] [dxvk] Change outlier detection for low-latency frame
  pacing
 
 Previously the cpu frametime was used, which is replaced by the "cpuUntilGpuStart" sync property which is probably more relevant.
@@ -6708,7 +6708,7 @@ index caf2c561..41bf7297 100644
 From 660f2732cc6a28b1caf83f01d60f7c51c0113743 Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Fri, 22 Aug 2025 19:49:08 +0200
-Subject: [PATCH 40/61] [dxvk] Revert to calling vkWaitForPresentKHR only with
+Subject: [PATCH 40/62] [dxvk] Revert to calling vkWaitForPresentKHR only with
  V-Sync on
 
 ---
@@ -6741,7 +6741,7 @@ index 89ea8c4f..7314f2c0 100644
 From 701b1505a56d52a365d82e0c887613f35e8cbeee Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Fri, 22 Aug 2025 20:06:26 +0200
-Subject: [PATCH 41/61] [hud] Remove presentlatency
+Subject: [PATCH 41/62] [hud] Remove presentlatency
 
 .. as we are now getting more meaningful V-Sync buffer stats via latencydetails.
 ---
@@ -6957,7 +6957,7 @@ index fdc742c6..8b3eb2ba 100644
 From 4df34f6071eaceab710f41eb8c51368a6b206a10 Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Tue, 2 Sep 2025 15:10:26 +0200
-Subject: [PATCH 42/61] [meta] Update readme
+Subject: [PATCH 42/62] [meta] Update readme
 
 ---
  README.md | 36 +++++++++++++++++++-----------------
@@ -7058,7 +7058,7 @@ index 30a0dd7a..256e6195 100644
 From 7b4f531731ba9ac9953040df90a970a91a6559c9 Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Fri, 19 Sep 2025 15:56:20 +0200
-Subject: [PATCH 43/61] [dxvk] Refactor frame sync for frame pacing
+Subject: [PATCH 43/62] [dxvk] Refactor frame sync for frame pacing
 
 Frame sync is now managed within the FramePacer class, which makes AB testing (in separate branch) more straight forward. The frame pacing mode now also has a const char* name property.
 ---
@@ -7388,7 +7388,7 @@ index 7fc50fb3..6de7a558 100644
 From c2e73d0db8f084c02e99c7f424a25e868fe3edb1 Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Wed, 3 Dec 2025 17:31:49 +0100
-Subject: [PATCH 44/61] [dxvk] Switch to implicit VRR frame pacing
+Subject: [PATCH 44/62] [dxvk] Switch to implicit VRR frame pacing
 
 vkWaitForPresentKHR() times are not reliable to determine V-Blank times, as they depend on tight guarantees of the compositor and the graphics driver. The previous VRR mode regularly went into V-Sync buffering and its usage on Wayland was limited. Although we couldn't measure the V-Sync buffering to this fine degree, this became pretty clear during play-testing.
 
@@ -7550,7 +7550,7 @@ index 41616759..b7e18b41 100644
 From 7d79f1ec504314b5f1360d1274437b600402bdd8 Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Sun, 7 Dec 2025 15:25:27 +0100
-Subject: [PATCH 45/61] [dxvk] Drop the V-Sync requirement for VRR pacing
+Subject: [PATCH 45/62] [dxvk] Drop the V-Sync requirement for VRR pacing
 
 ---
  src/dxvk/dxvk_presenter.cpp                       | 15 ++++-----------
@@ -7703,7 +7703,7 @@ index b7e18b41..8419cb5b 100644
 From 01a6a0d02ed7e7c85236654ab0c98b9a2b4787f7 Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Wed, 7 Jan 2026 12:40:24 +0100
-Subject: [PATCH 46/61] [dxvk] Disable V-Sync buffer tracking
+Subject: [PATCH 46/62] [dxvk] Disable V-Sync buffer tracking
 
 As this currently relies on vkWaitForPresentKHR(), this is not accurate enough, especially since we are waiting on fences before calling vkWaitForPresentKHR(). This will become even more of an issue with the introduction of VK_KHR_calibrated_timestamps, since we will wait there as well to query device timestamps.
 
@@ -7733,7 +7733,7 @@ index d19dff0f..0a92b285 100644
 From 9e14b3b29e89caeb9ce3e33841c3cdaf10b58916 Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Sun, 4 Jan 2026 19:07:37 +0100
-Subject: [PATCH 47/61] [dxvk] Add VK_KHR_calibrated_timestamps
+Subject: [PATCH 47/62] [dxvk] Add VK_KHR_calibrated_timestamps
 
 Temporarily marked as required. Is marked optional a few commits later.
 ---
@@ -7817,7 +7817,7 @@ index b1b3adb1..0f28d5a9 100644
 From ec33fa71c84b76b709dc553fba9f94b16c9b07a9 Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Sun, 4 Jan 2026 21:44:31 +0100
-Subject: [PATCH 48/61] [dxvk] Improve GPU runtime estimation
+Subject: [PATCH 48/62] [dxvk] Improve GPU runtime estimation
 
 For some reason, the frame pacer didn't get notified about dxvk blitting just before the present. Therefore I previously included the present step for marking the render finished - concluded by play-testing. This is no longer needed, as the blitting is now transparent to the pacer.
 ---
@@ -7981,7 +7981,7 @@ index 8b3eb2ba..a16d7bb5 100644
 From 7887d0b0821987347beedddf8c9eb109a9eb77d6 Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Sun, 4 Jan 2026 21:54:22 +0100
-Subject: [PATCH 49/61] [util] Add ringbuffer allocator
+Subject: [PATCH 49/62] [util] Add ringbuffer allocator
 
 ---
  src/dxvk/framepacer/dxvk_gpu_progress.h   |  4 +-
@@ -8123,7 +8123,7 @@ index 00000000..aa27cf07
 From a29ede0197ed8ccc3aac27ffa9f14291209f7b73 Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Sun, 4 Jan 2026 21:55:39 +0100
-Subject: [PATCH 50/61] [dxvk] Add query pools to the frame pacer
+Subject: [PATCH 50/62] [dxvk] Add query pools to the frame pacer
 
 ---
  src/dxvk/dxvk_latency.h               | 6 ++++++
@@ -8188,7 +8188,7 @@ index 551726ff..2c47c3b5 100644
 From a5184243202f8f7fbbca6bb3d85540e951a0f921 Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Sun, 4 Jan 2026 22:13:37 +0100
-Subject: [PATCH 51/61] [dxvk] Write device timestamp at the end of each submit
+Subject: [PATCH 51/62] [dxvk] Write device timestamp at the end of each submit
 
 ---
  src/dxvk/dxvk_context.cpp               | 18 ++++++++++++++----
@@ -8536,7 +8536,7 @@ index 2c47c3b5..3e18d043 100644
 From f30242ae705e5a159f758e3bf6821eb73514dd24 Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Sun, 4 Jan 2026 23:02:38 +0100
-Subject: [PATCH 52/61] [dxvk] Use device timestamps for frame pacing
+Subject: [PATCH 52/62] [dxvk] Use device timestamps for frame pacing
 
 ---
  .../dxvk_calibrated_device_timestamps.cpp     | 51 +++++++++++++++++++
@@ -8851,7 +8851,7 @@ index bcc311b6..0666de87 100644
 From 3dd90827d476c65431f39f30b1e4fef0414e85eb Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Tue, 6 Jan 2026 17:04:15 +0100
-Subject: [PATCH 53/61] [dxvk] Check VK_KHR_calibrated_timestamps support for
+Subject: [PATCH 53/62] [dxvk] Check VK_KHR_calibrated_timestamps support for
  frame pacing
 
 Falls back to the vkWaitSemaphores() timestamp when the GPU has finished processing submits, in case VK_KHR_calibrated_timestamps is not supported or when timestampValidBits != 64
@@ -9123,7 +9123,7 @@ index 55a72474..01529a0c 100644
 From 7685dc63cb767becd672f7915546a22adfbb05e3 Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Sat, 10 Jan 2026 20:05:38 +0100
-Subject: [PATCH 54/61] [meta] Update README
+Subject: [PATCH 54/62] [meta] Update README
 
 ---
  README.md | 25 ++++++++++++++++---------
@@ -9212,7 +9212,7 @@ index 256e6195..bce75a05 100644
 From b08873921a243a726c60f0da9a1e0236e5ac8fc2 Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Sat, 10 Jan 2026 20:16:45 +0100
-Subject: [PATCH 55/61] [meta] Release 2.7.1-2
+Subject: [PATCH 55/62] [meta] Release 2.7.1-2
 
 ---
  RELEASE                        | 2 +-
@@ -9281,7 +9281,7 @@ index 902ac95e..a2beacf9 100644
 From f7677b878d0a021b67a87eaf249ff17332f78cba Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Sat, 10 Jan 2026 20:59:25 +0100
-Subject: [PATCH 56/61] [build] Fix meson.build for dxvk-native
+Subject: [PATCH 56/62] [build] Fix meson.build for dxvk-native
 
 ---
  meson.build | 2 +-
@@ -9304,7 +9304,7 @@ index e064667b..780d7aa8 100644
 From 67fdf8c1fb541fa4010701c28cbdc96c347da3f7 Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Wed, 14 Jan 2026 02:24:53 +0100
-Subject: [PATCH 57/61] [dxvk] Add VK_EXT_calibrated_timestamps
+Subject: [PATCH 57/62] [dxvk] Add VK_EXT_calibrated_timestamps
 
 In case a driver doesn't support VK_KHR_calibrated_timestamps, try using VK_EXT_calibrated_timestamps which is supported by practically every driver on Linux/Windows/MacOS. Mostly affects drivers released in 2022 and 2023. These two extensions are pretty much identical, whereas the KHR variant is the newer promoted version.
 ---
@@ -9513,7 +9513,7 @@ index 0f28d5a9..47bf510b 100644
 From 24fb958f7ed0b159aee3d4217619d44f59cee895 Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Fri, 23 Jan 2026 13:20:09 +0100
-Subject: [PATCH 58/61] [dxvk] Fix GPU runtime in GpuProgress
+Subject: [PATCH 58/62] [dxvk] Fix GPU runtime in GpuProgress
 
 Now works as intended. Greatly improves latency and smoothness. Very relevant for the VRR mode too.
 
@@ -9669,7 +9669,7 @@ index 77439eb7..0a646e05 100644
 From 17eec1c550e54d5be39eb66a5d3aa4d665025991 Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Fri, 23 Jan 2026 13:23:45 +0100
-Subject: [PATCH 59/61] [dxvk] Improve robustness to stutters
+Subject: [PATCH 59/62] [dxvk] Improve robustness to stutters
 
 Cap the amount of time we wait until starting a frame. This matches how we did it for pre-2.7.1 versions and makes the pacing more robust to unexpected events.
 ---
@@ -9730,7 +9730,7 @@ index 0a646e05..9fe23bfd 100644
 From 87558252668350299022726b89b869d38afb7141 Mon Sep 17 00:00:00 2001
 From: netborg <137700136+netborg-afps@users.noreply.github.com>
 Date: Wed, 28 Jan 2026 16:52:34 +0100
-Subject: [PATCH 60/61] [meta] Release 2.7.1-3
+Subject: [PATCH 60/62] [meta] Release 2.7.1-3
 
 ---
  RELEASE | 2 +-
@@ -9750,7 +9750,7 @@ index 6991fad0..7c038bd7 100644
 From cbe83fb4617cf9193101e9070c96d024791a8516 Mon Sep 17 00:00:00 2001
 From: Stelios Tsampas <loathingkernel@gmail.com>
 Date: Wed, 4 Mar 2026 01:55:45 +0200
-Subject: [PATCH 61/61] [meta] ph42on's gplasync patch
+Subject: [PATCH 61/62] [meta] ph42on's gplasync patch
 
 ---
  meson.build                |  2 +-
@@ -10023,6 +10023,70 @@ index a0d07d38..d9c1e453 100644
      /// Shader-related options
      Tristate useRawSsbo = Tristate::Auto;
  
+-- 
+2.53.0
+
+
+From a9f527aa5fb56353f50449ed25ad9504bc7d36ed Mon Sep 17 00:00:00 2001
+From: Stelios Tsampas <loathingkernel@gmail.com>
+Date: Wed, 4 Mar 2026 15:53:03 +0200
+Subject: [PATCH 62/62] [meta] fix llasync version reporting
+
+---
+ meson.build                    | 2 +-
+ src/dxvk/dxvk_instance.cpp     | 6 +-----
+ src/dxvk/hud/dxvk_hud_item.cpp | 6 +-----
+ 3 files changed, 3 insertions(+), 11 deletions(-)
+
+diff --git a/meson.build b/meson.build
+index 61d82980..780d7aa8 100644
+--- a/meson.build
++++ b/meson.build
+@@ -199,7 +199,7 @@ glsl_generator = generator(
+ )
+ 
+ dxvk_version = vcs_tag(
+-  command: ['git', 'describe', '--dirty=-1-gplasync'],
++  command: ['git', 'describe', '--dirty=+'],
+   input:  'version.h.in',
+   output: 'version.h',
+ )
+diff --git a/src/dxvk/dxvk_instance.cpp b/src/dxvk/dxvk_instance.cpp
+index c74a55dc..ad21a121 100644
+--- a/src/dxvk/dxvk_instance.cpp
++++ b/src/dxvk/dxvk_instance.cpp
+@@ -23,12 +23,8 @@ namespace dxvk {
+ 
+ 
+   DxvkInstance::DxvkInstance(const DxvkInstanceImportInfo& args, DxvkInstanceFlags flags) {
+-    static std::string git_dxvk_version(DXVK_VERSION);
+-    static std::string dxvk_version = "v"+git_dxvk_version.substr(
+-      std::min((int)git_dxvk_version.length(),24));
+-
+     Logger::info(str::format("Game: ", env::getExeName()));
+-    Logger::info(str::format("DXVK-LOW-LATENCY: ", dxvk_version));
++    Logger::info(str::format("DXVK-LOWLATENCY-GPLASYNC: ", DXVK_VERSION));
+     Logger::info(str::format("Build: ", DXVK_TARGET, " ", DXVK_COMPILER, " ", DXVK_COMPILER_VERSION));
+ 
+     wsi::init();
+diff --git a/src/dxvk/hud/dxvk_hud_item.cpp b/src/dxvk/hud/dxvk_hud_item.cpp
+index a2beacf9..6e30e3d4 100644
+--- a/src/dxvk/hud/dxvk_hud_item.cpp
++++ b/src/dxvk/hud/dxvk_hud_item.cpp
+@@ -103,12 +103,8 @@ namespace dxvk::hud {
+     const HudOptions&         options,
+           HudRenderer&        renderer,
+           HudPos              position) {
+-    static std::string git_dxvk_version(DXVK_VERSION);
+-    static std::string dxvk_version = "DXVK-LOW-LATENCY v"+git_dxvk_version.substr(
+-      std::min((int)git_dxvk_version.length(),24));
+-
+     position.y += 16;
+-    renderer.drawText(16, position, 0xffffffffu, dxvk_version);
++    renderer.drawText(16, position, 0xffffffffu, "DXVK-LOWLATENCY-GPLASYNC " DXVK_VERSION);
+ 
+     position.y += 8;
+     return position;
 -- 
 2.53.0
 
