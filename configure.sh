@@ -202,8 +202,8 @@ function configure() {
     if [[ -n "$arg_without_d7vk" ]]; then
       echo "WITHOUT_D7VK := 1"
     fi
-    if [[ -n "$arg_without_gplall" ]]; then
-      echo "WITHOUT_GPLALL := 1"
+    if [[ -n "$arg_without_llasync" ]]; then
+      echo "WITHOUT_LLASYNC := 1"
     fi
     if [[ -n "$arg_without_wayland_libs" ]]; then
       echo "WITHOUT_WAYLAND_LIBS := 1"
@@ -241,7 +241,7 @@ arg_without_tts=""
 arg_without_nvidia_libs=""
 arg_without_sarek=""
 arg_without_d7vk=""
-arg_without_gplall=""
+arg_without_llasync=""
 arg_without_wayland_libs=""
 arg_without_libpcap=""
 arg_help=""
@@ -303,8 +303,8 @@ function parse_args() {
       arg_without_sarek="1"
     elif [[ $arg = --without-d7vk ]]; then
       arg_without_d7vk="1"
-    elif [[ $arg = --without-gplall ]]; then
-      arg_without_gplall="1"
+    elif [[ $arg = --without-llasync ]]; then
+      arg_without_llasync="1"
     elif [[ $arg = --without-wayland-libs ]]; then
       arg_without_wayland_libs="1"
     elif [[ $arg = --without-libpcap ]]; then
@@ -376,7 +376,7 @@ usage() {
   "$1" ""
   "$1" "    --without-d7vk Disables d7vk"
   "$1" ""
-  "$1" "    --without-gplall Disables dxvk-gplall"
+  "$1" "    --without-llasync Disables dxvk-llasync"
   "$1" ""
   "$1" "    --without-wayland-libs Disables bundling wayland libraries. Wine is still built with Wayland support (for native builds)"
   "$1" ""
