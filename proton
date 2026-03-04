@@ -1898,11 +1898,18 @@ class Session:
 
         if "dxvklowlatency" in self.compat_config:
             self.compat_config.add("dxvkllasync")
+            self.env["DXVK_ASYNC"] = "0"
             append_to_env_str(self.env, "DXVK_CONFIG", "dxvk.enableAsync=False", ";")
-
-        if "dxvkgplasync" in self.compat_config:
+        elif "dxvkgplasync" in self.compat_config:
             self.compat_config.add("dxvkllasync")
             append_to_env_str(self.env, "DXVK_CONFIG", "dxvk.framePace=max-frame-latency", ";")
+
+        if "dxvkllasync" in self.compat_config:
+            threads = max(os.cpu_count() - 2, 3)
+            append_to_env_str(self.env, "DXVK_CONFIG", f"dxvk.numCompilerThreads={threads}", ";")
+            # if "dxvk.numCompilerThreads" not in os.environ.get("DXVK_CONFIG", ""):
+            #    append_to_env_str(self.env, "DXVK_CONFIG", f"dxvk.numCompilerThreads={threads}", ";")
+            append_to_env_str(self.env, "DXVK_CONFIG", "dxvk.enableGraphicsPipelineLibrary=Auto", ";")
 
         if "nvidialibs" in self.compat_config:
             self.compat_config.add("nvcuda")
