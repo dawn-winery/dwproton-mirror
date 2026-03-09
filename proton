@@ -1921,6 +1921,7 @@ class Session:
 
         if "dxvklowlatency" in self.compat_config:
             self.compat_config.add("dxvkllasync")
+            self.env["DXVK_ASYNC"] = "0"
             append_to_env_str(self.env, "DXVK_CONFIG", "dxvk.enableAsync=False", ";")
 
         if "dxvkgplasync" in self.compat_config:
