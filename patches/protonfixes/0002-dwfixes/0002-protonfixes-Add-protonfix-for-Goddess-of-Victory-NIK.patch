@@ -1,0 +1,69 @@
+From 46c9d21ce91f70ad675741f4f7fe0854d4eb48b6 Mon Sep 17 00:00:00 2001
+From: NelloKudo <marshnelloosu@gmail.com>
+Date: Wed, 11 Mar 2026 14:32:06 +0100
+Subject: [PATCH 2/2] protonfixes: Add protonfix for Goddess of Victory: NIKKE.
+
+---
+ gamefixes-umu/umu-nikke.py | 37 +++++++++++++++++++++++++++++++++++++
+ umu-database.csv           |  1 +
+ 2 files changed, 38 insertions(+)
+ create mode 100644 gamefixes-umu/umu-nikke.py
+
+diff --git a/gamefixes-umu/umu-nikke.py b/gamefixes-umu/umu-nikke.py
+new file mode 100644
+index 0000000..738e951
+--- /dev/null
++++ b/gamefixes-umu/umu-nikke.py
+@@ -0,0 +1,37 @@
++"""Game fix for Goddess of Victory: NIKKE"""
++
++import os
++import sys
++import shutil
++
++from protonfixes import util
++
++def main():
++    """Nikke locks repair/download launcher features if Steam is detected"""
++    util.del_environment('SteamGameId')
++    util.del_environment('SteamAppId')
++
++    """NVAPI breaks video playback"""
++    util.disable_nvapi()
++
++    """Nikke's launcher automatic update feature is broken on Linux, so we need to move the update files manually"""
++    exe_dir = os.path.dirname(sys.argv[2])
++    update_dir = os.path.join(exe_dir, "update_files")
++
++    if os.path.isdir(update_dir):
++        moved = []
++        for item in os.listdir(update_dir):
++            src = os.path.join(update_dir, item)
++            dst = os.path.join(exe_dir, item)
++            if os.path.isdir(src):
++                shutil.copytree(src, dst, dirs_exist_ok=True)
++                shutil.rmtree(src)
++            else:
++                shutil.move(src, dst)
++            moved.append(item)
++
++        shutil.rmtree(update_dir)
++
++        if moved:
++            print(f"[umu-nikke] Moved update_files contents to {exe_dir}.")
++            print(f"[umu-nikke] Removed update_files directory.")
+diff --git a/umu-database.csv b/umu-database.csv
+index 3cfde82..c9f5f98 100644
+--- a/umu-database.csv
++++ b/umu-database.csv
+@@ -10,6 +10,7 @@ Grand Theft Auto V,none,none,umu-271590,gtav,Standalone Rockstar installer,
+ Genshin Impact,egs,41869934302e4b8cafac2d3c0e7c293d,umu-7d690c122fde4c60bed85405f343ad10,,,
+ Genshin Impact,none,playpc,umu-genshin,,Play Store PC,
+ Genshin Impact,none,none,umu-genshin,,Standalone PC installer,
++Goddess of Victory: NIKKE,none,none,umu-nikke,,Standalone PC installer,
+ Red Dead Redemption 2,egs,Heather,umu-1174180,rdr2,,
+ Red Dead Redemption 2,none,none,umu-1174180,rdr2,Standalone Rockstar installer,
+ Horizon Zero Dawn™ Complete Edition,gog,1209025141,umu-1151640,,,
+-- 
+2.53.0
+
