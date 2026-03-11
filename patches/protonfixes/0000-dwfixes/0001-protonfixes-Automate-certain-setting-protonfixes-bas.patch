@@ -1,0 +1,73 @@
+From 76e290b0d1588770c789228fa86c940c14857ca5 Mon Sep 17 00:00:00 2001
+From: NelloKudo <marshnelloosu@gmail.com>
+Date: Wed, 11 Mar 2026 14:28:38 +0100
+Subject: [PATCH 1/2] protonfixes: Automate certain setting protonfixes based
+ on game executable.
+
+An easy way to automate protonfixes for games that strictly need it (e.g. GI/ZZZ with steam.exe, Nikke
+with its fixes). Doesn't override users' customs UMU_ID though.
+---
+ __init__.py |  3 ++-
+ dwfixes.py  | 29 +++++++++++++++++++++++++++++
+ 2 files changed, 31 insertions(+), 1 deletion(-)
+ create mode 100644 dwfixes.py
+
+diff --git a/__init__.py b/__init__.py
+index 498cfeb..d3d3de3 100644
+--- a/__init__.py
++++ b/__init__.py
+@@ -15,6 +15,7 @@ from .utilities import (
+     winetricks,
+ )
+ from .zenity import ZenityWaitDialog
++from .dwfixes import apply_dwfixes
+ 
+ sys.path.insert(
+     0,
+@@ -71,7 +72,7 @@ def execute_early() -> None:
+     else:
+         fix.early()
+ 
+-
++apply_dwfixes(os.environ)
+ execute_early()
+ 
+ 
+diff --git a/dwfixes.py b/dwfixes.py
+new file mode 100644
+index 0000000..b4ce905
+--- /dev/null
++++ b/dwfixes.py
+@@ -0,0 +1,29 @@
++## dwfixes - automate settings certain protonfixes based on game executables
++import os
++import sys
++
++def _is_hoyo_launcher(exe_path: str) -> bool:
++    return "HoYoPlay" in exe_path.split(os.sep)
++
++UMU_IDS = {
++    "GenshinImpact.exe":   "umu-genshin",
++    "ZenlessZoneZero.exe": "umu-zenlesszonezero",
++    "nikke_launcher.exe":  "umu-nikke",
++}
++
++def apply_dwfixes(env: dict):
++    if len(sys.argv) < 3:
++        return
++
++    exe_path = sys.argv[2]
++    exe = os.path.basename(exe_path)
++
++    if exe == "launcher.exe" and _is_hoyo_launcher(exe_path):
++        umu_id = "umu-zenlesszonezero"
++    else:
++        umu_id = UMU_IDS.get(exe)
++
++    # only override the default fallback, not if the user explicitly set UMU_ID
++    # or if running on steam (UMU_ID absent entirely)
++    if umu_id and env.get("UMU_ID") == "umu-default":
++        env["UMU_ID"] = os.environ["UMU_ID"] = umu_id
+-- 
+2.53.0
+
