@@ -1,0 +1,26 @@
+From 1986670a1cdcf17b83ce8e75b1d8ecb430d9b835 Mon Sep 17 00:00:00 2001
+From: NelloKudo <marshnelloosu@gmail.com>
+Date: Wed, 18 Mar 2026 21:34:26 +0100
+Subject: [PATCH] Revert "HACK: winewayland: disable server-side decorations"
+
+This reverts commit 552bee95e63f71e7c62362d0ad074ecebc187b17.
+---
+ dlls/winewayland.drv/wayland.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/dlls/winewayland.drv/wayland.c b/dlls/winewayland.drv/wayland.c
+index c3143ce796d..b68572d9fd2 100644
+--- a/dlls/winewayland.drv/wayland.c
++++ b/dlls/winewayland.drv/wayland.c
+@@ -94,7 +94,7 @@ static int wayland_disable_ssd(void)
+     if (disabled == -1)
+         disabled = (env = getenv("WAYLANDDRV_SSD")) && !strcmp(env, "0");
+ 
+-    return 1;
++    return disabled;
+ }
+ 
+ /**********************************************************************
+-- 
+2.53.0
+
