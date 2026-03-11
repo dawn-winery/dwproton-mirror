@@ -1,0 +1,54 @@
+From e53515025a9ec1ece30131012c76a5078550bdd6 Mon Sep 17 00:00:00 2001
+From: NelloKudo <marshnelloosu@gmail.com>
+Date: Sun, 12 Jul 2026 18:03:31 +0200
+Subject: [PATCH] protonfixes: Add protonfix for Goddess of Victory: NIKKE.
+
+---
+ gamefixes-umu/umu-nikke.py | 38 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 38 insertions(+)
+ create mode 100644 gamefixes-umu/umu-nikke.py
+
+diff --git a/gamefixes-umu/umu-nikke.py b/gamefixes-umu/umu-nikke.py
+new file mode 100644
+index 0000000..f38ec7b
+--- /dev/null
++++ b/gamefixes-umu/umu-nikke.py
+@@ -0,0 +1,38 @@
++"""Game fix for Goddess of Victory: NIKKE"""
++
++import os
++import sys
++import shutil
++
++from protonfixes import util
++
++def main():
++    """Nikke locks repair/download launcher features if Steam is detected"""
++    util.del_environment('SteamGameId')
++    util.del_environment('SteamAppId')
++    util.del_environment('UMU_USE_STEAM')
++
++    """NVAPI breaks video playback"""
++    util.disable_nvapi()
++
++    """Nikke's launcher automatic update feature is broken on Linux, so we need to move the update files manually"""
++    exe_dir = os.path.dirname(sys.argv[2])
++    update_dir = os.path.join(exe_dir, "update_files")
++
++    if os.path.isdir(update_dir):
++        moved = []
++        for item in os.listdir(update_dir):
++            src = os.path.join(update_dir, item)
++            dst = os.path.join(exe_dir, item)
++            if os.path.isdir(src):
++                shutil.copytree(src, dst, dirs_exist_ok=True)
++                shutil.rmtree(src)
++            else:
++                shutil.move(src, dst)
++            moved.append(item)
++
++        shutil.rmtree(update_dir)
++
++        if moved:
++            print(f"[umu-nikke] Moved update_files contents to {exe_dir}.")
++            print(f"[umu-nikke] Removed update_files directory.")
