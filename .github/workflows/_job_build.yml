@@ -67,7 +67,7 @@ jobs:
       run: sudo apt update && sudo apt-get install -y ccache fontforge-nox
 
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         fetch-depth: 0
         fetch-tags: true
@@ -97,7 +97,7 @@ jobs:
 
     - name: Restore cache
       id: ccache-restore
-      uses: actions/cache/restore@v4
+      uses: actions/cache/restore@v5
       with:
         path: ~/.ccache
         key: ccache-proton-${{ steps.ccache-id.outputs.checksum }}-${{ github.run_id }}
@@ -112,19 +112,19 @@ jobs:
     - name: Save cache
       id: ccache-save
       if: always()
-      uses: actions/cache/save@v4
+      uses: actions/cache/save@v5
       with:
         path: ~/.ccache
         key: ${{ steps.ccache-restore.outputs.cache-primary-key }}
 
     - name: Upload artifact ${{ inputs.name }}.tar.xz
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: ${{ inputs.name }}.tar.xz
         path: ./build/${{ inputs.name }}.tar.xz
 
     - name: Upload artifact ${{ inputs.name }}.sha512sum
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: ${{ inputs.name }}.sha512sum
         path: ./build/${{ inputs.name }}.sha512sum
