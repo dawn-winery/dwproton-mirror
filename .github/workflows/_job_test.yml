@@ -26,13 +26,13 @@ jobs:
           sudo apparmor_parser /usr/share/apparmor/extra-profiles/bwrap-userns-restrict
 
       - name: Download ${{ matrix.file }} artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: ${{ inputs.name }}.tar.xz
 
       - name: Setup env
         run: |
-          git clone https://github.com/loathingKernel/umu-launcher.git -b tool_info_arm64
+          git clone https://github.com/Open-Wine-Components/umu-launcher.git -b main
           cd umu-launcher
           python3 -m venv venv && source venv/bin/activate && pip3 install -e .
 
