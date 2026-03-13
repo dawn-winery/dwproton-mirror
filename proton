@@ -1339,6 +1339,7 @@ def comma_escaped(s):
 def default_compat_config():
     ret = set()
     if "SteamAppId" in os.environ:
+        ret.add("ntsync")
         appid = os.environ["SteamAppId"]
         if appid in [
                 #affected by CW bug 19741
