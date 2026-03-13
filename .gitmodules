@@ -57,6 +57,9 @@
 [submodule "vkd3d-proton"]
 	path = vkd3d-proton
 	url = https://github.com/HansKristian-Work/vkd3d-proton
+[submodule "vkd3d-bratan"]
+	path = vkd3d-bratan
+	url = https://github.com/HansKristian-Work/vkd3d-proton.git
 [submodule "OpenXR-SDK"]
 	path = OpenXR-SDK
 	url = https://github.com/KhronosGroup/OpenXR-SDK
