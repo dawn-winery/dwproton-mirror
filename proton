@@ -1160,6 +1160,7 @@ class CompatData:
                     g_session.dlloverrides[f] = "n"
 
                 use_vkd3d_bratan = "vkd3dbratan" in g_session.compat_config and os.path.isdir(g_proton.lib_dir + "wine/vkd3d-bratan")
+                use_vkd3d_bratan = use_vkd3d_bratan or ("vkd3dheap" in g_session.compat_config and os.path.isdir(g_proton.lib_dir + "wine/vkd3d-bratan"))
                 if use_vkd3d_bratan:
                     vkd3d_proton_path = "vkd3d-bratan/"
                 else:
@@ -1857,6 +1858,7 @@ class Session:
         self.check_environment("PROTON_DXVK_LLASYNC", "dxvkllasync")
         self.check_environment("PROTON_DXVK_LOWLATENCY", "dxvklowlatency")
         self.check_environment("PROTON_VKD3D_BRATAN", "vkd3dbratan")
+        self.check_environment("PROTON_VKD3D_HEAP", "vkd3dheap")
         self.check_environment("PROTON_NO_ESYNC", "noesync")
         self.check_environment("PROTON_NO_FSYNC", "nofsync")
         self.check_environment("PROTON_USE_NTSYNC", "ntsync")
