@@ -1874,6 +1874,7 @@ class Session:
         self.check_environment("PROTON_HEAP_ZERO_MEMORY", "heapzeromemory")
         self.check_environment("PROTON_DISABLE_NVAPI", "disablenvapi")
         self.check_environment("PROTON_FORCE_NVAPI", "forcenvapi")
+        self.check_environment("PROTON_VKREFLEX", "vkreflex")
         self.check_environment("PROTON_NVIDIA_LIBS", "nvidialibs")
         self.check_environment("PROTON_NVIDIA_LIBS_NO_32BIT", "nvidialibsno32")
         self.check_environment("PROTON_NVIDIA_NVCUDA", "nvcuda")
@@ -1929,6 +1930,10 @@ class Session:
             self.compat_config.add("nvenc")
             self.compat_config.add("nvml")
             self.compat_config.add("nvoptix")
+
+        if "vkreflex" in self.compat_config and "disablenvapi" not in self.compat_config and is_driver_loaded({'nvidia'}):
+            append_to_env_str(self.env, "VK_ADD_IMPLICIT_LAYER_PATH", g_proton.dist_dir + "share/vulkan/implicit_layer.d", ":")
+            self.env["DXVK_NVAPI_VKREFLEX"] = "1"
 
         if "nofsync" in self.compat_config:
             self.env.pop("WINEFSYNC", "")
