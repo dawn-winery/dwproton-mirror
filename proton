@@ -1884,6 +1884,7 @@ class Session:
         self.check_environment("PROTON_NO_D3D10", "nod3d10")
         self.check_environment("PROTON_DXVK_SAREK", "dxvksarek")
         self.check_environment("PROTON_DXVK_LLASYNC", "dxvkllasync")
+        self.check_environment("PROTON_DXVK_GPLASYNC", "dxvkgplasync")
         self.check_environment("PROTON_DXVK_LOWLATENCY", "dxvklowlatency")
         self.check_environment("PROTON_VKD3D_BRATAN", "vkd3dbratan")
         self.check_environment("PROTON_VKD3D_HEAP", "vkd3dheap")
@@ -1946,6 +1947,9 @@ class Session:
             self.compat_config.add("dxvkllasync")
             self.env["DXVK_ASYNC"] = "0"
             append_to_env_str(self.env, "DXVK_CONFIG", "dxvk.enableAsync=False", ";")
+        elif "dxvkgplasync" in self.compat_config:
+            self.compat_config.add("dxvkllasync")
+            append_to_env_str(self.env, "DXVK_CONFIG", "dxvk.framePace=max-frame-latency", ";")
 
         if "dxvkllasync" in self.compat_config:
             threads = max(os.cpu_count() - 2, 3)
