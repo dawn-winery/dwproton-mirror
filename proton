@@ -43,7 +43,7 @@ import protonfixes
 #To enable debug logging, copy "user_settings.sample.py" to "user_settings.py"
 #and edit it if needed.
 
-CURRENT_PREFIX_VERSION="10.1000-200"
+CURRENT_PREFIX_VERSION="CachyOS-10.1000-200"
 
 PFX="Proton: "
 ld_path_var = "LD_LIBRARY_PATH"
@@ -364,6 +364,16 @@ def setup_openvr_paths():
         json.dump(contents, file, indent=3)
 
 
+def is_driver_loaded(d):
+    try:
+        with open('/proc/modules') as f:
+            drivers = set([line.partition(' ')[0] for line in f.read().splitlines()])
+            if drivers.intersection(d):
+                return True
+            else:
+                return False
+    except OSError:
+        return False
 
 # Function to find the installed location of DLL files for use by Wine/Proton
 # from the NVIDIA Linux driver
@@ -532,7 +542,6 @@ class Proton:
         self.wine_bin = self.bin_dir + "wine"
         self.wine64_bin = self.bin_dir + "wine64"
         self.wineserver_bin = self.bin_dir + "wineserver"
-        self.dist_lock = FileLock(self.path("dist.lock"), timeout=-1)
         self.host_pe_arch = "x86_64-windows"
         self.wow64_pe_arch = "i386-windows"
 
@@ -958,6 +967,9 @@ class CompatData:
                     pass
                 os.sync()
 
+            # Fix broken prefixes by replacing any faulty values in registry
+            get_replace_reg_value(self.prefix_dir + "user.reg", "Software\\\\Wine\\\\Drivers", "Graphics", "\"x11,wayland\"")
+
             self.migrate_user_paths()
 
             if not file_exists(self.prefix_dir + "/dosdevices/c:", follow_symlinks=False):
@@ -1140,26 +1152,54 @@ class CompatData:
                     try_copy(g_proton.default_pfx_dir + "drive_c/windows/syswow64/" + f + ".dll", "drive_c/windows/syswow64",
                             prefix=self.prefix_dir, track_file=tracked_files, link_debug=True)
 
+                use_dxvk_sarek = "dxvksarek" in g_session.compat_config and os.path.isdir(g_proton.lib_dir + "wine/dxvk-sarek")
+                use_dxvk_llasync = "dxvkllasync" in g_session.compat_config and os.path.isdir(g_proton.lib_dir + "wine/dxvk-llasync")
+                if use_dxvk_sarek:
+                    use_nvapi = False
+                    dxvk_path = "dxvk-sarek/"
+                elif use_dxvk_llasync:
+                    dxvk_path = "dxvk-llasync/"
+                else:
+                    dxvk_path = "dxvk/"
+
                 for f in dxvkfiles:
-                    try_copy(g_proton.arch_pe_dir("wine/dxvk", False) + f + ".dll", "drive_c/windows/system32",
+                    try_copy(g_proton.arch_pe_dir("wine/" + dxvk_path, False) + f + ".dll", "drive_c/windows/system32",
                             prefix=self.prefix_dir, track_file=tracked_files, link_debug=True)
-                    try_copy(g_proton.arch_pe_dir("wine/dxvk", True) + f + ".dll", "drive_c/windows/syswow64",
+                    try_copy(g_proton.arch_pe_dir("wine/" + dxvk_path, True) + f + ".dll", "drive_c/windows/syswow64",
                             prefix=self.prefix_dir, track_file=tracked_files, link_debug=True)
 
                     copy_arm64x_forwarder_targets("wine/dxvk")
                     g_session.dlloverrides[f] = "n"
 
+                use_vkd3d_bratan = "vkd3dbratan" in g_session.compat_config and os.path.isdir(g_proton.lib_dir + "wine/vkd3d-bratan")
+                use_vkd3d_bratan = use_vkd3d_bratan or ("vkd3dheap" in g_session.compat_config and os.path.isdir(g_proton.lib_dir + "wine/vkd3d-bratan"))
+                if use_vkd3d_bratan:
+                    vkd3d_proton_path = "vkd3d-bratan/"
+                else:
+                    vkd3d_proton_path = "vkd3d-proton/"
+
                 for f in vkd3d_protonfiles:
                     optional = False
                     if f == "d3d12core":
                         optional = True
-                    try_copy(g_proton.arch_pe_dir("wine/vkd3d-proton", False) + f + ".dll", "drive_c/windows/system32",
+                    try_copy(g_proton.arch_pe_dir("wine/" + vkd3d_proton_path, False) + f + ".dll", "drive_c/windows/system32",
                             prefix=self.prefix_dir, track_file=tracked_files, link_debug=True, optional=optional)
-                    try_copy(g_proton.arch_pe_dir("wine/vkd3d-proton", True) + f + ".dll", "drive_c/windows/syswow64",
+                    try_copy(g_proton.arch_pe_dir("wine/" + vkd3d_proton_path, True) + f + ".dll", "drive_c/windows/syswow64",
                             prefix=self.prefix_dir, track_file=tracked_files, link_debug=True, optional=optional)
 
                     copy_arm64x_forwarder_targets("wine/vkd3d-proton")
                     g_session.dlloverrides[f] = "n"
+
+                use_d7vk_ddraw = "d7vkddraw" in g_session.compat_config and os.path.isdir(g_proton.lib_dir + "wine/d7vk")
+                if use_d7vk_ddraw:
+                    try_copy(g_proton.default_pfx_dir + "drive_c/windows/syswow64/ddraw.dll", "drive_c/windows/syswow64/ddraw_.dll",
+                            prefix=self.prefix_dir, track_file=tracked_files, link_debug=True)
+                    try_copy(g_proton.arch_pe_dir("wine/d7vk", True) + "ddraw.dll", "drive_c/windows/syswow64",
+                            prefix=self.prefix_dir, track_file=tracked_files, link_debug=True, optional=optional)
+                    g_session.dlloverrides["ddraw"] = "n,b"
+                else:
+                    try_copy(g_proton.default_pfx_dir + "drive_c/windows/syswow64/ddraw.dll", "drive_c/windows/syswow64",
+                            prefix=self.prefix_dir, track_file=tracked_files, link_debug=True)
 
                 for f in icufiles:
                     dst = "drive_c/windows/system32/" + f + ".dll"
@@ -1172,14 +1212,26 @@ class CompatData:
                         tracked_files.write(dst + '\n')
                     self.create_symlink(self.prefix_dir + dst, g_proton.arch_pe_dir("wine/icu", True) + f + ".dll")
 
+                allow_nvidia_libs = os.path.isdir(g_proton.lib_dir + "wine/nvidia-libs")
+                disable_nvlibs32 = "nvidialibsno32" in g_session.compat_config or "wow64" in g_session.compat_config
+                use_nvoptix = "nvoptix" in g_session.compat_config and allow_nvidia_libs
+                use_nvml = ("nvml" in g_session.compat_config and allow_nvidia_libs) or use_nvoptix
+                use_nvenc = "nvenc" in g_session.compat_config and allow_nvidia_libs
+                use_nvcuda = ("nvcuda" in g_session.compat_config and allow_nvidia_libs) or use_nvenc or use_nvoptix
+
+                if use_nvcuda or use_nvenc or use_nvoptix:
+                    nvapi_path = "nvidia-libs/nvapi/"
+                else:
+                    nvapi_path = "nvapi/"
+
                 # If the user requested the NVAPI be available, copy it into place.
                 # If they didn't, clean up any stray nvapi DLLs.
                 if use_nvapi:
-                    try_copy(g_proton.arch_pe_dir("wine/nvapi", False) + "nvapi64.dll", "drive_c/windows/system32",
+                    try_copy(g_proton.arch_pe_dir("wine/" + nvapi_path, False) + "nvapi64.dll", "drive_c/windows/system32",
                             prefix=self.prefix_dir, track_file=tracked_files, link_debug=True)
-                    try_copy(g_proton.arch_pe_dir("wine/nvapi", False) + "nvofapi64.dll", "drive_c/windows/system32",
+                    try_copy(g_proton.arch_pe_dir("wine/" + nvapi_path, False) + "nvofapi64.dll", "drive_c/windows/system32",
                             prefix=self.prefix_dir, track_file=tracked_files, link_debug=True)
-                    try_copy(g_proton.arch_pe_dir("wine/nvapi", True) + "nvapi.dll", "drive_c/windows/syswow64",
+                    try_copy(g_proton.arch_pe_dir("wine/" + nvapi_path, True) + "nvapi.dll", "drive_c/windows/syswow64",
                             prefix=self.prefix_dir, track_file=tracked_files, link_debug=True)
                     g_session.dlloverrides["nvapi64"] = "n"
                     g_session.dlloverrides["nvofapi64"] = "n"
@@ -1197,6 +1249,80 @@ class CompatData:
                     if file_exists(nvapi32_dll + '.debug', follow_symlinks=False):
                         os.unlink(nvapi32_dll + '.debug')
 
+                if use_nvcuda and use_nvapi:
+                    try_copy(g_proton.arch_pe_dir("wine/nvidia-libs/nvcuda", False) + "nvcuda.dll.so", "drive_c/windows/system32/nvcuda.dll",
+                            prefix=self.prefix_dir, track_file=tracked_files, link_debug=True)
+                    g_session.dlloverrides["nvcuda"] = "n,b"
+                else:
+                    nvcuda64_dll = self.prefix_dir + "drive_c/windows/system32/nvcuda.dll"
+                    if file_exists(nvcuda64_dll, follow_symlinks=False):
+                        os.unlink(nvcuda64_dll)
+                    try_copy(g_proton.default_pfx_dir + "drive_c/windows/system32/nvcuda.dll", "drive_c/windows/system32",
+                            prefix=self.prefix_dir, track_file=tracked_files, link_debug=True)
+
+                if use_nvcuda and use_nvapi and not disable_nvlibs32:
+                    try_copy(g_proton.arch_pe_dir("wine/nvidia-libs/nvcuda", True) + "nvcuda.dll.so", "drive_c/windows/syswow64/nvcuda.dll",
+                             prefix=self.prefix_dir, track_file=tracked_files, link_debug=True)
+                    g_session.dlloverrides["nvcuda"] = "n,b"
+                else:
+                    nvcuda32_dll = self.prefix_dir + "drive_c/windows/syswow64/nvcuda.dll"
+                    if file_exists(nvcuda32_dll, follow_symlinks=False):
+                        os.unlink(nvcuda32_dll)
+                    try_copy(g_proton.default_pfx_dir + "drive_c/windows/syswow64/nvcuda.dll", "drive_c/windows/syswow64",
+                             prefix=self.prefix_dir, track_file=tracked_files, link_debug=True)
+
+                if use_nvenc and use_nvapi:
+                    try_copy(g_proton.arch_pe_dir("wine/nvidia-libs/nvenc", False) + "nvcuvid.dll.so", "drive_c/windows/system32/nvcuvid.dll",
+                            prefix=self.prefix_dir, track_file=tracked_files, link_debug=True)
+                    try_copy(g_proton.arch_pe_dir("wine/nvidia-libs/nvenc", False) + "nvencodeapi64.dll.so", "drive_c/windows/system32/nvencodeapi64.dll",
+                            prefix=self.prefix_dir, track_file=tracked_files, link_debug=True)
+                    g_session.dlloverrides["nvcuvid"] = "n,b"
+                    g_session.dlloverrides["nvencodeapi64"] = "n,b"
+                else:
+                    nvcuvid64_dll = self.prefix_dir + "drive_c/windows/system32/nvcuvid.dll"
+                    nvencodeapi64_dll = self.prefix_dir + "drive_c/windows/system32/nvencodeapi64.dll"
+                    if file_exists(nvcuvid64_dll, follow_symlinks=False):
+                        os.unlink(nvcuvid64_dll)
+                    if file_exists(nvencodeapi64_dll, follow_symlinks=False):
+                        os.unlink(nvencodeapi64_dll)
+
+                if use_nvenc and use_nvapi and not disable_nvlibs32:
+                    try_copy(g_proton.arch_pe_dir("wine/nvidia-libs/nvenc", True) + "nvcuvid.dll.so", "drive_c/windows/syswow64/nvcuvid.dll",
+                             prefix=self.prefix_dir, track_file=tracked_files, link_debug=True)
+                    try_copy(g_proton.arch_pe_dir("wine/nvidia-libs/nvenc", True) + "nvencodeapi.dll.so", "drive_c/windows/syswow64/nvencodeapi.dll",
+                             prefix=self.prefix_dir, track_file=tracked_files, link_debug=True)
+                    g_session.dlloverrides["nvcuvid"] = "n,b"
+                    g_session.dlloverrides["nvencodeapi"] = "n,b"
+                else:
+                    nvcuvid32_dll = self.prefix_dir + "drive_c/windows/syswow64/nvcuvid.dll"
+                    nvencodeapi32_dll = self.prefix_dir + "drive_c/windows/syswow64/nvencodeapi.dll"
+                    if file_exists(nvcuvid32_dll, follow_symlinks=False):
+                        os.unlink(nvcuvid32_dll)
+                    if file_exists(nvencodeapi32_dll, follow_symlinks=False):
+                        os.unlink(nvencodeapi32_dll)
+
+                if use_nvml and use_nvapi:
+                    prepend_to_env_str(g_session.env, "WINEDLLPATH", g_proton.lib_dir + "wine/nvidia-libs/nvml/wine", ":")
+                else:
+                    nvml64_dll = self.prefix_dir + "drive_c/windows/system32/nvml.dll"
+                    nvml32_dll = self.prefix_dir + "drive_c/windows/syswow64/nvml.dll"
+                    if file_exists(nvml64_dll, follow_symlinks=False):
+                        os.unlink(nvml64_dll)
+                    if file_exists(nvml32_dll, follow_symlinks=False):
+                        os.unlink(nvml32_dll)
+
+                if use_nvoptix and use_nvapi:
+                    try_copy(g_proton.arch_pe_dir("wine/nvidia-libs/nvoptix", False) + "nvoptix.dll.so", "drive_c/windows/system32/nvoptix.dll",
+                            prefix=self.prefix_dir, track_file=tracked_files, link_debug=True)
+                    g_session.dlloverrides["nvoptix"] = "n,b"
+                else:
+                    nvoptix64_dll = self.prefix_dir + "drive_c/windows/system32/nvoptix.dll"
+                    nvoptix32_dll = self.prefix_dir + "drive_c/windows/syswow64/nvoptix.dll"
+                    if file_exists(nvoptix64_dll, follow_symlinks=False):
+                        os.unlink(nvoptix64_dll)
+                    if file_exists(nvoptix32_dll, follow_symlinks=False):
+                        os.unlink(nvoptix32_dll)
+
                 # Try to detect known DLLs that ship with the NVIDIA Linux Driver
                 # and add them into the prefix
                 if g_session.nvidia_wine_dll_dir:
@@ -1212,9 +1338,6 @@ class CompatData:
             setup_steam_dir_drive()
             setup_openvr_paths()
 
-            # add Steam ffmpeg libraries to path
-            prepend_to_env_str(g_session.env, ld_path_var, steamdir + "/ubuntu12_64/video/:" + steamdir + "/ubuntu12_32/video/:" + steamdir + "/steamrtarm64/video/", ":")
-
 def comma_escaped(s):
     escaped = False
     idx = -1
@@ -1227,6 +1350,7 @@ def comma_escaped(s):
 def default_compat_config():
     ret = set()
     if "SteamAppId" in os.environ:
+        ret.add("ntsync")
         appid = os.environ["SteamAppId"]
         if appid in [
                 #affected by CW bug 19741
@@ -1243,7 +1367,7 @@ def default_compat_config():
             ret.add("nomfdxgiman")
 
         if appid in [
-                # OPWR may be causing text input delays in login windows in these games on Wayland due to
+                # OPWR may be causing text input delays in login windows in these games on XWayland due to
                 # blit happening before presentation
                 "1172620", #Sea of Thieves
                 "962130", #Grounded
@@ -1266,6 +1390,10 @@ def default_compat_config():
                 "1180660", #Tell Me Why
                 "1238430", #Tell Me Why Chapter 2
                 "1266670", #Tell Me Why Chapter 3
+                ]:
+            ret.add("noopwrx11")
+
+        if appid in [
                 # Other issues arising from OWPR code path in apps, e. g., hitting unimplemented bits in
                 # d3dcompiler.
                 "230410", #Warframe
@@ -1333,6 +1461,7 @@ def default_compat_config():
                 "2840770", #Avatar: Frontiers of Pandora
                 "429660", #Tales of Berseria
                 "1286220", #Sea Power
+                "2507950",
                 "2827230", #Wild Assault
                 "3159330", #Assassin's Creed Shadows
                 "367500", #Dragon's Dogma: Dark Arisen
@@ -1564,6 +1693,10 @@ class Session:
         else:
             self.env.pop("LC_ALL", "")
 
+        # FIXME: temporary workaround to libxkbcommon's current integration
+        if "XLOCALEDIR" not in self.env:
+            self.env["XLOCALEDIR"] = g_proton.dist_dir + "share/X11/locale"
+
         # CW-Bug-Id: #23185 Enable the new SDL 2.30 Steam Input integration.
         if "SteamVirtualGamepadInfo_Proton" in self.env and "SteamVirtualGamepadInfo" not in self.env:
             self.env["SteamVirtualGamepadInfo"] = self.env["SteamVirtualGamepadInfo_Proton"]
@@ -1736,16 +1869,27 @@ class Session:
         self.env.setdefault("VKD3D_DEBUG", "none")
         self.env.setdefault("VKD3D_SHADER_DEBUG", "none")
 
+        # Enable wine-nvml by default on Nvidia (experimental)
+        if is_driver_loaded({'nvidia'}):
+            self.compat_config.add("nvml")
+
         if "wined3d11" in self.compat_config:
             self.compat_config.add("wined3d")
 
         if not self.check_environment("PROTON_USE_WINED3D", "wined3d"):
             self.check_environment("PROTON_USE_WINED3D11", "wined3d")
+        self.check_environment("PROTON_D7VK_DDRAW", "d7vkddraw")
         self.check_environment("PROTON_DXVK_D3D8", "dxvkd3d8")
         self.check_environment("PROTON_NO_D3D11", "nod3d11")
         self.check_environment("PROTON_NO_D3D10", "nod3d10")
+        self.check_environment("PROTON_DXVK_SAREK", "dxvksarek")
+        self.check_environment("PROTON_DXVK_LLASYNC", "dxvkllasync")
+        self.check_environment("PROTON_DXVK_LOWLATENCY", "dxvklowlatency")
+        self.check_environment("PROTON_VKD3D_BRATAN", "vkd3dbratan")
+        self.check_environment("PROTON_VKD3D_HEAP", "vkd3dheap")
         self.check_environment("PROTON_NO_ESYNC", "noesync")
         self.check_environment("PROTON_NO_FSYNC", "nofsync")
+        self.check_environment("PROTON_USE_NTSYNC", "ntsync")
         self.check_environment("PROTON_FORCE_LARGE_ADDRESS_AWARE", "forcelgadd")
         self.check_environment("PROTON_OLD_GL_STRING", "oldglstr")
         self.check_environment("PROTON_HIDE_NVIDIA_GPU", "hidenvgpu")
@@ -1758,23 +1902,96 @@ class Session:
         self.check_environment("PROTON_HEAP_ZERO_MEMORY", "heapzeromemory")
         self.check_environment("PROTON_DISABLE_NVAPI", "disablenvapi")
         self.check_environment("PROTON_FORCE_NVAPI", "forcenvapi")
+        self.check_environment("PROTON_NVIDIA_LIBS", "nvidialibs")
+        self.check_environment("PROTON_NVIDIA_LIBS_NO_32BIT", "nvidialibsno32")
+        self.check_environment("PROTON_NVIDIA_NVCUDA", "nvcuda")
+        self.check_environment("PROTON_NVIDIA_NVENC", "nvenc")
+        self.check_environment("PROTON_NVIDIA_NVML", "nvml")
+        self.check_environment("PROTON_NVIDIA_NVOPTIX", "nvoptix")
         self.check_environment("PROTON_HIDE_APU", "hideapu")
+        self.check_environment("PROTON_ENABLE_MEDIACONV", "mediaconv")
+        self.check_environment("PROTON_NO_WM_DECORATION", "nowmdecoration")
+        self.check_environment("PROTON_ENABLE_WAYLAND", "wayland")
+        self.check_environment("PROTON_ENABLE_HDR", "hdr")
+        self.check_environment("PROTON_PREFER_SDL", "sdlinput")
+        self.check_environment("PROTON_FSR4_INDICATOR", "fsr4hud")
+        self.check_environment("PROTON_DLSS_INDICATOR", "dlsshud")
+        self.check_environment("PROTON_NATIVE_AGS", "nativeags")
 
         if "noesync" in self.compat_config:
             self.env.pop("WINEESYNC", "")
+            self.env["WINEESYNC"] = "0"
         else:
             self.env["WINEESYNC"] = "1"
 
+        if "mediaconv" in self.compat_config:
+            self.env["PROTON_VIDEO_CONVERT"] = "1"
+            self.env["PROTON_AUDIO_CONVERT"] = "1"
+            self.env["PROTON_AUDIO_CONVERT_BIN"] = "1"
+            self.env["PROTON_DEMUX"] = "1"
+
+        if "nowmdecoration" in self.compat_config:
+            self.env["WAYLANDDRV_SSD"] = "0"
+            self.env["WINE_NO_WM_DECORATION"] = "1"
+
+        if "sdlinput" in self.compat_config:
+            self.env["PROTON_DISABLE_HIDRAW"] = "1"
+            self.env["PROTON_NO_STEAMINPUT"] = "1"
+            if "SDL_GAMECONTROLLER_ALLOW_STEAM_VIRTUAL_GAMEPAD" in self.env:
+                del self.env["SDL_GAMECONTROLLER_ALLOW_STEAM_VIRTUAL_GAMEPAD"]
+            if "SDL_GAMECONTROLLER_IGNORE_DEVICES" in self.env:
+                del self.env["SDL_GAMECONTROLLER_IGNORE_DEVICES"]
+
+        if "dxvklowlatency" in self.compat_config:
+            self.compat_config.add("dxvkllasync")
+            self.env["DXVK_ASYNC"] = "0"
+            append_to_env_str(self.env, "DXVK_CONFIG", "dxvk.enableAsync=False", ";")
+
+        if "dxvkllasync" in self.compat_config:
+            threads = max(os.cpu_count() - 2, 3)
+            append_to_env_str(self.env, "DXVK_CONFIG", f"dxvk.numCompilerThreads={threads}", ";")
+            # if "dxvk.numCompilerThreads" not in os.environ.get("DXVK_CONFIG", ""):
+            #    append_to_env_str(self.env, "DXVK_CONFIG", f"dxvk.numCompilerThreads={threads}", ";")
+            append_to_env_str(self.env, "DXVK_CONFIG", "dxvk.enableGraphicsPipelineLibrary=Auto", ";")
+
+        if "nvidialibs" in self.compat_config:
+            self.compat_config.add("nvcuda")
+            self.compat_config.add("nvenc")
+            self.compat_config.add("nvml")
+            self.compat_config.add("nvoptix")
+
         if "nofsync" in self.compat_config:
             self.env.pop("WINEFSYNC", "")
+            self.env["WINEFSYNC"] = "0"
         else:
             self.env["WINEFSYNC"] = "1"
+
+        if "ntsync" in self.compat_config:
+            self.env.pop("WINE_DISABLE_FAST_SYNC", "")
+        else:
+            self.env["WINE_DISABLE_FAST_SYNC"] = "1"
 
         if "oldglstr" in self.compat_config:
             #mesa override
             self.env["MESA_EXTENSION_MAX_YEAR"] = "2003"
             #nvidia override
             self.env["__GL_ExtensionStringVersion"] = "17700"
+
+        if "wayland" in self.compat_config:
+            if self.env.get("WAYLAND_DISPLAY", False):
+                self.dlloverrides["winex11.drv"] = ""
+                self.dlloverrides["winewayland.drv"] = "b"
+                self.env.setdefault("WINE_WAYLAND_HACKS", "1")
+                self.env["PROTON_USE_XALIA"] = "0"
+                if "PROTON_NO_STEAMINPUT" not in self.env:
+                    self.env["PROTON_NO_STEAMINPUT"] = "1"
+                if "SDL_GAMECONTROLLER_ALLOW_STEAM_VIRTUAL_GAMEPAD" in self.env:
+                    del self.env["SDL_GAMECONTROLLER_ALLOW_STEAM_VIRTUAL_GAMEPAD"]
+                if "SDL_GAMECONTROLLER_IGNORE_DEVICES" in self.env:
+                    del self.env["SDL_GAMECONTROLLER_IGNORE_DEVICES"]
+                if "hdr" in self.compat_config:
+                    self.env["DXVK_HDR"] = "1"
+                    self.env.setdefault("ENABLE_HDR_WSI", str(int(is_driver_loaded({'nvidia'}))))
 
         if os.environ.get("SteamGameId", 0) in [
                 "661920", #Claybook
@@ -1907,10 +2124,18 @@ class Session:
         if "disablelibglesv2" in self.compat_config:
             self.dlloverrides["libglesv2"] = "d"
 
+        if "nativeags" in self.compat_config:
+            self.dlloverrides["atiadlxx"] = "b"
+            self.dlloverrides["atidxx64"] = "b"
+            self.dlloverrides["amd_ags_x64"] = "n"
+
         if "nomfdxgiman" in self.compat_config:
             self.env["WINE_DO_NOT_CREATE_DXGI_DEVICE_MANAGER"] = "1"
 
         if "noopwr" in self.compat_config:
+            self.env["WINE_DISABLE_VULKAN_OPWR"] = "1"
+
+        if "noopwrx11" in self.compat_config and "wayland" not in self.compat_config:
             self.env["WINE_DISABLE_VULKAN_OPWR"] = "1"
 
         if "PROTON_USE_XALIA" not in self.env:
@@ -2006,6 +2231,15 @@ class Session:
 
         if update_prefix_files:
             g_compatdata.setup_prefix()
+
+        if "fsr4hud" in self.compat_config:
+            self.env["FSR4_WATERMARK"] = "1"
+            self.env["MLFG_WATERMARK"] = "1"
+
+        if "dlsshud" in self.compat_config:
+            self.env["DXVK_NVAPI_SET_NGX_DEBUG_OPTIONS"] = "DLSSIndicator=1024,DLSSGIndicator=2,"
+        else:
+            self.env.setdefault("DXVK_NVAPI_SET_NGX_DEBUG_OPTIONS", "DLSSIndicator=0,DLSSGIndicator=0,")
 
         if "nod3d11" in self.compat_config:
             self.dlloverrides["d3d11"] = ""
@@ -2129,8 +2363,6 @@ if __name__ == "__main__":
 
     g_proton = Proton(os.path.dirname(sys.argv[0]))
 
-    g_proton.cleanup_legacy_dist()
-    g_proton.do_steampipe_fixups()
 
     g_compatdata = CompatData(os.environ["STEAM_COMPAT_DATA_PATH"])
 
@@ -2139,7 +2371,8 @@ if __name__ == "__main__":
     g_session.init_wine()
 
     if g_proton.missing_default_prefix():
-        g_proton.make_default_prefix()
+        log("Default prefix is missing, something is very wrong.")
+        sys.exit(1)
 
     g_session.init_session(sys.argv[1] != "runinprefix")
 

@@ -190,6 +190,34 @@ function configure() {
     if [[ -n "$arg_enable_bear" ]]; then
       echo "ENABLE_BEAR := 1"
     fi
+    if [[ -n "$arg_without_tts" ]]; then
+      echo "WITHOUT_TTS := 1"
+    fi
+    if [[ -n "$arg_without_nvidia_libs" ]]; then
+      echo "WITHOUT_NVIDIA_LIBS := 1"
+    fi
+    if [[ -n "$arg_without_sarek" ]]; then
+      echo "WITHOUT_SAREK := 1"
+    fi
+    if [[ -n "$arg_without_d7vk" ]]; then
+      echo "WITHOUT_D7VK := 1"
+    fi
+    if [[ -n "$arg_without_llasync" ]]; then
+      echo "WITHOUT_LLASYNC := 1"
+    fi
+    if [[ -n "$arg_without_vkd3d_bratan" ]]; then
+      echo "WITHOUT_VKD3D_BRATAN := 1"
+    fi
+    if [[ -n "$arg_without_wayland_libs" ]]; then
+      echo "WITHOUT_WAYLAND_LIBS := 1"
+    fi
+    if [[ -n "$arg_without_libpcap" ]]; then
+      echo "WITHOUT_LIBPCAP := 1"
+    fi
+
+    echo "HOST_CFLAGS := ${CFLAGS:--O2 -march=nocona -mtune=core-avx2}"
+    echo "HOST_RUSTFLAGS := ${RUSTFLAGS:--Copt-level=3 -Ctarget-cpu=nocona}"
+    echo "USE_LTO := ${USE_LTO:-0}"
 
     # Include base
     echo ""
@@ -212,6 +240,14 @@ arg_docker_opts=""
 arg_relabel_volumes=""
 arg_enable_ccache=""
 arg_enable_bear=""
+arg_without_tts=""
+arg_without_nvidia_libs=""
+arg_without_sarek=""
+arg_without_d7vk=""
+arg_without_llasync=""
+arg_without_vkd3d_bratan=""
+arg_without_wayland_libs=""
+arg_without_libpcap=""
 arg_help=""
 invalid_args=""
 function parse_args() {
@@ -263,6 +299,22 @@ function parse_args() {
       arg_enable_ccache="1"
     elif [[ $arg = --enable-bear ]]; then
       arg_enable_bear="1"
+    elif [[ $arg = --without-tts ]]; then
+      arg_without_tts="1"
+    elif [[ $arg = --without-nvidia-libs ]]; then
+      arg_without_nvidia_libs="1"
+    elif [[ $arg = --without-sarek ]]; then
+      arg_without_sarek="1"
+    elif [[ $arg = --without-d7vk ]]; then
+      arg_without_d7vk="1"
+    elif [[ $arg = --without-llasync ]]; then
+      arg_without_llasync="1"
+    elif [[ $arg = --without-vkd3d-bratan ]]; then
+      arg_without_vkd3d_bratan="1"
+    elif [[ $arg = --without-wayland-libs ]]; then
+      arg_without_wayland_libs="1"
+    elif [[ $arg = --without-libpcap ]]; then
+      arg_without_libpcap="1"
     elif [[ $arg = --proton-sdk-image ]]; then
       val_used=1
       arg_protonsdk_image="$val"
@@ -321,6 +373,22 @@ usage() {
   "$1" "    --enable-ccache Mount \$CCACHE_DIR or \$HOME/.ccache inside of the container and use ccache for the build."
   "$1" ""
   "$1" "    --enable-bear Invokes make via bear creating compile_commands.json."
+  "$1" ""
+  "$1" "    --without-tts Disables text-to-speech libraries (OpenFST, VOSK, Kaldi and Piper)"
+  "$1" ""
+  "$1" "    --without-nvidia-libs Disables alternative NVidia libraries (nvcuda, nvenc, nvml, nvoptix)"
+  "$1" ""
+  "$1" "    --without-sarek Disables dxvk-sarek"
+  "$1" ""
+  "$1" "    --without-d7vk Disables d7vk"
+  "$1" ""
+  "$1" "    --without-llasync Disables dxvk-llasync"
+  "$1" ""
+  "$1" "    --without-vkd3d-bratan Disables vkd3d-bratan"
+  "$1" ""
+  "$1" "    --without-wayland-libs Disables bundling wayland libraries. Wine is still built with Wayland support (for native builds)"
+  "$1" ""
+  "$1" "    --without-libpcap Disables bundling libpcap. Wine is still built with libpcap support (for native builds)"
   "$1" ""
   "$1" "  Steam Runtime"
   "$1" "    Proton builds that are to be installed & run under the steam client must be built with"
