@@ -91,6 +91,7 @@ HOST_ARCH := $(shell uname -m)
 ARCHS := i386-windows x86_64-windows
 
 TARGET_ARCH ?= x86_64
+TARGET_STEAMRT := $(shell source /etc/os-release && echo -n $$VERSION_CODENAME)
 
 ifeq ($(TARGET_ARCH),x86_64)
 	ARCHS += i386-unix x86_64-unix
@@ -1799,7 +1800,7 @@ all-dist: default_pfx
 ## toolmanifest.vdf
 ##
 
-TOOLMANIFEST_VDF_SRC := toolmanifest_$(TARGET_ARCH).vdf
+TOOLMANIFEST_VDF_SRC := toolmanifest_$(TARGET_ARCH)_$(TARGET_STEAMRT).vdf
 DIST_TOOLMANIFEST := $(addprefix $(DST_BASE)/,toolmanifest.vdf)
 $(DIST_TOOLMANIFEST): $(addprefix $(SRCDIR)/,$(TOOLMANIFEST_VDF_SRC))
 	cp -a $< $@
