@@ -27,7 +27,12 @@ jobs:
             cflags: -O2 -march=x86-64-v4 -mtune=skylake-avx512
             rustflags: -Copt-level=3 -Ctarget-cpu=nocona
 
-          - name: proton-${{ github.ref_name }}-x86_64-llvm
+          - name: proton-${{ github.ref_name }}-x86_64-steamrt4
+            cflags: -O3 -march=nocona -mtune=core-avx2
+            rustflags: -Copt-level=3 -Ctarget-cpu=nocona
+            configure: '--proton-sdk-image=registry.gitlab.steamos.cloud/proton/steamrt4/sdk/x86_64:4.0.20260119.200228-2'
+
+          - name: proton-${{ github.ref_name }}-x86_64-steamrt4-llvm
             cflags: -O3 -march=nocona -mtune=core-avx2
             rustflags: -Copt-level=3 -Ctarget-cpu=nocona
             configure: '--without-nvidia-libs --proton-sdk-image=registry.gitlab.steamos.cloud/proton/steamrt4/sdk/x86_64-llvm:4.0.20260119.200228-2'
