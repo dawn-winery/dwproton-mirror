@@ -63,7 +63,7 @@ jobs:
           - name: proton-${{ needs.version.outputs.full_desc }}-x86_64-steamrt4-llvm
             cflags: -O3 -march=nocona -mtune=core-avx2
             rustflags: -Copt-level=3 -Ctarget-cpu=nocona
-            configure: '--without-nvidia-libs --proton-sdk-image=registry.gitlab.steamos.cloud/proton/steamrt4/sdk/x86_64-llvm:4.0.20260119.200228-2'
+            configure: '--without-nvidia-libs --without-tts --proton-sdk-image=registry.gitlab.steamos.cloud/proton/steamrt4/sdk/x86_64-llvm:4.0.20260119.200228-2'
 
           - name: proton-${{ needs.version.outputs.full_desc }}-arm64
             configure: '--without-nvidia-libs --without-sarek --without-d7vk --target-arch=arm64'
