@@ -1336,8 +1336,11 @@ def comma_escaped(s):
 def default_compat_config():
     ret = set()
     if "SteamAppId" in os.environ:
-        ret.add("ntsync")
         appid = os.environ["SteamAppId"]
+        if appid not in [
+                "3280350", #Death Stranding 2
+                ]:
+            ret.add("ntsync")
         if appid in [
                 #affected by CW bug 19741
                 "1017900", #Age of Empires: Definitive Edition
