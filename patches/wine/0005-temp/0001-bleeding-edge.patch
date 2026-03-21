@@ -1,0 +1,925 @@
+From e73e15800c79142ef0eb47d9ed6fe3129ef62231 Mon Sep 17 00:00:00 2001
+From: Arkadiusz Hiler <ahiler@codeweavers.com>
+Date: Thu, 12 Mar 2026 13:17:46 +0200
+Subject: [PATCH 01/22] amend! winhttp: Stub WinHttpSetOption(
+ WINHTTP_OPTION_DECOMPRESSION ).
+
+winhttp: Stub WinHttpSetOption( WINHTTP_OPTION_DECOMPRESSION ).
+
+CW-Bug-Id: #26726
+-- 
+2.53.0
+
+
+From b310f0cb430231afb8401915ddadb4304fce0065 Mon Sep 17 00:00:00 2001
+From: Paul Gofman <pgofman@codeweavers.com>
+Date: Thu, 12 Mar 2026 10:59:20 -0600
+Subject: [PATCH 02/22] win32u: Disable undecorated windows hack for Rei and
+ the Floating City.
+
+CW-Bug-Id: #26767
+---
+ dlls/win32u/defwnd.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/dlls/win32u/defwnd.c b/dlls/win32u/defwnd.c
+index a00648ded8c..9dc6b5655ce 100644
+--- a/dlls/win32u/defwnd.c
++++ b/dlls/win32u/defwnd.c
+@@ -269,6 +269,7 @@ BOOL adjust_window_rect( RECT *rect, DWORD style, BOOL menu, DWORD ex_style, UIN
+              && !(sgi && !strcmp( sgi, "1240440" )) /* Bug 23802: Halo Infinite */
+              && !(sgi && !strcmp( sgi, "613830" ))  /* Bug 25747: CHRONO TRIGGER */
+              && !(sgi && !strcmp( sgi, "3077660" )) /* Bug 26235: Mystery Manor: Hidden Objects */
++             && !(sgi && !strcmp( sgi, "3721960" )) /* Bug 26767: Rei and the Floating City */
+             )
+             return TRUE;
+     }
+@@ -1890,6 +1891,7 @@ static void handle_nc_calc_size( HWND hwnd, WPARAM wparam, RECT *win_rect )
+             && !(sgi && !strcmp( sgi, "1240440" ))                  /* Bug 23802: Halo Infinite */
+             && !(sgi && !strcmp( sgi, "2883280" ))                  /* Bug 24151: Dog Brew */
+             && !(sgi && !strcmp( sgi, "613830" ))                   /* Bug 25747: CHRONO TRIGGER */
++            && !(sgi && !strcmp( sgi, "3721960" ))                  /* Bug 26767: Rei and the Floating City */
+            )
+             return;
+     }
+-- 
+2.53.0
+
+
+From 0d8f7db42d1a7b351308582f4769b8000fbf1f36 Mon Sep 17 00:00:00 2001
+From: Brendan McGrath <bmcgrath@codeweavers.com>
+Date: Thu, 12 Mar 2026 14:05:07 +1100
+Subject: [PATCH 03/22] mfmediaengine: Reset the sample requested flag on Stop.
+
+When a sink is stopped, all pending requests are discarded by the client
+(for example IMFMediaSession).
+
+CW-Bug-Id: #26771
+---
+ dlls/mfmediaengine/video_frame_sink.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/dlls/mfmediaengine/video_frame_sink.c b/dlls/mfmediaengine/video_frame_sink.c
+index a79cd5f8644..00b4332f69c 100644
+--- a/dlls/mfmediaengine/video_frame_sink.c
++++ b/dlls/mfmediaengine/video_frame_sink.c
+@@ -1010,6 +1010,7 @@ static HRESULT video_frame_sink_set_state(struct video_frame_sink *sink, enum si
+             {
+                 video_frame_sink_sample_queue_flush(sink);
+                 video_frame_sink_set_flag(sink, FLAGS_FIRST_FRAME, FALSE);
++                sink->sample_request_pending = FALSE;
+             }
+ 
+             if (state == SINK_STATE_RUNNING && (sink->state == SINK_STATE_STOPPED || sink->state == SINK_STATE_PAUSED ||
+-- 
+2.53.0
+
+
+From 26e45414cba31c367fc13ffa23d67bb03be86155 Mon Sep 17 00:00:00 2001
+From: Brendan McGrath <bmcgrath@codeweavers.com>
+Date: Thu, 12 Mar 2026 14:06:06 +1100
+Subject: [PATCH 04/22] mfmediaengine: Implement looping behaviour.
+
+CW-Bug-Id: #26771
+---
+ dlls/mfmediaengine/main.c | 20 ++++++++++++++------
+ 1 file changed, 14 insertions(+), 6 deletions(-)
+
+diff --git a/dlls/mfmediaengine/main.c b/dlls/mfmediaengine/main.c
+index 5c600747224..93e44241dd8 100644
+--- a/dlls/mfmediaengine/main.c
++++ b/dlls/mfmediaengine/main.c
+@@ -911,6 +911,7 @@ static HRESULT WINAPI media_engine_session_events_Invoke(IMFAsyncCallback *iface
+     struct media_engine *engine = impl_from_session_events_IMFAsyncCallback(iface);
+     IMFMediaEvent *event = NULL;
+     MediaEventType event_type;
++    BOOL ended_event = FALSE;
+     HRESULT hr;
+ 
+     if (FAILED(hr = IMFMediaSession_EndGetEvent(engine->session, result, &event)))
+@@ -978,14 +979,21 @@ static HRESULT WINAPI media_engine_session_events_Invoke(IMFAsyncCallback *iface
+             IMFMediaEngineNotify_EventNotify(engine->callback, MF_MEDIA_ENGINE_EVENT_PLAYING, 0, 0);
+             break;
+         case MESessionEnded:
+-
+             EnterCriticalSection(&engine->cs);
+-            media_engine_set_flag(engine, FLAGS_ENGINE_FIRST_FRAME, FALSE);
+-            media_engine_set_flag(engine, FLAGS_ENGINE_IS_ENDED, TRUE);
+-            engine->video_frame.pts = MINLONGLONG;
++            if (engine->flags & FLAGS_ENGINE_LOOP)
++            {
++                 media_engine_set_current_time(engine, 0.0);
++            }
++            else
++            {
++                engine->video_frame.pts = MINLONGLONG;
++                media_engine_set_flag(engine, FLAGS_ENGINE_FIRST_FRAME, FALSE);
++                media_engine_set_flag(engine, FLAGS_ENGINE_IS_ENDED, TRUE);
++                ended_event = TRUE;
++            }
+             LeaveCriticalSection(&engine->cs);
+-
+-            IMFMediaEngineNotify_EventNotify(engine->callback, MF_MEDIA_ENGINE_EVENT_ENDED, 0, 0);
++            if (ended_event)
++                IMFMediaEngineNotify_EventNotify(engine->callback, MF_MEDIA_ENGINE_EVENT_ENDED, 0, 0);
+             break;
+ 
+         case MEEndOfPresentationSegment:
+-- 
+2.53.0
+
+
+From 22e444ffcf4b73bcf5742d3f1d5af9d436d2ea0c Mon Sep 17 00:00:00 2001
+From: Brendan McGrath <bmcgrath@codeweavers.com>
+Date: Fri, 13 Mar 2026 12:15:51 +1100
+Subject: [PATCH 05/22] mfmediaengine: Keep the last presentation sample on
+ flush.
+
+On Windows, if IMFMediaEngine::TransferVideoFrame is called after the
+video has finished, then the last video frame presented is returned.
+
+CW-Bug-Id: #26771
+---
+ dlls/mfmediaengine/video_frame_sink.c | 7 -------
+ 1 file changed, 7 deletions(-)
+
+diff --git a/dlls/mfmediaengine/video_frame_sink.c b/dlls/mfmediaengine/video_frame_sink.c
+index 00b4332f69c..383198b753e 100644
+--- a/dlls/mfmediaengine/video_frame_sink.c
++++ b/dlls/mfmediaengine/video_frame_sink.c
+@@ -165,13 +165,6 @@ static void video_frame_sink_sample_queue_flush(struct video_frame_sink *sink)
+     queue->used = 0;
+     queue->front = 0;
+     queue->back = ARRAY_SIZE(queue->samples) - 1;
+-
+-    if (queue->presentation_sample)
+-    {
+-        IMFSample_Release(queue->presentation_sample);
+-        queue->presentation_sample = NULL;
+-        queue->sample_presented = FALSE;
+-    }
+ }
+ 
+ static void video_frame_sink_sample_queue_free(struct video_frame_sink *sink)
+-- 
+2.53.0
+
+
+From 9e682354748c33b66c1c83bc7a7699da09cbe33c Mon Sep 17 00:00:00 2001
+From: Paul Gofman <pgofman@codeweavers.com>
+Date: Mon, 16 Mar 2026 12:02:26 -0600
+Subject: [PATCH 06/22] fixup! HACK: proton: ntdll: Strip
+ gameoverlayrenderer.so from LD_PRELOAD before executing explorer.exe.
+
+CW-Bug-Id: #26532
+---
+ dlls/ntdll/unix/loader.c    |  1 +
+ programs/explorer/desktop.c | 10 ++++++++++
+ 2 files changed, 11 insertions(+)
+
+diff --git a/dlls/ntdll/unix/loader.c b/dlls/ntdll/unix/loader.c
+index 087ca830251..140a86c298e 100644
+--- a/dlls/ntdll/unix/loader.c
++++ b/dlls/ntdll/unix/loader.c
+@@ -646,6 +646,7 @@ NTSTATUS exec_wineloader( char **argv, int socketfd, const struct pe_image_info
+         int len = strlen( ld_preload );
+         char *next, *tmp, *env = malloc( sizeof("LD_PRELOAD=") + len );
+ 
++        setenv( "EXPLORER_LD_PRELOAD", ld_preload, 1 );
+         if (!env) return STATUS_NO_MEMORY;
+         strcpy( env, "LD_PRELOAD=" );
+         strcat( env, ld_preload );
+diff --git a/programs/explorer/desktop.c b/programs/explorer/desktop.c
+index f4edba3f7fa..7caa12e6318 100644
+--- a/programs/explorer/desktop.c
++++ b/programs/explorer/desktop.c
+@@ -1284,6 +1284,16 @@ void manage_desktop( WCHAR *arg )
+     NTSTATUS status;
+     HANDLE tabtip = NULL;
+ 
++    {
++        char s[1024];
++        if (!__wine_get_unix_env("EXPLORER_LD_PRELOAD", s, sizeof(s)))
++        {
++            TRACE("EXPLORER_LD_PRELOAD %s.\n", s);
++            __wine_set_unix_env("LD_PRELOAD", s);
++            __wine_set_unix_env("EXPLORER_LD_PRELOAD", NULL);
++        }
++    }
++
+     /* get the rest of the command line (if any) */
+     while (*p && !is_whitespace(*p)) p++;
+     if (*p)
+-- 
+2.53.0
+
+
+From 62f0237b17940856f05a7e596b96cc442dc86558 Mon Sep 17 00:00:00 2001
+From: Paul Gofman <pgofman@codeweavers.com>
+Date: Mon, 16 Mar 2026 09:48:51 -0600
+Subject: [PATCH 07/22] server: Cache timezone bias adjustment in
+ set_user_shared_data_time().
+
+(cherry picked from commit d5ca5d0dcc6684e2516c24099f80c1f986ca28f6)
+(preemptive cherry-pick)
+---
+ server/fd.c | 19 +++++++++++++------
+ 1 file changed, 13 insertions(+), 6 deletions(-)
+
+diff --git a/server/fd.c b/server/fd.c
+index a7351b80d95..628057bcadb 100644
+--- a/server/fd.c
++++ b/server/fd.c
+@@ -385,7 +385,8 @@ static void atomic_store_long(volatile LONG *ptr, LONG value)
+ static void set_user_shared_data_time(void)
+ {
+     timeout_t tick_count = monotonic_time / 10000;
+-    static timeout_t last_timezone_update;
++    static timeout_t last_timezone_update, last_timezone_bias = 65535, adjusted_timezone_bias;
++    static int current_year = -1;
+     timeout_t timezone_bias;
+     struct tm *tm, tm1, tm2;
+     time_t now;
+@@ -396,13 +397,19 @@ static void set_user_shared_data_time(void)
+         tm = gmtime( &now );
+         timezone_bias = mktime( tm ) - now;
+         tm = localtime( &now );
+-        if (tm->tm_isdst)
++        if (current_year != tm->tm_year || last_timezone_bias != timezone_bias)
+         {
+-            tm1 = tm2 = *tm;
+-            tm1.tm_isdst = 0;
+-            tm2.tm_isdst = 1;
+-            timezone_bias += mktime(&tm1) < mktime(&tm2) ? 3600 : -3600;
++            current_year = tm->tm_year;
++            last_timezone_bias = adjusted_timezone_bias = timezone_bias;
++            if (tm->tm_isdst)
++            {
++                tm1 = tm2 = *tm;
++                tm1.tm_isdst = 0;
++                tm2.tm_isdst = 1;
++                adjusted_timezone_bias += mktime(&tm1) < mktime(&tm2) ? 3600 : -3600;
++            }
+         }
++        timezone_bias = adjusted_timezone_bias;
+         timezone_bias *= TICKS_PER_SEC;
+ 
+         atomic_store_long(&user_shared_data->TimeZoneBias.High2Time, timezone_bias >> 32);
+-- 
+2.53.0
+
+
+From 09c7407b3016a6bf3834b3d9e233597a6dfce3f9 Mon Sep 17 00:00:00 2001
+From: Zhou Qiankang <wszqkzqk@qq.com>
+Date: Mon, 16 Mar 2026 19:37:09 +0800
+Subject: [PATCH 08/22] ntdll: Avoid expensive inverted DST check on
+ get_timezone_info() cache hit path.
+
+inverted DST detection (two mktime() calls) out of the cache hit fast path in
+get_timezone_info().
+
+Keep the cache key based on the cheap raw bias value and only compute
+inverted_dst/adjusted_bias on cache miss. Preserve the inverse DST correctness
+fix by still applying adjusted_bias to tzi->Bias in the slow path.
+
+This restores fast-path behavior for frequent GetTimeZoneInformation
+callers without regressing inverse DST handling.
+
+Wine-Bug: https://bugs.winehq.org/show_bug.cgi?id=59514
+Signed-off-by: Zhou Qiankang <wszqkzqk@qq.com>
+(cherry picked from commit e3394292156b8f162ae120a1d0172a776f188df0)
+(preemptive cherry-pick)
+---
+ dlls/ntdll/unix/system.c | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/dlls/ntdll/unix/system.c b/dlls/ntdll/unix/system.c
+index 477eb314502..a24c2600f81 100644
+--- a/dlls/ntdll/unix/system.c
++++ b/dlls/ntdll/unix/system.c
+@@ -3009,12 +3009,6 @@ static void get_timezone_info( RTL_DYNAMIC_TIME_ZONE_INFORMATION *tzi )
+     bias = (LONG)(mktime(tm) - year_start) / 60;
+ 
+     tm = localtime(&year_start);
+-    tm1 = tm2 = *tm;
+-    tm1.tm_isdst = 0;
+-    tm2.tm_isdst = 1;
+-    inverted_dst = mktime(&tm1) < mktime(&tm2);
+-    if (inverted_dst) bias += 60;
+-
+     if (current_year == tm->tm_year && current_bias == bias)
+     {
+         *tzi = cached_tzi;
+@@ -3022,10 +3016,16 @@ static void get_timezone_info( RTL_DYNAMIC_TIME_ZONE_INFORMATION *tzi )
+         return;
+     }
+ 
+-    memset(tzi, 0, sizeof(*tzi));
+-    TRACE("tz data will be valid through year %d, bias %d, inverted_dst %d\n", tm->tm_year + 1900, bias, inverted_dst);
+     current_year = tm->tm_year;
+     current_bias = bias;
++    tm1 = tm2 = *tm;
++    tm1.tm_isdst = 0;
++    tm2.tm_isdst = 1;
++    inverted_dst = mktime(&tm1) < mktime(&tm2);
++    if (inverted_dst) bias += 60;
++
++    memset(tzi, 0, sizeof(*tzi));
++    TRACE("tz data will be valid through year %d, bias %d, inverted_dst %d\n", tm->tm_year + 1900, bias, inverted_dst);
+ 
+     tzi->Bias = bias;
+ 
+-- 
+2.53.0
+
+
+From b6d69f27ddbc822397bfb909249e9747a3adb6f0 Mon Sep 17 00:00:00 2001
+From: Brendan McGrath <bmcgrath@codeweavers.com>
+Date: Tue, 17 Mar 2026 10:22:42 +1100
+Subject: [PATCH 09/22] amend! mfmediaengine: Reset the sample requested flag
+ on Stop.
+
+mfmediaengine: Reset the sample requested flag on Stop.
+
+When a sink is stopped, all pending requests are discarded by the client
+(for example IMFMediaSession).
+
+(cherry picked from commit 4f94ccd7f096784e99bbd4b536e959aa3cffb9b1)
+
+CW-Bug-Id: #26771
+-- 
+2.53.0
+
+
+From b5704cfc95802edfb9e4467474f439d607b8dd9d Mon Sep 17 00:00:00 2001
+From: Brendan McGrath <bmcgrath@codeweavers.com>
+Date: Tue, 17 Mar 2026 10:23:09 +1100
+Subject: [PATCH 10/22] amend! mfmediaengine: Implement looping behaviour.
+
+mfmediaengine: Implement looping behaviour.
+
+(cherry picked from commit 9840a3fde2f2adac86d812fc7be5777af0a92f1a)
+
+CW-Bug-Id: #26771
+-- 
+2.53.0
+
+
+From 6d1b420e3c396a1ebd74b973a3f913c16b15920c Mon Sep 17 00:00:00 2001
+From: Brendan McGrath <bmcgrath@codeweavers.com>
+Date: Tue, 17 Mar 2026 10:23:30 +1100
+Subject: [PATCH 11/22] amend! mfmediaengine: Keep the last presentation sample
+ on flush.
+
+mfmediaengine: Keep the last presentation sample on flush.
+
+On Windows, if IMFMediaEngine::TransferVideoFrame is called after the
+video has finished, then the last video frame presented is returned.
+
+(cherry picked from commit 0f166510f37451278c5bde76ad1466d1b0365d7e)
+
+CW-Bug-Id: #26771
+-- 
+2.53.0
+
+
+From e36d5482fd796f292e328cf37a41a7cc8d8ab8b8 Mon Sep 17 00:00:00 2001
+From: Paul Gofman <pgofman@codeweavers.com>
+Date: Tue, 17 Mar 2026 10:00:46 -0600
+Subject: [PATCH 12/22] win32u: Align absolute mouse event coords to virtual
+ resolution pixels.
+
+CW-Bug-Id: #26559
+---
+ dlls/win32u/message.c | 17 +++++++++++++++--
+ 1 file changed, 15 insertions(+), 2 deletions(-)
+
+diff --git a/dlls/win32u/message.c b/dlls/win32u/message.c
+index eea29ed05a9..16850ee0410 100644
+--- a/dlls/win32u/message.c
++++ b/dlls/win32u/message.c
+@@ -3776,8 +3776,21 @@ NTSTATUS send_hardware_message( HWND hwnd, UINT flags, const INPUT *input, LPARA
+         switch (input->type)
+         {
+         case INPUT_MOUSE:
+-            req->input.mouse.x     = input->mi.dx;
+-            req->input.mouse.y     = input->mi.dy;
++            if (input->mi.dwFlags & MOUSEEVENTF_ABSOLUTE && flags & SEND_HWMSG_NO_RAW)
++            {
++                RECT r = { input->mi.dx, input->mi.dy, input->mi.dx, input->mi.dy };
++                UINT dpi = get_thread_dpi();
++
++                r = map_rect_raw_to_virt( r, dpi );
++                r = map_rect_virt_to_raw( r, dpi );
++                req->input.mouse.x = r.left;
++                req->input.mouse.y = r.top;
++            }
++            else
++            {
++                req->input.mouse.x = input->mi.dx;
++                req->input.mouse.y = input->mi.dy;
++            }
+             req->input.mouse.data  = input->mi.mouseData;
+             req->input.mouse.flags = input->mi.dwFlags;
+             req->input.mouse.time  = input->mi.time;
+-- 
+2.53.0
+
+
+From 91577253faa2ae2dda61fb61022c6960100d6f12 Mon Sep 17 00:00:00 2001
+From: Daniel Lehman <dlehman25@gmail.com>
+Date: Tue, 24 Feb 2026 16:09:09 -0800
+Subject: [PATCH 13/22] dwrite: Add locales to locale list.
+
+Existing helper font_fallback_get_locale returns neutral locale
+if the exact name is not found.  This is ok when searching for
+the font fallback, but shortcuts the adding of locale when
+building the font fallback collection.
+
+(cherry picked from commit b25b925922d87b1ef6b97b67882eb4662f2054c5)
+(preemptive cherry-pick)
+---
+ dlls/dwrite/analyzer.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/dlls/dwrite/analyzer.c b/dlls/dwrite/analyzer.c
+index 4b9c19618f7..3d2e30417fc 100644
+--- a/dlls/dwrite/analyzer.c
++++ b/dlls/dwrite/analyzer.c
+@@ -520,14 +520,14 @@ static HRESULT fallback_locale_add_mapping(struct fallback_locale *locale, size_
+ 
+ /* TODO: potentially needs improvement to consider partially matching locale names. */
+ static struct fallback_locale * font_fallback_get_locale(const struct list *locales,
+-        const WCHAR *locale_name)
++        const WCHAR *locale_name, bool use_neutral)
+ {
+     struct fallback_locale *locale, *neutral = NULL;
+ 
+     LIST_FOR_EACH_ENTRY(locale, locales, struct fallback_locale, entry)
+     {
+         if (!wcsicmp(locale->name, locale_name)) return locale;
+-        if (!*locale->name) neutral = locale;
++        if (use_neutral && !*locale->name) neutral = locale;
+     }
+ 
+     return neutral;
+@@ -620,7 +620,7 @@ static const struct fallback_mapping * find_fallback_mapping(const struct fallba
+     /* Mapping wasn't found for specific locale, try with neutral one. This will only recurse once. */
+     if (*locale->name)
+     {
+-        locale = font_fallback_get_locale(&fallback->locales, L"");
++        locale = font_fallback_get_locale(&fallback->locales, L"", true);
+         mapping = find_fallback_mapping(fallback, locale, ch);
+     }
+ 
+@@ -2435,7 +2435,7 @@ static HRESULT fallback_map_characters(const struct dwrite_fontfallback *fallbac
+     if (!locale_name) locale_name = L"";
+ 
+     /* Lookup locale entry once, if specific locale is missing neutral one will be returned. */
+-    locale = font_fallback_get_locale(&data->locales, locale_name);
++    locale = font_fallback_get_locale(&data->locales, locale_name, true);
+ 
+     if (FAILED(hr = text_source_context_init(&context, source, position, length))) return hr;
+ 
+@@ -2674,7 +2674,7 @@ static struct fallback_locale * fallback_builder_add_locale(struct dwrite_fontfa
+     struct fallback_locale *locale;
+ 
+     if (!locale_name) locale_name = L"";
+-    if ((locale = font_fallback_get_locale(&builder->data.locales, locale_name))) return locale;
++    if ((locale = font_fallback_get_locale(&builder->data.locales, locale_name, false))) return locale;
+     if (!(locale = calloc(1, sizeof(*locale)))) return NULL;
+     lstrcpynW(locale->name, locale_name, ARRAY_SIZE(locale->name));
+     list_add_tail(&builder->data.locales, &locale->entry);
+-- 
+2.53.0
+
+
+From 84fb7278766a885cb4477e8f6770ea0c7ac125a0 Mon Sep 17 00:00:00 2001
+From: Paul Gofman <pgofman@codeweavers.com>
+Date: Wed, 18 Mar 2026 20:06:03 -0600
+Subject: [PATCH 14/22] dwrite: Fail loading unsupported COLRv1 fonts.
+
+CW-Bug-Id: #26705
+---
+ dlls/dwrite/dwrite_private.h | 1 +
+ dlls/dwrite/font.c           | 7 ++++++-
+ dlls/dwrite/opentype.c       | 9 ++++++++-
+ 3 files changed, 15 insertions(+), 2 deletions(-)
+
+diff --git a/dlls/dwrite/dwrite_private.h b/dlls/dwrite/dwrite_private.h
+index b200ce58eb6..9dfb4026224 100644
+--- a/dlls/dwrite/dwrite_private.h
++++ b/dlls/dwrite/dwrite_private.h
+@@ -203,6 +203,7 @@ enum font_flags
+     FONTFACE_NO_KERNING_PAIRS     = 0x00000010,
+     FONTFACE_VERTICAL_VARIANTS    = 0x00000020,
+     FONTFACE_NO_VERTICAL_VARIANTS = 0x00000040,
++    FONT_COLR_V1_ONLY             = 0x00000080,
+ };
+ 
+ struct dwrite_cmap;
+diff --git a/dlls/dwrite/font.c b/dlls/dwrite/font.c
+index b34244238a2..c400410c646 100644
+--- a/dlls/dwrite/font.c
++++ b/dlls/dwrite/font.c
+@@ -4353,7 +4353,12 @@ static HRESULT init_font_data(const struct fontface_desc *desc, DWRITE_FONT_FAMI
+ 
+     fontstrings_get_en_string(data->family_names, familyW, ARRAY_SIZE(familyW));
+     fontstrings_get_en_string(data->names, faceW, ARRAY_SIZE(faceW));
+-
++    if (props.flags & FONT_COLR_V1_ONLY)
++    {
++        FIXME("%s/%s COLRv1 is not supported.\n", debugstr_w(familyW), debugstr_w(faceW));
++        release_font_data(data);
++        return DWRITE_E_FILEFORMAT;
++    }
+     if (family_model == DWRITE_FONT_FAMILY_MODEL_WEIGHT_STRETCH_STYLE
+             && font_apply_differentiation_rules(data, familyW, faceW))
+     {
+diff --git a/dlls/dwrite/opentype.c b/dlls/dwrite/opentype.c
+index 98d28d86f9a..1ceac6dcf9a 100644
+--- a/dlls/dwrite/opentype.c
++++ b/dlls/dwrite/opentype.c
+@@ -2090,6 +2090,7 @@ void opentype_get_font_metrics(struct file_stream_desc *stream_desc, DWRITE_FONT
+ void opentype_get_font_properties(const struct file_stream_desc *stream_desc, struct dwrite_font_props *props)
+ {
+     struct dwrite_fonttable os2, head, post, colr, cpal;
++    const struct colr_header *header;
+     BOOL is_symbol, is_monospaced;
+ 
+     opentype_get_font_table(stream_desc, MS_OS2_TAG, &os2);
+@@ -2212,12 +2213,18 @@ void opentype_get_font_properties(const struct file_stream_desc *stream_desc, st
+ 
+     /* FONT_IS_COLORED */
+     opentype_get_font_table(stream_desc, MS_COLR_TAG, &colr);
+-    if (colr.data)
++    if (colr.data && (header = table_read_ensure(&colr, 0, sizeof(*header))))
+     {
+         opentype_get_font_table(stream_desc, MS_CPAL_TAG, &cpal);
+         if (cpal.data)
+         {
+             props->flags |= FONT_IS_COLORED;
++            /* COLRv1 may still have v0 data for backwards compat, so check num_baseglyph_records. */
++            if (header->version && !header->num_baseglyph_records)
++            {
++                WARN("COLR version %d.\n", GET_BE_WORD(header->version));
++                props->flags |= FONT_COLR_V1_ONLY;
++            }
+             IDWriteFontFileStream_ReleaseFileFragment(stream_desc->stream, cpal.context);
+         }
+ 
+-- 
+2.53.0
+
+
+From ef34405283c4f44361bb5895b6968cee03efe8bc Mon Sep 17 00:00:00 2001
+From: Paul Gofman <pgofman@codeweavers.com>
+Date: Thu, 19 Mar 2026 16:36:40 -0600
+Subject: [PATCH 15/22] dwrite: Fix second chance fonts handling in
+ fallback_map_characters().
+
+CW-Bug-Id: #26705
+---
+ dlls/dwrite/analyzer.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/dlls/dwrite/analyzer.c b/dlls/dwrite/analyzer.c
+index 3d2e30417fc..a06e816bd85 100644
+--- a/dlls/dwrite/analyzer.c
++++ b/dlls/dwrite/analyzer.c
+@@ -2463,14 +2463,13 @@ static HRESULT fallback_map_characters(const struct dwrite_fontfallback *fallbac
+         if (SUCCEEDED(create_matching_font(mapping->collection ? mapping->collection : fallback->systemcollection,
+                 mapping->families[i], weight, style, stretch, &IID_IDWriteFont3, (void **)&font)))
+         {
+-            if (!(mapped = fallback_font_get_supported_length(font, source, position, mapped)))
++            if (!(*ret_length = fallback_font_get_supported_length(font, source, position, mapped)))
+             {
+                 IDWriteFont3_Release(font);
+                 continue;
+             }
+ 
+             *ret_font = (IDWriteFont *)font;
+-            *ret_length = mapped;
+             *scale = mapping->scale;
+ 
+             return S_OK;
+-- 
+2.53.0
+
+
+From 195197a116d74787e95abc83201bfc4d891694a6 Mon Sep 17 00:00:00 2001
+From: Paul Gofman <pgofman@codeweavers.com>
+Date: Thu, 19 Mar 2026 16:59:17 -0600
+Subject: [PATCH 16/22] dwrite: Extend emoji fallback range and add Noto Emoji
+ as a fallback font.
+
+CW-Bug-Id: #26705
+---
+ dlls/dwrite/analyzer.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/dlls/dwrite/analyzer.c b/dlls/dwrite/analyzer.c
+index a06e816bd85..bf46799f75f 100644
+--- a/dlls/dwrite/analyzer.c
++++ b/dlls/dwrite/analyzer.c
+@@ -364,7 +364,7 @@ system_fallback_config[] =
+     { "FF00-FFEF",              L"Malgun Gothic", L"ko" },
+     { "FF00-FFEF",              L"MS Gothic" },
+ 
+-    { "1F800-1F8FF",            L"Noto Sans Symbols2, Noto Sans Symbols 2" },
++    { "1F300-1F8FF",            L"Noto Sans Symbols2, Noto Sans Symbols 2, Noto Emoji" },
+ };
+ 
+ struct text_source_context
+-- 
+2.53.0
+
+
+From 82329ec8c12df79f7c9220a92eb8bc33ab417f6f Mon Sep 17 00:00:00 2001
+From: Paul Gofman <pgofman@codeweavers.com>
+Date: Thu, 19 Mar 2026 17:11:36 -0600
+Subject: [PATCH 17/22] Revert "dwrite: Add locales to locale list."
+
+This reverts commit 91577253faa2ae2dda61fb61022c6960100d6f12.
+---
+ dlls/dwrite/analyzer.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/dlls/dwrite/analyzer.c b/dlls/dwrite/analyzer.c
+index bf46799f75f..216ac5dca88 100644
+--- a/dlls/dwrite/analyzer.c
++++ b/dlls/dwrite/analyzer.c
+@@ -520,14 +520,14 @@ static HRESULT fallback_locale_add_mapping(struct fallback_locale *locale, size_
+ 
+ /* TODO: potentially needs improvement to consider partially matching locale names. */
+ static struct fallback_locale * font_fallback_get_locale(const struct list *locales,
+-        const WCHAR *locale_name, bool use_neutral)
++        const WCHAR *locale_name)
+ {
+     struct fallback_locale *locale, *neutral = NULL;
+ 
+     LIST_FOR_EACH_ENTRY(locale, locales, struct fallback_locale, entry)
+     {
+         if (!wcsicmp(locale->name, locale_name)) return locale;
+-        if (use_neutral && !*locale->name) neutral = locale;
++        if (!*locale->name) neutral = locale;
+     }
+ 
+     return neutral;
+@@ -620,7 +620,7 @@ static const struct fallback_mapping * find_fallback_mapping(const struct fallba
+     /* Mapping wasn't found for specific locale, try with neutral one. This will only recurse once. */
+     if (*locale->name)
+     {
+-        locale = font_fallback_get_locale(&fallback->locales, L"", true);
++        locale = font_fallback_get_locale(&fallback->locales, L"");
+         mapping = find_fallback_mapping(fallback, locale, ch);
+     }
+ 
+@@ -2435,7 +2435,7 @@ static HRESULT fallback_map_characters(const struct dwrite_fontfallback *fallbac
+     if (!locale_name) locale_name = L"";
+ 
+     /* Lookup locale entry once, if specific locale is missing neutral one will be returned. */
+-    locale = font_fallback_get_locale(&data->locales, locale_name, true);
++    locale = font_fallback_get_locale(&data->locales, locale_name);
+ 
+     if (FAILED(hr = text_source_context_init(&context, source, position, length))) return hr;
+ 
+@@ -2673,7 +2673,7 @@ static struct fallback_locale * fallback_builder_add_locale(struct dwrite_fontfa
+     struct fallback_locale *locale;
+ 
+     if (!locale_name) locale_name = L"";
+-    if ((locale = font_fallback_get_locale(&builder->data.locales, locale_name, false))) return locale;
++    if ((locale = font_fallback_get_locale(&builder->data.locales, locale_name))) return locale;
+     if (!(locale = calloc(1, sizeof(*locale)))) return NULL;
+     lstrcpynW(locale->name, locale_name, ARRAY_SIZE(locale->name));
+     list_add_tail(&builder->data.locales, &locale->entry);
+-- 
+2.53.0
+
+
+From a7df5e7785ec61186c5f93aa6997af660d007a44 Mon Sep 17 00:00:00 2001
+From: Paul Gofman <pgofman@codeweavers.com>
+Date: Thu, 19 Mar 2026 18:37:49 -0600
+Subject: [PATCH 18/22] comctl32/static: Set HALFTONE StretchBlt mode in
+ STATIC_PaintBitmapfn().
+
+CW-Bug-Id: #26800
+---
+ dlls/comctl32/static.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/dlls/comctl32/static.c b/dlls/comctl32/static.c
+index 29a0498ba09..10152f7c9e6 100644
+--- a/dlls/comctl32/static.c
++++ b/dlls/comctl32/static.c
+@@ -856,6 +856,7 @@ static void STATIC_PaintBitmapfn(HWND hwnd, HDC hdc, HBRUSH hbrush, DWORD style
+     HDC hMemDC;
+     HBITMAP hBitmap, oldbitmap;
+     RECT rcClient;
++    int prev_mode;
+ 
+     GetClientRect( hwnd, &rcClient );
+     FillRect( hdc, &rcClient, hbrush );
+@@ -887,6 +888,7 @@ static void STATIC_PaintBitmapfn(HWND hwnd, HDC hdc, HBRUSH hbrush, DWORD style
+             rcClient.bottom = rcClient.top + bm.bmHeight;
+         }
+ 
++        prev_mode = SetStretchBltMode( hdc, HALFTONE );
+         if (extra->image_has_alpha)
+             GdiAlphaBlend(hdc, rcClient.left, rcClient.top, rcClient.right - rcClient.left,
+                    rcClient.bottom - rcClient.top, hMemDC,
+@@ -895,6 +897,7 @@ static void STATIC_PaintBitmapfn(HWND hwnd, HDC hdc, HBRUSH hbrush, DWORD style
+             StretchBlt(hdc, rcClient.left, rcClient.top, rcClient.right - rcClient.left,
+                    rcClient.bottom - rcClient.top, hMemDC,
+                    0, 0, bm.bmWidth, bm.bmHeight, SRCCOPY);
++        SetStretchBltMode( hdc, prev_mode );
+         SelectObject(hMemDC, oldbitmap);
+         DeleteDC(hMemDC);
+     }
+-- 
+2.53.0
+
+
+From f9269ea4026ca7731ad7c036da87164fb38c9c6b Mon Sep 17 00:00:00 2001
+From: Paul Gofman <pgofman@codeweavers.com>
+Date: Fri, 20 Mar 2026 11:31:54 -0600
+Subject: [PATCH 19/22] user32: Add stub for GetPointerDevice().
+
+CW-Bug-Id: #26805
+---
+ dlls/user32/input.c     | 7 +++++++
+ dlls/user32/user32.spec | 2 +-
+ 2 files changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/dlls/user32/input.c b/dlls/user32/input.c
+index 8d079a0794d..3546c07e9a1 100644
+--- a/dlls/user32/input.c
++++ b/dlls/user32/input.c
+@@ -830,6 +830,13 @@ BOOL WINAPI SetGestureConfig( HWND hwnd, DWORD reserved, UINT count,
+     return FALSE;
+ }
+ 
++BOOL WINAPI GetPointerDevice( HANDLE device, POINTER_DEVICE_INFO *info )
++{
++    FIXME( "device %p, info %p stub.\n", device, info );
++    SetLastError( ERROR_CALL_NOT_IMPLEMENTED );
++    return FALSE;
++}
++
+ BOOL WINAPI GetPointerTouchInfo( UINT32 id, POINTER_TOUCH_INFO *info )
+ {
+     FIXME( "id %u, info %p stub!\n", id, info );
+diff --git a/dlls/user32/user32.spec b/dlls/user32/user32.spec
+index 452761d8277..2cf1c92f5a3 100644
+--- a/dlls/user32/user32.spec
++++ b/dlls/user32/user32.spec
+@@ -625,7 +625,7 @@
+ @ stdcall GetParent(long)
+ @ stdcall GetPhysicalCursorPos(ptr)
+ # @ stub GetPointerCursorId
+-# @ stub GetPointerDevice
++@ stdcall GetPointerDevice(ptr ptr)
+ # @ stub GetPointerDeviceCursors
+ # @ stub GetPointerDeviceInputSpace
+ # @ stub GetPointerDeviceOrientation
+-- 
+2.53.0
+
+
+From a7457f7cf37064bcc9ab2dfcc0c13204e148abee Mon Sep 17 00:00:00 2001
+From: Paul Gofman <pgofman@codeweavers.com>
+Date: Fri, 20 Mar 2026 11:34:13 -0600
+Subject: [PATCH 20/22] user32: Add a stub for GetPointerInfoHistory().
+
+CW-Bug-Id: #26805
+---
+ dlls/user32/input.c     | 6 ++++++
+ dlls/user32/user32.spec | 2 +-
+ 2 files changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/dlls/user32/input.c b/dlls/user32/input.c
+index 3546c07e9a1..f457518468a 100644
+--- a/dlls/user32/input.c
++++ b/dlls/user32/input.c
+@@ -851,6 +851,12 @@ BOOL WINAPI GetPointerTouchInfoHistory( UINT32 id, UINT32 *count, POINTER_TOUCH_
+     return FALSE;
+ }
+ 
++BOOL WINAPI GetPointerInfoHistory( UINT32 id, UINT32 *count, POINTER_INFO *info )
++{
++    FIXME( "id %u, count %p, info %p stub.\n", id, count, info );
++    SetLastError( ERROR_CALL_NOT_IMPLEMENTED );
++    return FALSE;
++}
+ 
+ /*******************************************************************
+  *           SetForegroundWindow  (USER32.@)
+diff --git a/dlls/user32/user32.spec b/dlls/user32/user32.spec
+index 2cf1c92f5a3..4fc87b59bc7 100644
+--- a/dlls/user32/user32.spec
++++ b/dlls/user32/user32.spec
+@@ -640,7 +640,7 @@
+ # @ stub GetPointerFrameTouchInfo
+ # @ stub GetPointerFrameTouchInfoHistory
+ @ stdcall GetPointerInfo(long ptr)
+-# @ stub GetPointerInfoHistory
++@ stub GetPointerInfoHistory(long ptr ptr)
+ # @ stub GetPointerInputTransform
+ # @ stub GetPointerPenInfo
+ # @ stub GetPointerPenInfoHistory
+-- 
+2.53.0
+
+
+From 6eb714fb10b7a657097eff120d3af3840aff2e52 Mon Sep 17 00:00:00 2001
+From: Paul Gofman <pgofman@codeweavers.com>
+Date: Fri, 20 Mar 2026 11:34:38 -0600
+Subject: [PATCH 21/22] user32: Add a stub for SkipPointerFrameMessages().
+
+CW-Bug-Id: #26805
+---
+ dlls/user32/input.c     | 6 ++++++
+ dlls/user32/user32.spec | 2 +-
+ 2 files changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/dlls/user32/input.c b/dlls/user32/input.c
+index f457518468a..5e6b10effd2 100644
+--- a/dlls/user32/input.c
++++ b/dlls/user32/input.c
+@@ -858,6 +858,12 @@ BOOL WINAPI GetPointerInfoHistory( UINT32 id, UINT32 *count, POINTER_INFO *info
+     return FALSE;
+ }
+ 
++BOOL WINAPI SkipPointerFrameMessages( UINT32 id )
++{
++    FIXME( "id %u stub.\n", id );
++    return TRUE;
++}
++
+ /*******************************************************************
+  *           SetForegroundWindow  (USER32.@)
+  */
+diff --git a/dlls/user32/user32.spec b/dlls/user32/user32.spec
+index 4fc87b59bc7..7b3e3a2bc9a 100644
+--- a/dlls/user32/user32.spec
++++ b/dlls/user32/user32.spec
+@@ -1139,7 +1139,7 @@
+ @ stdcall ShutdownBlockReasonDestroy(long)
+ # @ stub ShutdownBlockReasonQuery
+ # @ stub SignalRedirectionStartComplete
+-# @ stub SkipPointerFrameMessages
++@ stdcall SkipPointerFrameMessages(long)
+ # @ stub SoftModalMessageBox
+ # @ stub SoundSentry
+ @ stdcall SubtractRect(ptr ptr ptr)
+-- 
+2.53.0
+
+
+From 1729f00e17e879f98f9df1f2bca86bc5d21a65df Mon Sep 17 00:00:00 2001
+From: Paul Gofman <pgofman@codeweavers.com>
+Date: Fri, 20 Mar 2026 18:12:12 -0600
+Subject: [PATCH 22/22] netprofm: HACK: Throttle list_manager_GetConnectivity()
+ for Death Stranding 2.
+
+CW-Bug-Id: #28612
+---
+ dlls/netprofm/list.c | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
+
+diff --git a/dlls/netprofm/list.c b/dlls/netprofm/list.c
+index af40dc0ac91..eb39ce1fe92 100644
+--- a/dlls/netprofm/list.c
++++ b/dlls/netprofm/list.c
+@@ -1354,6 +1354,19 @@ static HRESULT WINAPI list_manager_IsConnected(
+     return S_OK;
+ }
+ 
++static void throttle(void)
++{
++    const char *sgi;
++    static int cached = -1;
++
++    if (cached == -1)
++    {
++        cached = (sgi = getenv("SteamGameId")) && !strcmp( sgi, "3280350" );
++        if (cached) ERR( "GetConnectivity() throttle hack.\n" );
++    }
++    if (cached) Sleep(1);
++}
++
+ static HRESULT WINAPI list_manager_GetConnectivity(
+     INetworkListManager *iface,
+     NLM_CONNECTIVITY *pConnectivity )
+@@ -1373,6 +1386,8 @@ static HRESULT WINAPI list_manager_GetConnectivity(
+             *pConnectivity |= NLM_CONNECTIVITY_IPV4_LOCALNETWORK;
+     }
+ 
++    throttle();
++
+     return S_OK;
+ }
+ 
+-- 
+2.53.0
+
