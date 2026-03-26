@@ -75,6 +75,7 @@ jobs:
       rustflags: ${{ matrix.rustflags }}
       configure: --enable-ccache ${{ matrix.configure }}
       runner: ${{ matrix.runner != '' && matrix.runner || 'ubuntu-24.04' }}
+      continue: true
 
   test:
     name: Test
@@ -93,3 +94,4 @@ jobs:
     with:
       name: ${{ matrix.name }}
       runner: ${{ matrix.runner != '' && matrix.runner || 'ubuntu-24.04' }}
+      continue: true

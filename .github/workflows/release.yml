@@ -47,6 +47,7 @@ jobs:
       rustflags: ${{ matrix.rustflags }}
       configure: ${{ matrix.configure }}
       runner: ${{ matrix.runner != '' && matrix.runner || 'ubuntu-24.04' }}
+      continue: false
 
   release:
     name: Release
