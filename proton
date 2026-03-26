@@ -1339,6 +1339,7 @@ def default_compat_config():
         appid = os.environ["SteamAppId"]
         if appid not in [
                 "3280350", #Death Stranding 2
+                "990080", #Hogwarts Legacy
                 ]:
             ret.add("ntsync")
         if appid in [
