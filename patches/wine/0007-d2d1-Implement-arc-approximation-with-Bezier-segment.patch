@@ -1,7 +1,7 @@
 From ab89f341ff93238e0186c31da41d378217d067fc Mon Sep 17 00:00:00 2001
 From: Nikolay Sivov <nsivov@codeweavers.com>
 Date: Sun, 8 Feb 2026 01:38:01 +0100
-Subject: [PATCH 07/15] d2d1: Implement arc approximation with Bezier segments.
+Subject: [PATCH 07/63] d2d1: Implement arc approximation with Bezier segments.
 
 Wine-Bug: https://bugs.winehq.org/show_bug.cgi?id=57435
 Signed-off-by: Nikolay Sivov <nsivov@codeweavers.com>

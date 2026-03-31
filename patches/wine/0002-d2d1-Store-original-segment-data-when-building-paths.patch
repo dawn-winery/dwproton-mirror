@@ -1,7 +1,7 @@
 From ed8f72121e286d44d5ac1bdd2924cadab0fb165c Mon Sep 17 00:00:00 2001
 From: Nikolay Sivov <nsivov@codeweavers.com>
 Date: Thu, 5 Feb 2026 23:43:48 +0100
-Subject: [PATCH 02/15] d2d1: Store original segment data when building paths.
+Subject: [PATCH 02/63] d2d1: Store original segment data when building paths.
 
 Signed-off-by: Nikolay Sivov <nsivov@codeweavers.com>
 ---

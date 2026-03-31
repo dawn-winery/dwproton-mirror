@@ -1,7 +1,7 @@
 From 449fc17270eba68e466c02acd704f786df03e34c Mon Sep 17 00:00:00 2001
 From: Nikolay Sivov <nsivov@codeweavers.com>
 Date: Mon, 9 Feb 2026 10:18:37 +0100
-Subject: [PATCH 09/15] d2d1: Forward geometry group methods to the path
+Subject: [PATCH 09/63] d2d1: Forward geometry group methods to the path
  representing the group.
 
 Signed-off-by: Nikolay Sivov <nsivov@codeweavers.com>

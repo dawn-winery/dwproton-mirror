@@ -1,7 +1,7 @@
 From 8c2a8da905d3557141c9610403a9baf2856c9af1 Mon Sep 17 00:00:00 2001
 From: Nikolay Sivov <nsivov@codeweavers.com>
 Date: Tue, 10 Feb 2026 17:13:53 +0100
-Subject: [PATCH 10/15] d2d1/tests: Add another test for transformed geometry
+Subject: [PATCH 10/63] d2d1/tests: Add another test for transformed geometry
  behavior.
 
 Signed-off-by: Nikolay Sivov <nsivov@codeweavers.com>

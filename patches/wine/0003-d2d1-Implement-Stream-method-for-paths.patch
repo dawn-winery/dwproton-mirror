@@ -1,7 +1,7 @@
 From 93f136abc0626078899413bd6a31a1f601e44989 Mon Sep 17 00:00:00 2001
 From: Nikolay Sivov <nsivov@codeweavers.com>
 Date: Fri, 6 Feb 2026 00:42:40 +0100
-Subject: [PATCH 03/15] d2d1: Implement Stream() method for paths.
+Subject: [PATCH 03/63] d2d1: Implement Stream() method for paths.
 
 Signed-off-by: Nikolay Sivov <nsivov@codeweavers.com>
 ---

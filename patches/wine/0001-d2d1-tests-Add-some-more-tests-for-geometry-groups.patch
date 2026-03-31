@@ -1,7 +1,7 @@
 From 74417ddeff72fe9256560076d1eb5b3a5264af46 Mon Sep 17 00:00:00 2001
 From: Nikolay Sivov <nsivov@codeweavers.com>
 Date: Thu, 5 Feb 2026 13:32:04 +0100
-Subject: [PATCH 01/15] d2d1/tests: Add some more tests for geometry groups.
+Subject: [PATCH 01/63] d2d1/tests: Add some more tests for geometry groups.
 
 Signed-off-by: Nikolay Sivov <nsivov@codeweavers.com>
 ---

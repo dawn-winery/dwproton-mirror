@@ -1,7 +1,7 @@
 From f1f318c1f645224625af0ad51e99749de09ce081 Mon Sep 17 00:00:00 2001
 From: Nikolay Sivov <nsivov@codeweavers.com>
 Date: Wed, 11 Feb 2026 10:51:10 +0100
-Subject: [PATCH 11/15] d2d1: Use non-multiplied transform when forwarding
+Subject: [PATCH 11/63] d2d1: Use non-multiplied transform when forwarding
  transformed geometry methods.
 
 If source geometry is itself a transformed geometry, same transform will get applied

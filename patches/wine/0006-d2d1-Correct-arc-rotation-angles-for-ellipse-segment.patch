@@ -1,7 +1,7 @@
 From b272091f9f43091ae054921c43933e25a27c2c82 Mon Sep 17 00:00:00 2001
 From: Nikolay Sivov <nsivov@codeweavers.com>
 Date: Sat, 7 Feb 2026 01:30:01 +0100
-Subject: [PATCH 06/15] d2d1: Correct arc rotation angles for ellipse segments.
+Subject: [PATCH 06/63] d2d1: Correct arc rotation angles for ellipse segments.
 
 Signed-off-by: Nikolay Sivov <nsivov@codeweavers.com>
 ---

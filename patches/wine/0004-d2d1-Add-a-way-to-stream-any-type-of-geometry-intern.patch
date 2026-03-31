@@ -1,7 +1,7 @@
 From cfd5aff27d72458392aa32e0b593f07a2aae7dbd Mon Sep 17 00:00:00 2001
 From: Nikolay Sivov <nsivov@codeweavers.com>
 Date: Fri, 6 Feb 2026 10:23:31 +0100
-Subject: [PATCH 04/15] d2d1: Add a way to stream any type of geometry
+Subject: [PATCH 04/63] d2d1: Add a way to stream any type of geometry
  internally.
 
 Signed-off-by: Nikolay Sivov <nsivov@codeweavers.com>

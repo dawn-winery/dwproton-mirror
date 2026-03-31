@@ -1,7 +1,7 @@
 From 5f427908a362c454439375b162c48b5b083b6243 Mon Sep 17 00:00:00 2001
 From: Zhiyi Zhang <zzhang@codeweavers.com>
 Date: Mon, 23 Feb 2026 14:50:27 +0800
-Subject: [PATCH 12/15] d2d1/tests: Test brushes with out of range opacity
+Subject: [PATCH 12/63] d2d1/tests: Test brushes with out of range opacity
  values.
 
 ---

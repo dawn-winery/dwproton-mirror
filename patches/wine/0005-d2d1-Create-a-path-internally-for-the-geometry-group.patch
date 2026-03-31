@@ -1,7 +1,7 @@
 From eef8a7b9d2b9f302306d5cbd81d973ffe582c88b Mon Sep 17 00:00:00 2001
 From: Nikolay Sivov <nsivov@codeweavers.com>
 Date: Fri, 6 Feb 2026 15:43:41 +0100
-Subject: [PATCH 05/15] d2d1: Create a path internally for the geometry group.
+Subject: [PATCH 05/63] d2d1: Create a path internally for the geometry group.
 
 Signed-off-by: Nikolay Sivov <nsivov@codeweavers.com>
 ---

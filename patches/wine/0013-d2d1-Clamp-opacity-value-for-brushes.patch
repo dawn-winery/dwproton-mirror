@@ -1,7 +1,7 @@
 From bbf778508cd97541a588615c315932b5ac34eb7d Mon Sep 17 00:00:00 2001
 From: Zhiyi Zhang <zzhang@codeweavers.com>
 Date: Mon, 23 Feb 2026 14:50:27 +0800
-Subject: [PATCH 13/15] d2d1: Clamp opacity value for brushes.
+Subject: [PATCH 13/63] d2d1: Clamp opacity value for brushes.
 
 Some applications call DrawBitmap() with the opacity value set to 255.0f and end up showing white in
 the end result. Tests show that the opacity value should be clamped to legitimate values. Command

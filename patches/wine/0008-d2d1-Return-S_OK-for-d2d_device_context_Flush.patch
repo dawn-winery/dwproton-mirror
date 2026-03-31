@@ -1,7 +1,7 @@
 From f6059327d918dc999d76c5d8b5a4be0cdb6dad46 Mon Sep 17 00:00:00 2001
 From: Zhiyi Zhang <zzhang@codeweavers.com>
 Date: Sun, 1 Feb 2026 10:42:10 +0800
-Subject: [PATCH 08/15] d2d1: Return S_OK for d2d_device_context_Flush().
+Subject: [PATCH 08/63] d2d1: Return S_OK for d2d_device_context_Flush().
 
 React Native applications depend on this.
 

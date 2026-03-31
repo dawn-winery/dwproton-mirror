@@ -1,7 +1,7 @@
 From 2f3fca311568200826c81ffce8d3caa88e36be53 Mon Sep 17 00:00:00 2001
 From: Nikolay Sivov <nsivov@codeweavers.com>
 Date: Thu, 12 Mar 2026 15:59:17 +0100
-Subject: [PATCH 14/15] d2d1: Do not reference layer objects when recording to
+Subject: [PATCH 14/63] d2d1: Do not reference layer objects when recording to
  the command list.
 
 Signed-off-by: Nikolay Sivov <nsivov@codeweavers.com>

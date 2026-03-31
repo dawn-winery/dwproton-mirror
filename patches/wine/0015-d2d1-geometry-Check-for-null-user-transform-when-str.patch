@@ -1,7 +1,7 @@
 From 0e01eaa7e7174983376a93baa87380662e0e9580 Mon Sep 17 00:00:00 2001
 From: Nikolay Sivov <nsivov@codeweavers.com>
 Date: Sun, 22 Mar 2026 09:05:03 +0100
-Subject: [PATCH 15/15] d2d1/geometry: Check for null user transform when
+Subject: [PATCH 15/63] d2d1/geometry: Check for null user transform when
  streaming.
 
 Wine-Bug: https://bugs.winehq.org/show_bug.cgi?id=59551
