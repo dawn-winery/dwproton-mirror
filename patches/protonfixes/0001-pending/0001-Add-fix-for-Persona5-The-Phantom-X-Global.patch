@@ -1,0 +1,27 @@
+From 72e943146b4035db47264545a835827d6125155b Mon Sep 17 00:00:00 2001
+From: NelloKudo <marshnelloosu@gmail.com>
+Date: Fri, 27 Mar 2026 21:11:43 +0100
+Subject: [PATCH] Add fix for Persona5: The Phantom X (Global)
+
+Needs gamedrive fix to detect proper install space.
+---
+ gamefixes-steam/3061570.py | 7 +++++++
+ 1 file changed, 7 insertions(+)
+ create mode 100644 gamefixes-steam/3061570.py
+
+diff --git a/gamefixes-steam/3061570.py b/gamefixes-steam/3061570.py
+new file mode 100644
+index 0000000..af09e7d
+--- /dev/null
++++ b/gamefixes-steam/3061570.py
+@@ -0,0 +1,7 @@
++"""Game fix for Persona5: The Phantom X"""
++
++from protonfixes import util
++
++def early() ->  None:
++    """Needs gamedrive fix to detect proper install space"""
++    util.set_environment('PROTON_SET_GAME_DRIVE', '1')
+-- 
+2.53.0
+
