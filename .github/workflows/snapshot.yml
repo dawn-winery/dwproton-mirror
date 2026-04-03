@@ -1,97 +1,67 @@
-name: Snapshot
+name: Snapshot Build
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - 'cachyos_*_*/main'
-      - 'cachyos_*_*/dev'
-
-concurrency:
-  group: ${{ github.ref_name }}
-  cancel-in-progress: true
 
 jobs:
-  version:
-    name: Version
-    runs-on: ubuntu-slim
-    outputs:
-      tag_abbrev: ${{ steps.version.outputs.tag_abbrev }}
-      tag_offset: ${{ steps.version.outputs.tag_offset }}
-      sha_short: ${{ steps.version.outputs.sha_short }}
-      full_desc: ${{ steps.version.outputs.full_desc }}
-      branch: ${{ steps.version.outputs.branch }}
+  build-x86_64:
+    name: Build x86_64
+    runs-on: trixie
     steps:
-    - name: Checkout
-      uses: actions/checkout@v6
-      with:
-        fetch-depth: 0
-        fetch-tags: true
+      - name: Restore cache
+        id: ccache-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.ccache
+          key: ccache-proton-${{ github.run_id }}
+          restore-keys: |
+            ccache-proton-
 
-    - name: Version
-      id: version
-      shell: bash
-      run: |
-        tag_abbrev=$(git describe --tags --abbrev=0)
-        echo "tag_abbrev=$tag_abbrev" >> $GITHUB_OUTPUT
-        echo "tag_offset=$(git rev-list $tag_abbrev..HEAD --count)" >> $GITHUB_OUTPUT
-        echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-        echo "full_desc=$(git describe --long --tags)" >> $GITHUB_OUTPUT
-        echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_OUTPUT
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          submodules: false
 
-  build:
-    name: Build
-    needs: version
-    strategy:
-      matrix:
-        include:
-          - name: proton-${{ needs.version.outputs.full_desc }}-x86_64
-            cflags: -O2 -march=nocona -mtune=core-avx2
-            rustflags: -Copt-level=3 -Ctarget-cpu=nocona
-          - name: proton-${{ needs.version.outputs.full_desc }}-x86_64_v3
-            cflags: -O2 -march=x86-64-v3 -mtune=core-avx2
-            rustflags: -Copt-level=3 -Ctarget-cpu=nocona
-          - name: proton-${{ needs.version.outputs.full_desc }}-x86_64_v4
-            cflags: -O2 -march=x86-64-v4 -mtune=skylake-avx512
-            rustflags: -Copt-level=3 -Ctarget-cpu=nocona
+      - name: Init submodules
+        run: |
+          git submodule update --init --filter=tree:0 --recursive
+          mkdir ./build
 
-          - name: proton-${{ needs.version.outputs.full_desc }}-x86_64-steamrt4
-            cflags: -O3 -march=nocona -mtune=core-avx2
-            rustflags: -Copt-level=3 -Ctarget-cpu=nocona
-            configure: '--proton-sdk-image=registry.gitlab.steamos.cloud/proton/steamrt4/sdk/x86_64:4.0.20260119.200228-2'
+      - name: Get short SHA
+        id: vars
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
 
-          - name: proton-${{ needs.version.outputs.full_desc }}-x86_64-steamrt4-llvm
-            cflags: -O3 -march=nocona -mtune=core-avx2
-            rustflags: -Copt-level=3 -Ctarget-cpu=nocona
-            configure: '--without-nvidia-libs --without-tts --proton-sdk-image=registry.gitlab.steamos.cloud/proton/steamrt4/sdk/x86_64-llvm:4.0.20260119.200228-2'
+      - name: Configure
+        working-directory: ./build
+        env:
+          RUSTFLAGS: -Copt-level=3 -Ctarget-cpu=nocona
+          USE_LTO: 0
+        run: |
+          ../configure.sh \
+            --build-name=dwproton-snapshot-${{ steps.vars.outputs.sha_short }}-x86_64 \
+            --enable-ccache \
+            --without-tts
 
-          - name: proton-${{ needs.version.outputs.full_desc }}-arm64
-            configure: '--without-nvidia-libs --target-arch=arm64'
-            runner: 'ubuntu-24.04-arm'
-    uses: ./.github/workflows/_job_build.yml
-    with:
-      name: ${{ matrix.name }}
-      cflags: ${{ matrix.cflags }}
-      rustflags: ${{ matrix.rustflags }}
-      configure: --enable-ccache ${{ matrix.configure }}
-      runner: ${{ matrix.runner != '' && matrix.runner || 'ubuntu-24.04' }}
-      continue: true
+      - name: Build
+        working-directory: ./build
+        run: |
+          make -j$(nproc) redist
 
-  test:
-    name: Test
-    needs: [version, build]
-    strategy:
-      matrix:
-        include:
-          - name: proton-${{ needs.version.outputs.full_desc }}-x86_64
-          - name: proton-${{ needs.version.outputs.full_desc }}-x86_64_v3
-          - name: proton-${{ needs.version.outputs.full_desc }}-x86_64_v4
-          - name: proton-${{ needs.version.outputs.full_desc }}-x86_64-steamrt4
-          - name: proton-${{ needs.version.outputs.full_desc }}-x86_64-steamrt4-llvm
-          - name: proton-${{ needs.version.outputs.full_desc }}-arm64
-            runner: 'ubuntu-24.04-arm'
-    uses: ./.github/workflows/_job_test.yml
-    with:
-      name: ${{ matrix.name }}
-      runner: ${{ matrix.runner != '' && matrix.runner || 'ubuntu-24.04' }}
-      continue: true
+      - name: Save cache
+        id: ccache-save
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.ccache
+          key: ${{ steps.ccache-restore.outputs.cache-primary-key }}
+
+      - name: Upload snapshot artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dwproton-snapshot-${{ steps.vars.outputs.sha_short }}-x86_64
+          path: |
+            ./build/dwproton-snapshot-${{ steps.vars.outputs.sha_short }}-x86_64.tar.xz
+            ./build/dwproton-snapshot-${{ steps.vars.outputs.sha_short }}-x86_64.sha512sum
+          retention-days: 14
