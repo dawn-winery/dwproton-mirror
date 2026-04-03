@@ -58,13 +58,13 @@ jobs:
           key: ${{ steps.ccache-restore.outputs.cache-primary-key }}
 
       - name: Upload artifact ${{ github.ref_name }}-x86_64.tar.xz
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ github.ref_name }}-x86_64.tar.xz
           path: ./build/${{ github.ref_name }}-x86_64.tar.xz
 
       - name: Upload artifact ${{ github.ref_name }}-x86_64.sha512sum
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ github.ref_name }}-x86_64.sha512sum
           path: ./build/${{ github.ref_name }}-x86_64.sha512sum
@@ -84,7 +84,7 @@ jobs:
             > /tmp/release-notes.md
 
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v3
         with:
           path: ./artifacts
 

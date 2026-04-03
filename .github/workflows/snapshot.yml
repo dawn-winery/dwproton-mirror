@@ -58,7 +58,7 @@ jobs:
           key: ${{ steps.ccache-restore.outputs.cache-primary-key }}
 
       - name: Upload snapshot artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: dwproton-snapshot-${{ steps.vars.outputs.sha_short }}-x86_64
           path: |
