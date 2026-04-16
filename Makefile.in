@@ -400,6 +400,23 @@ $(eval $(call rules-meson,gst_base,aarch64,unix))
 
 
 ##
+## glib-networking
+##
+
+GLIB_NETWORKING_MESON_ARGS := \
+	-Dgnutls=enabled \
+	-Dopenssl=disabled \
+	-Dlibproxy=disabled \
+	-Dgnome_proxy=disabled \
+	-Dinstalled_tests=false
+
+$(eval $(call rules-source,glib_networking,$(SRCDIR)/glib-networking))
+$(eval $(call rules-meson,glib_networking,i386,unix))
+$(eval $(call rules-meson,glib_networking,x86_64,unix))
+$(eval $(call rules-meson,glib_networking,aarch64,unix))
+
+
+##
 ## gst-plugins-good
 ##
 
@@ -448,6 +465,7 @@ endif
 
 GST_GOOD_DEPENDS = gst_orc gstreamer gst_base
 GST_GOOD_DEPENDS += libxml2
+GST_GOOD_DEPENDS += glib_networking
 GST_GOOD_HOST_DEPENDS = gst_orc
 
 $(eval $(call rules-source,gst_good,$(SRCDIR)/gstreamer/subprojects/gst-plugins-good/))

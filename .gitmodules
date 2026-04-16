@@ -118,3 +118,6 @@
 [submodule "d7vk"]
 	path = d7vk
 	url = https://github.com/WinterSnowfall/d7vk.git
+[submodule "glib-networking"]
+	path = glib-networking
+	url = https://gitlab.gnome.org/GNOME/glib-networking.git
