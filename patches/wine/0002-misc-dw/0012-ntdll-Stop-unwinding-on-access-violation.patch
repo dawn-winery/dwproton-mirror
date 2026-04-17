@@ -1,0 +1,67 @@
+From 78a32ba06a7ec6b2a6fb6cc85eb96d52ec167f57 Mon Sep 17 00:00:00 2001
+From: Dylan Donnell <dylan.donnell@student.griffith.ie>
+Date: Sun, 19 Oct 2025 13:37:58 +0200
+Subject: [PATCH] ntdll: Stop unwinding on access violation.
+
+---
+ dlls/ntdll/signal_x86_64.c | 35 ++++++++++++++++++++++++++---------
+ 1 file changed, 26 insertions(+), 9 deletions(-)
+
+diff --git a/dlls/ntdll/signal_x86_64.c b/dlls/ntdll/signal_x86_64.c
+index 3d4bd23e8ff..245d07abe37 100644
+--- a/dlls/ntdll/signal_x86_64.c
++++ b/dlls/ntdll/signal_x86_64.c
+@@ -866,6 +866,13 @@ BOOLEAN WINAPI RtlIsProcessorFeaturePresent( UINT feature )
+     return feature < PROCESSOR_FEATURE_MAX && user_shared_data->ProcessorFeatures[feature];
+ }
+ 
++static LONG WINAPI walk_frame_chain_handler( EXCEPTION_POINTERS *eptr )
++{
++    if (eptr->ExceptionRecord->ExceptionCode == STATUS_ACCESS_VIOLATION)
++        return EXCEPTION_EXECUTE_HANDLER;
++
++    return EXCEPTION_CONTINUE_SEARCH;
++}
+ 
+ /*************************************************************************
+  *		RtlWalkFrameChain (NTDLL.@)
+@@ -882,17 +889,27 @@ ULONG WINAPI RtlWalkFrameChain( void **buffer, ULONG count, ULONG flags )
+ 
+     RtlCaptureContext( &context );
+ 
+-    for (i = 0; i < count; i++)
++    __TRY
+     {
+-        func = RtlLookupFunctionEntry( context.Rip, &base, &table );
+-        if (RtlVirtualUnwind2( UNW_FLAG_NHANDLER, base, context.Rip, func, &context, NULL,
+-                               &data, &frame, NULL, NULL, NULL, &handler, 0 ))
+-            break;
+-        if (!context.Rip) break;
+-        if (!frame || !is_valid_frame( frame )) break;
+-        if (context.Rsp == (ULONG_PTR)NtCurrentTeb()->Tib.StackBase) break;
+-        if (i >= skip) buffer[num_entries++] = (void *)context.Rip;
++        for (i = 0; i < count; i++)
++        {
++            func = RtlLookupFunctionEntry( context.Rip, &base, &table );
++            if (RtlVirtualUnwind2( UNW_FLAG_NHANDLER, base, context.Rip, func, &context, NULL,
++                                &data, &frame, NULL, NULL, NULL, &handler, 0 ))
++                break;
++            if (!context.Rip) break;
++            if (!frame || !is_valid_frame( frame )) break;
++            if (context.Rsp == (ULONG_PTR)NtCurrentTeb()->Tib.StackBase) break;
++            if (i >= skip) buffer[num_entries++] = (void *)context.Rip;
++        }
++    }
++    __EXCEPT(walk_frame_chain_handler)
++    {
++        TRACE( "access violation when unwinding with context.Rip %p\n", (void *)context.Rip );
++	return 0;
+     }
++    __ENDTRY
++
+     return num_entries;
+ }
+ 
+-- 
+GitLab
+
