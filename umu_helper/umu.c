@@ -488,7 +488,8 @@ int main(int argc, char *argv[])
 
     if ((sgi = getenv("SteamGameId")))
     {
-        WCHAR path[MAX_PATH], *p;
+        /* Create desktop window in main thread to prevent race with background thread. */
+        GetDesktopWindow();
 
         set_gamingrepair_succeeded(sgi);
 
