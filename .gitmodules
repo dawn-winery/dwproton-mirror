@@ -75,6 +75,9 @@
 [submodule "libsoup"]
 	path = libsoup
 	url = https://github.com/GNOME/libsoup.git
+[submodule "extras/dxvk-sarek"]
+	path = extras/dxvk-sarek
+	url = https://github.com/pythonlover02/DXVK-Sarek.git
 [submodule "dxvk-igdext"]
 	path = dxvk-igdext
 	url = https://github.com/GameTechDev/dxvk-igdext
