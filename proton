@@ -2166,6 +2166,9 @@ class Session:
             # Surfaceless supports less formats than x11
             self.env.setdefault("GST_GL_WINDOW", "x11")
 
+        if "PROTON_USE_WINEALSA" in self.env and nonzero(self.env["PROTON_USE_WINEALSA"]):
+            self.dlloverrides["winepulse.drv"] = "d"
+
         if "sdlinput" in self.compat_config:
             self.env["PROTON_DISABLE_HIDRAW"] = "1"
             self.env["PROTON_NO_STEAMINPUT"] = "1"
