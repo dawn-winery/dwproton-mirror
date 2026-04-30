@@ -2563,7 +2563,7 @@ $(DIST_COPY_TARGETS): | $(DST_DIR)
 all-dist: $(DIST_COPY_TARGETS)
 
 all-dist:
-	echo `date '+%s'` `GIT_DIR=$(abspath $(SRCDIR)/.git) git describe --tags` > $(DIST_VERSION)
+	echo `date '+%s'` $$(GIT_DIR=$(abspath $(SRCDIR)/.git) git describe --tags 2>/dev/null || echo $(BUILD_NAME)) > $(DIST_VERSION)
 
 
 ##

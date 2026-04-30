@@ -1,0 +1,70 @@
+name: Snapshot Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-x86_64:
+    name: Build x86_64
+    runs-on: trixie
+    steps:
+      - name: Restore cache
+        id: ccache-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.ccache
+          key: ccache-proton-${{ github.run_id }}
+          restore-keys: |
+            ccache-proton-
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          submodules: false
+
+      - name: Init submodules
+        run: |
+          git submodule update --init --filter=tree:0 --recursive
+          mkdir ./build
+
+      - name: Get version
+        id: vars
+        run: |
+          tag=$(grep -m1 'CURRENT_PREFIX_VERSION=' proton | cut -d'"' -f2)
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "sha_short=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Configure
+        working-directory: ./build
+        env:
+          RUSTFLAGS: -Copt-level=3 -Ctarget-cpu=nocona
+          USE_LTO: 0
+        run: |
+          ../configure.sh \
+            --build-name=dwproton-${{ steps.vars.outputs.tag }}-${{ steps.vars.outputs.sha_short }}-x86_64 \
+            --enable-ccache \
+            --without-tts
+
+      - name: Build
+        working-directory: ./build
+        run: |
+          make -j$(nproc) redist
+
+      - name: Save cache
+        id: ccache-save
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.ccache
+          key: ${{ steps.ccache-restore.outputs.cache-primary-key }}
+
+      - name: Upload snapshot artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: dwproton-${{ steps.vars.outputs.tag }}-${{ steps.vars.outputs.sha_short }}-x86_64
+          path: |
+            ./build/dwproton-${{ steps.vars.outputs.tag }}-${{ steps.vars.outputs.sha_short }}-x86_64.tar.xz
+            ./build/dwproton-${{ steps.vars.outputs.tag }}-${{ steps.vars.outputs.sha_short }}-x86_64.sha512sum
+          retention-days: 14
