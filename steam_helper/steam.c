@@ -865,11 +865,25 @@ int main(int argc, char *argv[])
     BOOL game_process = FALSE;
     const char *sgi;
     DWORD rc = 0;
+    const char *canonical_hole;
 
     WINE_TRACE("\n");
 
     if (steam_command_handler(argc, argv))
         return 0;
+
+    if ((canonical_hole = getenv("WINE_CANONICAL_HOLE")))
+    {
+        if (strcmp(canonical_hole, "skip_volatile_check") == 0)
+        {
+            FIXME("skipping the volatile check, ready for the boost thanks to the guy who reverse engineered the whole BSPR "
+                "issue in 18 hours, thanks :prayge: :jokerge:\n");
+        }
+        else
+        {
+            ERR("unrecognized option `%s`\n", canonical_hole);
+        }
+    }
 
     if ((sgi = getenv("SteamGameId")))
     {

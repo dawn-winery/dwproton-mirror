@@ -2344,7 +2344,7 @@ $(eval $(call rules-common,protonfixes,x86_64,unix))
 $(eval $(call rules-common,protonfixes,aarch64,unix))
 
 $(OBJ)/.protonfixes-post-source: patches-source
-	$(foreach p,$(shell find $(PATCHES_SRC)/protonfixes/ -name "*.patch" | sort),patch -d $(PROTONFIXES_SRC) -Np1 -i $(p) &&) true
+	$(foreach p,$(shell find $(PATCHES_SRC)/protonfixes/ -name "*.patch" | sort),patch --follow-symlinks -d $(PROTONFIXES_SRC) -Np1 -i $(p) &&) true
 	touch $@
 
 $(OBJ)/.protonfixes-x86_64-build:
@@ -2410,7 +2410,7 @@ $(DIST_COPY_TARGETS): | $(DST_DIR)
 all-dist: $(DIST_COPY_TARGETS)
 
 all-dist:
-	echo `date '+%s'` `GIT_DIR=$(abspath $(SRCDIR)/.git) git describe --tags` > $(DIST_VERSION)
+	echo `date '+%s'` $$(GIT_DIR=$(abspath $(SRCDIR)/.git) git describe --tags 2>/dev/null || echo $(BUILD_NAME)) > $(DIST_VERSION)
 
 
 ##
