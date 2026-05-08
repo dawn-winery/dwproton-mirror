@@ -1,8 +1,8 @@
-From 9988eb1cc3569143e7a5978fc6c54b69f2ce1b0d Mon Sep 17 00:00:00 2001
+From 79570d2bc226dc1102eee84cf10cc9b0443823f6 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Bernhard=20K=C3=B6lbl?= <bkoelbl@codeweavers.com>
 Date: Wed, 29 Apr 2026 11:15:02 +0200
-Subject: [PATCH] windows.media.speech: Don't access the all voices vector view
- directly.
+Subject: [PATCH 02/47] windows.media.speech: Don't access the all voices
+ vector view directly.
 
 The vector view might be uninitialized by the time
 ISpeechSynthesizer_put_Voice is called, so get it via the "official"

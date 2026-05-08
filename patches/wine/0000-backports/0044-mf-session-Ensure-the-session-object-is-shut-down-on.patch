@@ -1,0 +1,38 @@
+From d1ed89a5b33bc1da6ac469d6caf40b021ef1683a Mon Sep 17 00:00:00 2001
+From: Conor McCarthy <cmccarthy@codeweavers.com>
+Date: Thu, 30 Oct 2025 12:59:22 +1000
+Subject: [PATCH 44/47] mf/session: Ensure the session object is shut down on
+ release.
+
+(cherry picked from commit 1fda3a66f5a5ee73d88f8591fefb2103ae9cdbaa)
+---
+ dlls/mf/session.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/dlls/mf/session.c b/dlls/mf/session.c
+index 6affd199a4a..67d32e0bb2b 100644
+--- a/dlls/mf/session.c
++++ b/dlls/mf/session.c
+@@ -2242,8 +2242,8 @@ static ULONG WINAPI mfsession_Release(IMFMediaSession *iface)
+ 
+     if (!refcount)
+     {
+-        session_clear_queued_topologies(session);
+-        session_clear_presentation(session);
++        if (SUCCEEDED(session_is_shut_down(session)))
++            IMFMediaSession_Shutdown(iface);
+         session_clear_command_list(session);
+         if (session->presentation.current_topology)
+             IMFTopology_Release(session->presentation.current_topology);
+@@ -2514,8 +2514,6 @@ static HRESULT WINAPI mfsession_Shutdown(IMFMediaSession *iface)
+         if (session->quality_manager)
+             IMFQualityManager_Shutdown(session->quality_manager);
+         MFShutdownObject((IUnknown *)session->clock);
+-        IMFPresentationClock_Release(session->clock);
+-        session->clock = NULL;
+         session_clear_presentation(session);
+         session_clear_queued_topologies(session);
+         session_submit_simple_command(session, SESSION_CMD_SHUTDOWN);
+-- 
+2.54.0
+

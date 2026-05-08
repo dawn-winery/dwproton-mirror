@@ -1,0 +1,234 @@
+From 5bf0a559decc9352ed84ffaefc694fc522250fbb Mon Sep 17 00:00:00 2001
+From: Connor McAdams <cmcadams@codeweavers.com>
+Date: Thu, 30 Apr 2026 09:58:14 -0400
+Subject: [PATCH 06/47] Revert "dinput/tests: Add tests for joystick id."
+
+This reverts commit 9e3e56b822a70c9a087078d9209bc0d54cfb5497.
+
+CW-Bug-Id: #25883
+---
+ dlls/dinput/tests/driver_bus.c |   2 +-
+ dlls/dinput/tests/driver_hid.c |   2 +
+ dlls/dinput/tests/hid.c        |   3 +-
+ dlls/dinput/tests/joystick8.c  | 154 +--------------------------------
+ 4 files changed, 5 insertions(+), 156 deletions(-)
+
+diff --git a/dlls/dinput/tests/driver_bus.c b/dlls/dinput/tests/driver_bus.c
+index 788ac5cebd7..e8338e49711 100644
+--- a/dlls/dinput/tests/driver_bus.c
++++ b/dlls/dinput/tests/driver_bus.c
+@@ -563,7 +563,7 @@ static NTSTATUS remove_child_device( struct func_device *impl, DEVICE_OBJECT *de
+     for (i = 0; i < impl->devices->Count; ++i)
+         if (impl->devices->Objects[i] == device) break;
+     if (i == impl->devices->Count) status = STATUS_NOT_FOUND;
+-    else impl->devices->Objects[i] = impl->devices->Objects[--impl->devices->Count];
++    else impl->devices->Objects[i] = impl->devices->Objects[impl->devices->Count--];
+     KeReleaseSpinLock( &impl->base.lock, irql );
+ 
+     return status;
+diff --git a/dlls/dinput/tests/driver_hid.c b/dlls/dinput/tests/driver_hid.c
+index 5d92c8b230a..7b20af07493 100644
+--- a/dlls/dinput/tests/driver_hid.c
++++ b/dlls/dinput/tests/driver_hid.c
+@@ -57,6 +57,8 @@ static void check_device( DEVICE_OBJECT *device )
+ 
+     ok( device == impl->expect_hid_fdo, "got device %p\n", device );
+     ok( device->DriverObject == expect_driver, "got DriverObject %p\n", device->DriverObject );
++    if (!device->NextDevice) ok( device == impl->expect_hid_fdo, "got device %p\n", device );
++    else ok( device->NextDevice == impl->expect_hid_fdo, "got NextDevice %p\n", device->NextDevice );
+     ok( !device->AttachedDevice, "got AttachedDevice %p\n", device->AttachedDevice );
+ 
+     ok( ext->MiniDeviceExtension == impl->expect_hid_ext, "got MiniDeviceExtension %p\n", ext->MiniDeviceExtension );
+diff --git a/dlls/dinput/tests/hid.c b/dlls/dinput/tests/hid.c
+index 5dfa51e17a9..c9cdb649f26 100644
+--- a/dlls/dinput/tests/hid.c
++++ b/dlls/dinput/tests/hid.c
+@@ -720,8 +720,7 @@ void hid_device_stop( struct hid_device_desc *desc, UINT count )
+                            NULL, OPEN_EXISTING, 0, NULL );
+     ok( control != INVALID_HANDLE_VALUE, "CreateFile failed, error %lu\n", GetLastError() );
+     ret = sync_ioctl( control, IOCTL_WINETEST_REMOVE_DEVICE, desc, sizeof(*desc), NULL, 0, 5000 );
+-    ok( ret || (GetLastError() == ERROR_FILE_NOT_FOUND || GetLastError() == ERROR_NO_SUCH_DEVICE),
+-        "IOCTL_WINETEST_REMOVE_DEVICE failed, last error %lu\n", GetLastError() );
++    ok( ret || GetLastError() == ERROR_FILE_NOT_FOUND, "IOCTL_WINETEST_REMOVE_DEVICE failed, last error %lu\n", GetLastError() );
+     CloseHandle( control );
+ 
+     if (!ret) return;
+diff --git a/dlls/dinput/tests/joystick8.c b/dlls/dinput/tests/joystick8.c
+index 279798af5ca..fc33ba981e4 100644
+--- a/dlls/dinput/tests/joystick8.c
++++ b/dlls/dinput/tests/joystick8.c
+@@ -5980,158 +5980,6 @@ static void test_rawinput_desktop( const char *path, BOOL input )
+     DestroyWindow( hwnd );
+ }
+ 
+-struct select_default_instance_data
+-{
+-    IDirectInput8W *di8;
+-    DIDEVICEINSTANCEW default_instance;
+-    BOOL default_instance_found;
+-};
+-
+-static BOOL CALLBACK select_default_instance( const DIDEVICEINSTANCEW *devinst, void *context )
+-{
+-    DIPROPGUIDANDPATH prop_guid_path =
+-    {
+-        .diph =
+-        {
+-            .dwSize = sizeof(DIPROPGUIDANDPATH),
+-            .dwHeaderSize = sizeof(DIPROPHEADER),
+-            .dwHow = DIPH_DEVICE,
+-        },
+-    };
+-
+-    DIPROPDWORD prop_dword =
+-    {
+-        .diph =
+-        {
+-            .dwSize = sizeof(DIPROPDWORD),
+-            .dwHeaderSize = sizeof(DIPROPHEADER),
+-            .dwHow = DIPH_DEVICE,
+-        },
+-    };
+-    struct select_default_instance_data *d = context;
+-    IDirectInputDevice8W *device;
+-    HRESULT hr;
+-
+-    hr = IDirectInput8_CreateDevice( d->di8, &devinst->guidInstance, &device, NULL );
+-    ok( hr == DI_OK, "got hr %#lx.\n", hr );
+-    hr = IDirectInputDevice8_GetProperty( device, DIPROP_JOYSTICKID, &prop_dword.diph );
+-    ok( hr == DI_OK, "got hr %#lx.\n", hr );
+-    todo_wine ok( prop_dword.dwData < 100, "got %lu.\n", prop_dword.dwData );
+-
+-    hr = IDirectInputDevice8_GetProperty( device, DIPROP_GUIDANDPATH, &prop_guid_path.diph );
+-    ok( hr == DI_OK, "got hr %#lx.\n", hr );
+-    trace( "%s, id %lu, inst %s, path %s.\n", debugstr_w(devinst->tszInstanceName), prop_dword.dwData,
+-           debugstr_guid(&devinst->guidInstance), debugstr_w(prop_guid_path.wszPath) );
+-    if (!prop_dword.dwData)
+-    {
+-        ok( !d->default_instance_found, "duplicate joystick with id 0.\n" );
+-        d->default_instance = *devinst;
+-        d->default_instance_found = TRUE;
+-    }
+-    IDirectInputDevice8_Release( device );
+-    return DIENUM_CONTINUE;
+-}
+-
+-static void test_joystick_id(void)
+-{
+-#include "psh_hid_macros.h"
+-    const unsigned char report_desc[] =
+-    {
+-        USAGE_PAGE(1, HID_USAGE_PAGE_GENERIC),
+-        USAGE(1, HID_USAGE_GENERIC_JOYSTICK),
+-        COLLECTION(1, Application),
+-            USAGE(1, HID_USAGE_GENERIC_JOYSTICK),
+-            COLLECTION(1, Physical),
+-                USAGE_PAGE(1, HID_USAGE_PAGE_BUTTON),
+-                USAGE_MINIMUM(1, 1),
+-                USAGE_MAXIMUM(1, 6),
+-                LOGICAL_MINIMUM(1, 0),
+-                LOGICAL_MAXIMUM(1, 1),
+-                PHYSICAL_MINIMUM(1, 0),
+-                PHYSICAL_MAXIMUM(1, 1),
+-                REPORT_SIZE(1, 1),
+-                REPORT_COUNT(1, 8),
+-                INPUT(1, Data|Var|Abs),
+-            END_COLLECTION,
+-        END_COLLECTION,
+-    };
+-    C_ASSERT(sizeof(report_desc) < MAX_HID_DESCRIPTOR_LEN);
+-#include "pop_hid_macros.h"
+-    struct hid_device_desc desc =
+-    {
+-        .use_report_id = TRUE,
+-        .caps = { .InputReportByteLength = 1 },
+-    };
+-    struct hid_device_desc desc2;
+-
+-    DIPROPDWORD prop_dword =
+-    {
+-        .diph =
+-        {
+-            .dwSize = sizeof(DIPROPDWORD),
+-            .dwHeaderSize = sizeof(DIPROPHEADER),
+-            .dwHow = DIPH_DEVICE,
+-        },
+-    };
+-    struct select_default_instance_data d = { NULL };
+-    IDirectInputDevice8W *device;
+-    IDirectInput8W *di8;
+-    HRESULT hr;
+-
+-    cleanup_registry_keys();
+-
+-    hr = DirectInput8Create( instance, DIRECTINPUT_VERSION, &IID_IDirectInput8W, (void **)&di8, NULL );
+-    if (FAILED(hr))
+-    {
+-        win_skip( "DirectInput8Create returned %#lx.\n", hr );
+-        return;
+-    }
+-
+-    desc.report_descriptor_len = sizeof(report_desc);
+-    memcpy( desc.report_descriptor_buf, report_desc, sizeof(report_desc) );
+-    fill_context( desc.context, ARRAY_SIZE(desc.context) );
+-
+-    desc.attributes = default_attributes;
+-    desc2 = desc;
+-    desc2.attributes.ProductID++;
+-    if (!hid_device_start( &desc, 1 )) goto done;
+-    if (!hid_device_start( &desc2, 1 )) goto done;
+-
+-    d.di8 = di8;
+-    hr = IDirectInput8_EnumDevices( di8, DI8DEVCLASS_GAMECTRL, select_default_instance, &d, DIEDFL_ALLDEVICES );
+-    ok( hr == DI_OK, "got hr %#lx.\n", hr );
+-
+-    hr = IDirectInput8_CreateDevice( di8, &GUID_Joystick, &device, NULL );
+-    if (d.default_instance_found)
+-    {
+-        ok( hr == DI_OK, "got %#lx.\n", hr );
+-        hr = IDirectInputDevice8_GetProperty( device, DIPROP_JOYSTICKID, &prop_dword.diph );
+-        ok( hr == DI_OK, "got hr %#lx.\n", hr );
+-        ok( !prop_dword.dwData, "got %lu.\n", prop_dword.dwData );
+-        IDirectInputDevice8_Release( device );
+-    }
+-    else
+-    {
+-        ok( hr == DIERR_DEVICENOTREG, "got %#lx.\n", hr );
+-    }
+-
+-    hid_device_stop( &desc, 1 );
+-
+-    memset( &d, 0, sizeof(d) );
+-    d.di8 = di8;
+-    hr = IDirectInput8_EnumDevices( di8, DI8DEVCLASS_GAMECTRL, select_default_instance, &d, DIEDFL_ALLDEVICES );
+-    ok( hr == DI_OK, "got hr %#lx.\n", hr );
+-    ok( !d.default_instance_found, "found joystick id 0.\n" );
+-    hr = IDirectInput8_CreateDevice( di8, &GUID_Joystick, &device, NULL );
+-    ok( hr == DIERR_DEVICENOTREG, "got %#lx.\n", hr );
+-
+-done:
+-    IDirectInput8_Release( di8 );
+-    hid_device_stop( &desc, 1 );
+-    hid_device_stop( &desc2, 1 );
+-    cleanup_registry_keys();
+-}
+-
+ START_TEST( joystick8 )
+ {
+     char **argv;
+@@ -6143,11 +5991,11 @@ START_TEST( joystick8 )
+ 
+     dinput_test_init();
+     if (!bus_device_start()) goto done;
++
+     winetest_mute_threshold = 3;
+ 
+     if (test_device_types( 0x800 ))
+     {
+-        test_joystick_id();
+         /* This needs to be done before doing anything involving dinput.dll
+          * on Windows, or the tests will fail, dinput8.dll is fine though. */
+         test_winmm_joystick();
+-- 
+2.54.0
+

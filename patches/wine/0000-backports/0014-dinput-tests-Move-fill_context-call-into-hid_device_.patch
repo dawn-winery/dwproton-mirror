@@ -1,0 +1,318 @@
+From 8962afa06dbc9bb0462675400568255af022bcb1 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?R=C3=A9mi=20Bernon?= <rbernon@codeweavers.com>
+Date: Wed, 1 Apr 2026 14:19:44 +0200
+Subject: [PATCH 14/47] dinput/tests: Move fill_context call into
+ hid_device_start.
+
+(cherry picked from commit cc0bd03e30da978699cee4fa06a3b6a640c8ae7d)
+
+CW-Bug-Id: #25883
+---
+ dlls/dinput/tests/device8.c        |  8 ++------
+ dlls/dinput/tests/dinput_test.h    |  7 ++-----
+ dlls/dinput/tests/force_feedback.c |  4 ----
+ dlls/dinput/tests/hid.c            | 32 ++++++++++++++----------------
+ dlls/dinput/tests/hotplug.c        |  2 --
+ dlls/dinput/tests/joystick8.c      |  8 --------
+ 6 files changed, 19 insertions(+), 42 deletions(-)
+
+diff --git a/dlls/dinput/tests/device8.c b/dlls/dinput/tests/device8.c
+index 52a4d9c0e25..b3774abfdba 100644
+--- a/dlls/dinput/tests/device8.c
++++ b/dlls/dinput/tests/device8.c
+@@ -1715,9 +1715,8 @@ static void test_hid_mouse(void)
+ 
+     desc.report_descriptor_len = sizeof(report_desc);
+     memcpy( desc.report_descriptor_buf, report_desc, sizeof(report_desc) );
+-    fill_context( desc.context, ARRAY_SIZE(desc.context) );
+ 
+-    if (!hid_device_start_( &desc, 1, 5000 /* needs a long timeout on Win7 */ )) goto done;
++    if (!hid_device_start( &desc, 1 )) goto done;
+ 
+     swprintf( device_path, MAX_PATH, L"\\\\?\\hid#vid_%04x&pid_%04x", desc.attributes.VendorID,
+               desc.attributes.ProductID );
+@@ -2267,7 +2266,6 @@ static void test_hid_touch_screen(void)
+     memcpy( desc.report_descriptor_buf, report_desc, sizeof(report_desc) );
+     desc.expect_size = sizeof(expect_max_count);
+     memcpy( desc.expect, &expect_max_count, sizeof(expect_max_count) );
+-    fill_context( desc.context, ARRAY_SIZE(desc.context) );
+ 
+     if (!hid_device_start( &desc, 1 )) goto done;
+ 
+@@ -2439,7 +2437,6 @@ static void test_hid_touch_screen(void)
+     desc.is_polled = TRUE;
+     desc.input_size = sizeof(touch_release);
+     memcpy( desc.input, &touch_release, sizeof(touch_release) );
+-    fill_context( desc.context, ARRAY_SIZE(desc.context) );
+ 
+     if (!hid_device_start( &desc, 1 )) goto done;
+ 
+@@ -3567,9 +3564,8 @@ static void test_hid_keyboard(void)
+ 
+     desc.report_descriptor_len = sizeof(report_desc);
+     memcpy( desc.report_descriptor_buf, report_desc, sizeof(report_desc) );
+-    fill_context( desc.context, ARRAY_SIZE(desc.context) );
+ 
+-    if (!hid_device_start_( &desc, 1, 5000 /* needs a long timeout on Win7 */ )) goto done;
++    if (!hid_device_start( &desc, 1 )) goto done;
+ 
+     swprintf( device_path, MAX_PATH, L"\\\\?\\hid#vid_%04x&pid_%04x", desc.attributes.VendorID,
+               desc.attributes.ProductID );
+diff --git a/dlls/dinput/tests/dinput_test.h b/dlls/dinput/tests/dinput_test.h
+index d19e1868d76..26842aa119b 100644
+--- a/dlls/dinput/tests/dinput_test.h
++++ b/dlls/dinput/tests/dinput_test.h
+@@ -51,8 +51,8 @@ extern const WCHAR expect_path_end[];
+ extern HINSTANCE instance;
+ extern BOOL localized; /* object names get translated */
+ 
+-#define hid_device_start( a, b ) hid_device_start_( a, b, 1000 )
+-BOOL hid_device_start_( struct hid_device_desc *desc, UINT count, DWORD timeout );
++#define hid_device_start( a, b ) hid_device_start_( __FILE__, __LINE__, a, b, 1000 )
++BOOL hid_device_start_( const char *file, int line, struct hid_device_desc *desc, UINT count, DWORD timeout );
+ void hid_device_stop( struct hid_device_desc *desc, UINT count );
+ BOOL bus_device_start(void);
+ void bus_device_stop(void);
+@@ -67,9 +67,6 @@ void dinput_test_exit(void);
+ HRESULT dinput_test_create_device( DWORD version, DIDEVICEINSTANCEW *devinst, IDirectInputDevice8W **device );
+ DWORD WINAPI dinput_test_device_thread( void *stop_event );
+ 
+-#define fill_context( a, b ) fill_context_( __FILE__, __LINE__, a, b )
+-void fill_context_( const char *file, int line, char *buffer, SIZE_T size );
+-
+ #define check_member_( file, line, val, exp, fmt, member )                                         \
+     ok_(file, line)( (val).member == (exp).member, "got " #member " " fmt "\n", (val).member )
+ #define check_member( val, exp, fmt, member )                                                      \
+diff --git a/dlls/dinput/tests/force_feedback.c b/dlls/dinput/tests/force_feedback.c
+index 89caa86af9d..54b5acae5e7 100644
+--- a/dlls/dinput/tests/force_feedback.c
++++ b/dlls/dinput/tests/force_feedback.c
+@@ -3424,7 +3424,6 @@ static BOOL test_force_feedback_joystick( DWORD version )
+ 
+     desc.report_descriptor_len = sizeof(report_descriptor);
+     memcpy( desc.report_descriptor_buf, report_descriptor, sizeof(report_descriptor) );
+-    fill_context( desc.context, ARRAY_SIZE(desc.context) );
+ 
+     if (!hid_device_start( &desc, 1 )) goto done;
+     if (FAILED(hr = dinput_test_create_device( version, &devinst, &device ))) goto done;
+@@ -4322,7 +4321,6 @@ static BOOL test_force_feedback_six_axes(void)
+ 
+     desc.report_descriptor_len = sizeof(report_descriptor);
+     memcpy( desc.report_descriptor_buf, report_descriptor, sizeof(report_descriptor) );
+-    fill_context( desc.context, ARRAY_SIZE(desc.context) );
+ 
+     if (!hid_device_start( &desc, 1 )) goto done;
+     if (FAILED(hr = dinput_test_create_device( version, &devinst, &device ))) goto done;
+@@ -5311,7 +5309,6 @@ static void test_device_managed_effect(void)
+     memcpy( desc.report_descriptor_buf, report_descriptor, sizeof(report_descriptor) );
+     desc.expect_size = sizeof(expect_pool);
+     memcpy( desc.expect, expect_pool, sizeof(expect_pool) );
+-    fill_context( desc.context, ARRAY_SIZE(desc.context) );
+ 
+     if (!hid_device_start( &desc, 1 )) goto done;
+     if (FAILED(hr = dinput_test_create_device( DIRECTINPUT_VERSION, &devinst, &device ))) goto done;
+@@ -7269,7 +7266,6 @@ static void test_windows_gaming_input(void)
+     memcpy( desc.report_descriptor_buf, report_desc, sizeof(report_desc) );
+     desc.expect_size = sizeof(expect_init);
+     memcpy( desc.expect, expect_init, sizeof(expect_init) );
+-    fill_context( desc.context, ARRAY_SIZE(desc.context) );
+ 
+     if (!hid_device_start( &desc, 1 )) goto done;
+     ret = WaitForSingleObject( controller_added.event, 5000 );
+diff --git a/dlls/dinput/tests/hid.c b/dlls/dinput/tests/hid.c
+index 4dcbba7ab26..2bb79b6212d 100644
+--- a/dlls/dinput/tests/hid.c
++++ b/dlls/dinput/tests/hid.c
+@@ -711,6 +711,16 @@ BOOL bus_device_start(void)
+     return ret || GetLastError() == ERROR_SERVICE_ALREADY_RUNNING;
+ }
+ 
++static void fill_context( const char *file, int line, char *buffer, SIZE_T size )
++{
++    const char *source_file;
++    source_file = strrchr( file, '/' );
++    if (!source_file) source_file = strrchr( file, '\\' );
++    if (!source_file) source_file = file;
++    else source_file++;
++    snprintf( buffer, size, "%s:%d", source_file, line );
++}
++
+ static void hid_device_remove( HANDLE control, struct hid_device_desc *desc, UINT count )
+ {
+     DWORD ret;
+@@ -741,7 +751,7 @@ void hid_device_stop( struct hid_device_desc *desc, UINT count )
+     CloseHandle( control );
+ }
+ 
+-BOOL hid_device_start_( struct hid_device_desc *desc, UINT count, DWORD timeout )
++BOOL hid_device_start_( const char *file, int line, struct hid_device_desc *desc, UINT count, DWORD timeout )
+ {
+     HANDLE control;
+     DWORD ret = 0;
+@@ -752,6 +762,8 @@ BOOL hid_device_start_( struct hid_device_desc *desc, UINT count, DWORD timeout
+ 
+     for (UINT i = 0; i < count; i++)
+     {
++        fill_context( file, line, desc[i].context, ARRAY_SIZE(desc[i].context) );
++
+         ret = sync_ioctl( control, IOCTL_WINETEST_CREATE_DEVICE, desc + i, sizeof(*desc), NULL, 0, 5000 );
+         ok( ret, "IOCTL_WINETEST_CREATE_DEVICE failed, last error %lu\n", GetLastError() );
+ 
+@@ -937,16 +949,6 @@ BOOL sync_ioctl_( const char *file, int line, HANDLE device, DWORD code, void *i
+     return ret;
+ }
+ 
+-void fill_context_( const char *file, int line, char *buffer, SIZE_T size )
+-{
+-    const char *source_file;
+-    source_file = strrchr( file, '/' );
+-    if (!source_file) source_file = strrchr( file, '\\' );
+-    if (!source_file) source_file = file;
+-    else source_file++;
+-    snprintf( buffer, size, "%s:%d", source_file, line );
+-}
+-
+ void set_hid_expect_( const char *file, int line, HANDLE device, struct hid_device_desc *desc,
+                       struct hid_expect *expect, DWORD expect_size )
+ {
+@@ -957,7 +959,7 @@ void set_hid_expect_( const char *file, int line, HANDLE device, struct hid_devi
+     if (desc) memcpy( buffer, desc, sizeof(*desc) );
+     else memset( buffer, 0, sizeof(*desc) );
+ 
+-    fill_context_( file, line, buffer + sizeof(*desc), ARRAY_SIZE(buffer) - sizeof(*desc) );
++    fill_context( file, line, buffer + sizeof(*desc), ARRAY_SIZE(buffer) - sizeof(*desc) );
+     size = sizeof(*desc) + strlen( buffer + sizeof(*desc) ) + 1;
+     ret = sync_ioctl_( file, line, device, IOCTL_WINETEST_HID_SET_CONTEXT, buffer, size, NULL, 0, 5000 );
+     ok_(file, line)( ret, "IOCTL_WINETEST_HID_SET_CONTEXT failed, last error %lu\n", GetLastError() );
+@@ -1001,7 +1003,7 @@ void send_hid_input_( const char *file, int line, HANDLE device, struct hid_devi
+     if (desc) memcpy( buffer, desc, sizeof(*desc) );
+     else memset( buffer, 0, sizeof(*desc) );
+ 
+-    fill_context_( file, line, buffer + sizeof(*desc), ARRAY_SIZE(buffer) - sizeof(*desc) );
++    fill_context( file, line, buffer + sizeof(*desc), ARRAY_SIZE(buffer) - sizeof(*desc) );
+     size = sizeof(*desc) + strlen( buffer + sizeof(*desc) ) + 1;
+     ret = sync_ioctl_( file, line, device, IOCTL_WINETEST_HID_SET_CONTEXT, buffer, size, NULL, 0, 5000 );
+     ok_(file, line)( ret, "IOCTL_WINETEST_HID_SET_CONTEXT failed, last error %lu\n", GetLastError() );
+@@ -3183,7 +3185,6 @@ static void test_hid_driver( DWORD report_id, DWORD polled )
+     memcpy( desc.report_descriptor_buf, report_desc, sizeof(report_desc) );
+     desc.input_size = polled ? sizeof(expect_in) : 0;
+     memcpy( desc.input, &expect_in, sizeof(expect_in) );
+-    fill_context( desc.context, ARRAY_SIZE(desc.context) );
+ 
+     if (hid_device_start( &desc, 1 )) test_hid_device( report_id, polled, &caps, &desc );
+     hid_device_stop( &desc, 1 );
+@@ -3592,7 +3593,6 @@ static void test_hidp_kdr(void)
+ 
+     desc.report_descriptor_len = sizeof(report_desc);
+     memcpy( desc.report_descriptor_buf, report_desc, sizeof(report_desc) );
+-    fill_context( desc.context, ARRAY_SIZE(desc.context) );
+ 
+     if (!hid_device_start( &desc, 1 )) goto done;
+ 
+@@ -3902,7 +3902,6 @@ DWORD WINAPI dinput_test_device_thread( void *stop_event )
+ 
+     desc.report_descriptor_len = sizeof(gamepad_desc);
+     memcpy( desc.report_descriptor_buf, gamepad_desc, sizeof(gamepad_desc) );
+-    fill_context( desc.context, ARRAY_SIZE(desc.context) );
+ 
+     hid_device_start( &desc, 1 );
+     ret = WaitForSingleObject( stop_event, 5000 );
+@@ -4167,7 +4166,6 @@ static void test_hid_multiple_tlc(void)
+ 
+     desc.report_descriptor_len = sizeof(report_desc);
+     memcpy( desc.report_descriptor_buf, report_desc, sizeof(report_desc) );
+-    fill_context( desc.context, ARRAY_SIZE(desc.context) );
+ 
+     if (!hid_device_start( &desc, 1 )) goto done;
+ 
+diff --git a/dlls/dinput/tests/hotplug.c b/dlls/dinput/tests/hotplug.c
+index ce44bae754c..9bea45202ff 100644
+--- a/dlls/dinput/tests/hotplug.c
++++ b/dlls/dinput/tests/hotplug.c
+@@ -167,7 +167,6 @@ static BOOL test_input_lost( DWORD version )
+ 
+     desc.report_descriptor_len = sizeof(report_desc);
+     memcpy( desc.report_descriptor_buf, report_desc, sizeof(report_desc) );
+-    fill_context( desc.context, ARRAY_SIZE(desc.context) );
+ 
+     if (!hid_device_start( &desc, 1 )) goto done;
+     if (FAILED(hr = dinput_test_create_device( version, &devinst, &device ))) goto done;
+@@ -209,7 +208,6 @@ static BOOL test_input_lost( DWORD version )
+     hr = IDirectInputDevice8_Unacquire( device );
+     ok( hr == DI_NOEFFECT, "Unacquire returned: %#lx\n", hr );
+ 
+-    fill_context( desc.context, ARRAY_SIZE(desc.context) );
+     hid_device_start( &desc, 1 );
+ 
+     hr = IDirectInputDevice8_Acquire( device );
+diff --git a/dlls/dinput/tests/joystick8.c b/dlls/dinput/tests/joystick8.c
+index bb908603836..5c5b8f69d3f 100644
+--- a/dlls/dinput/tests/joystick8.c
++++ b/dlls/dinput/tests/joystick8.c
+@@ -1918,7 +1918,6 @@ static void test_simple_joystick( DWORD version )
+ 
+     desc.report_descriptor_len = sizeof(report_desc);
+     memcpy( desc.report_descriptor_buf, report_desc, sizeof(report_desc) );
+-    fill_context( desc.context, ARRAY_SIZE(desc.context) );
+ 
+     if (!hid_device_start( &desc, 1 )) goto done;
+     if (FAILED(hr = dinput_test_create_device( version, &devinst, &device ))) goto done;
+@@ -3743,7 +3742,6 @@ static BOOL test_device_types( DWORD version )
+         desc.caps = device_desc[i].hid_caps;
+         desc.report_descriptor_len = device_desc[i].report_desc_len;
+         memcpy( desc.report_descriptor_buf, device_desc[i].report_desc_buf, device_desc[i].report_desc_len );
+-        fill_context( desc.context, ARRAY_SIZE(desc.context) );
+ 
+         if (!hid_device_start( &desc, 1 ))
+         {
+@@ -4213,7 +4211,6 @@ static void test_many_axes_joystick(void)
+ 
+     desc.report_descriptor_len = sizeof(report_desc);
+     memcpy( desc.report_descriptor_buf, report_desc, sizeof(report_desc) );
+-    fill_context( desc.context, ARRAY_SIZE(desc.context) );
+ 
+     if (!hid_device_start( &desc, 1 )) goto done;
+     if (FAILED(hr = dinput_test_create_device( DIRECTINPUT_VERSION, &devinst, &device ))) goto done;
+@@ -4481,7 +4478,6 @@ static void test_driving_wheel_axes(void)
+ 
+     desc.report_descriptor_len = sizeof(report_desc);
+     memcpy( desc.report_descriptor_buf, report_desc, sizeof(report_desc) );
+-    fill_context( desc.context, ARRAY_SIZE(desc.context) );
+ 
+     if (!hid_device_start( &desc, 1 )) goto done;
+     if (FAILED(hr = dinput_test_create_device( DIRECTINPUT_VERSION, &devinst, &device ))) goto done;
+@@ -4716,7 +4712,6 @@ static void test_winmm_joystick(void)
+ 
+     desc.report_descriptor_len = sizeof(report_desc);
+     memcpy( desc.report_descriptor_buf, report_desc, sizeof(report_desc) );
+-    fill_context( desc.context, ARRAY_SIZE(desc.context) );
+ 
+     if (!hid_device_start( &desc, 1 )) goto done;
+ 
+@@ -5140,7 +5135,6 @@ static void test_windows_gaming_input(void)
+ 
+     desc.report_descriptor_len = sizeof(report_desc);
+     memcpy( desc.report_descriptor_buf, report_desc, sizeof(report_desc) );
+-    fill_context( desc.context, ARRAY_SIZE(desc.context) );
+ 
+     if (!hid_device_start( &desc, 1 )) goto done;
+     res = WaitForSingleObject( controller_added.event, 5000 );
+@@ -5251,7 +5245,6 @@ static void test_windows_gaming_input(void)
+ 
+     desc.report_descriptor_len = sizeof(wheel_threepedals_desc);
+     memcpy( desc.report_descriptor_buf, wheel_threepedals_desc, sizeof(wheel_threepedals_desc) );
+-    fill_context( desc.context, ARRAY_SIZE(desc.context) );
+ 
+     controller_added.event = CreateEventW( NULL, FALSE, FALSE, NULL );
+     ok( !!controller_added.event, "CreateEventW failed, error %lu\n", GetLastError() );
+@@ -5470,7 +5463,6 @@ static void test_rawinput( char **argv )
+ 
+     desc.report_descriptor_len = sizeof(report_desc);
+     memcpy( desc.report_descriptor_buf, report_desc, sizeof(report_desc) );
+-    fill_context( desc.context, ARRAY_SIZE(desc.context) );
+ 
+     rawinput_device_added = CreateSemaphoreW( NULL, 0, LONG_MAX, NULL );
+     ok( !!rawinput_device_added, "CreateSemaphoreW failed, error %lu\n", GetLastError() );
+-- 
+2.54.0
+

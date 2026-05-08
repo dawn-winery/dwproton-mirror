@@ -1,0 +1,40 @@
+From 12ebbe810ff1c0e5f5374b2dfefd9a0ab60ff47a Mon Sep 17 00:00:00 2001
+From: Connor McAdams <cmcadams@codeweavers.com>
+Date: Tue, 3 Mar 2026 12:18:56 -0500
+Subject: [PATCH 07/47] dinput/tests: Fix occasional GameInput test crash.
+
+Signed-off-by: Connor McAdams <cmcadams@codeweavers.com>
+(cherry picked from commit 130b8042fbf9261effaccd6494268313d086629d)
+
+CW-Bug-Id: #25883
+---
+ dlls/dinput/tests/joystick8.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/dlls/dinput/tests/joystick8.c b/dlls/dinput/tests/joystick8.c
+index fc33ba981e4..bb908603836 100644
+--- a/dlls/dinput/tests/joystick8.c
++++ b/dlls/dinput/tests/joystick8.c
+@@ -5320,6 +5320,7 @@ static void test_game_input(void)
+     HMODULE gameinput = LoadLibraryW( L"gameinput.dll" );
+     HRESULT (WINAPI *pGameInputCreate)( v0_IGameInput **out );
+     v0_IGameInput *gi0;
++    HRESULT hr;
+ 
+     if (!gameinput || !(pGameInputCreate = (void *)GetProcAddress( gameinput, "GameInputCreate" )))
+     {
+@@ -5328,8 +5329,9 @@ static void test_game_input(void)
+     }
+ 
+     gi0 = (void *)0xdeadbeef;
+-    todo_wine ok_hr( S_OK, pGameInputCreate( &gi0 ) );
+-    if (gi0 != (void *)0xdeadbeef) ok_ret( 0, v0_IGameInput_Release( gi0 ) );
++    hr = pGameInputCreate( &gi0 );
++    todo_wine ok( hr == S_OK || broken(hr == E_NOTIMPL), "Unexpected hr %#lx.\n", hr );
++    if (gi0 && gi0 != (void *)0xdeadbeef) ok_ret( 0, v0_IGameInput_Release( gi0 ) );
+ }
+ 
+ static HANDLE rawinput_device_added, rawinput_device_removed, rawinput_event;
+-- 
+2.54.0
+

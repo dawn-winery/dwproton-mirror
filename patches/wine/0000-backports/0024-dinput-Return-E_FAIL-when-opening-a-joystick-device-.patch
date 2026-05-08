@@ -1,0 +1,56 @@
+From 937d1e17f2847edab00af83e9e80d4af7ac0a5d7 Mon Sep 17 00:00:00 2001
+From: Connor McAdams <cmcadams@codeweavers.com>
+Date: Sat, 18 Apr 2026 14:12:00 -0400
+Subject: [PATCH 24/47] dinput: Return E_FAIL when opening a joystick device
+ that is currently disconnected.
+
+(cherry picked from commit a7277ba021c2a443d60055b816af3132d99438a0)
+
+CW-Bug-Id: #25883
+---
+ dlls/dinput/joystick_hid.c    | 2 +-
+ dlls/dinput/tests/joystick8.c | 6 +++---
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/dlls/dinput/joystick_hid.c b/dlls/dinput/joystick_hid.c
+index 7545dbc7246..14ffe787c68 100644
+--- a/dlls/dinput/joystick_hid.c
++++ b/dlls/dinput/joystick_hid.c
+@@ -1643,7 +1643,7 @@ static HRESULT hid_joystick_device_try_open( WCHAR *path, HANDLE *device, PHIDP_
+ 
+     device_file = CreateFileW( path, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE,
+                                NULL, OPEN_EXISTING, FILE_FLAG_OVERLAPPED | FILE_FLAG_NO_BUFFERING, 0 );
+-    if (device_file == INVALID_HANDLE_VALUE) return DIERR_DEVICENOTREG;
++    if (device_file == INVALID_HANDLE_VALUE) return E_FAIL;
+ 
+     if (!HidD_GetPreparsedData( device_file, &preparsed_data )) goto failed;
+     if (!HidD_GetAttributes( device_file, attrs )) goto failed;
+diff --git a/dlls/dinput/tests/joystick8.c b/dlls/dinput/tests/joystick8.c
+index 59a97d38396..61577bc6538 100644
+--- a/dlls/dinput/tests/joystick8.c
++++ b/dlls/dinput/tests/joystick8.c
+@@ -6268,7 +6268,7 @@ static void test_joystick_instance_guid( DWORD version )
+     IDirectInputDevice8_Release( device );
+ 
+     hr = dinput_create_device( &di, &expect_instances[0], &device );
+-    todo_wine ok( hr == E_FAIL, "Unexpected hr %#lx.\n", hr );
++    ok( hr == E_FAIL, "Unexpected hr %#lx.\n", hr );
+     if (SUCCEEDED(hr)) IDirectInputDevice8_Release( device );
+ 
+     hr = dinput_create_device( &di, &instances[1], &device );
+@@ -6294,10 +6294,10 @@ static void test_joystick_instance_guid( DWORD version )
+ 
+     /* Stopped devices should return E_FAIL. */
+     hr = dinput_create_device( &di, &instances[0], &device );
+-    todo_wine ok( hr == E_FAIL, "Unexpected hr %#lx.\n", hr );
++    ok( hr == E_FAIL, "Unexpected hr %#lx.\n", hr );
+     if (SUCCEEDED(hr)) IDirectInputDevice8_Release( device );
+     hr = dinput_create_device( &di, &instances[2], &device );
+-    todo_wine ok( hr == E_FAIL, "Unexpected hr %#lx.\n", hr );
++    ok( hr == E_FAIL, "Unexpected hr %#lx.\n", hr );
+     if (SUCCEEDED(hr)) IDirectInputDevice8_Release( device );
+ 
+     /* After calling EnumDevices(), guidInstance values will be reassigned. */
+-- 
+2.54.0
+

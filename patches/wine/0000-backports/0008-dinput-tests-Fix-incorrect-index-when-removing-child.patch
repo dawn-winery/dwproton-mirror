@@ -1,0 +1,30 @@
+From 29d1ebfb21cbee97d8c6f2bc7e824bc9514d55e4 Mon Sep 17 00:00:00 2001
+From: Connor McAdams <cmcadams@codeweavers.com>
+Date: Fri, 5 Dec 2025 14:41:05 -0500
+Subject: [PATCH 08/47] dinput/tests: Fix incorrect index when removing child
+ device.
+
+Signed-off-by: Connor McAdams <cmcadams@codeweavers.com>
+(cherry picked from commit b3d942eb1ceb5ea59f8e1784015d67c9f52bb503)
+
+CW-Bug-Id: #25883
+---
+ dlls/dinput/tests/driver_bus.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/dlls/dinput/tests/driver_bus.c b/dlls/dinput/tests/driver_bus.c
+index e8338e49711..788ac5cebd7 100644
+--- a/dlls/dinput/tests/driver_bus.c
++++ b/dlls/dinput/tests/driver_bus.c
+@@ -563,7 +563,7 @@ static NTSTATUS remove_child_device( struct func_device *impl, DEVICE_OBJECT *de
+     for (i = 0; i < impl->devices->Count; ++i)
+         if (impl->devices->Objects[i] == device) break;
+     if (i == impl->devices->Count) status = STATUS_NOT_FOUND;
+-    else impl->devices->Objects[i] = impl->devices->Objects[impl->devices->Count--];
++    else impl->devices->Objects[i] = impl->devices->Objects[--impl->devices->Count];
+     KeReleaseSpinLock( &impl->base.lock, irql );
+ 
+     return status;
+-- 
+2.54.0
+

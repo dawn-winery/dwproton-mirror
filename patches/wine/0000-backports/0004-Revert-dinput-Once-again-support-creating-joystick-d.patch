@@ -1,0 +1,77 @@
+From 5f4563e156e875d201f28c8df6a6ecd548c3db4e Mon Sep 17 00:00:00 2001
+From: Connor McAdams <cmcadams@codeweavers.com>
+Date: Thu, 30 Apr 2026 09:57:51 -0400
+Subject: [PATCH 04/47] Revert "dinput: Once again support creating joystick
+ device with GUID_Joystick."
+
+This reverts commit d394b13b0d6a80d6646f8832e7317eb7c240822c.
+
+CW-Bug-Id: #25883
+---
+ dlls/dinput/joystick_hid.c    | 16 ----------------
+ dlls/dinput/tests/joystick8.c | 13 ++++++++-----
+ 2 files changed, 8 insertions(+), 21 deletions(-)
+
+diff --git a/dlls/dinput/joystick_hid.c b/dlls/dinput/joystick_hid.c
+index e5442a8ddfe..4ce583e5ca0 100644
+--- a/dlls/dinput/joystick_hid.c
++++ b/dlls/dinput/joystick_hid.c
+@@ -279,15 +279,6 @@ static unsigned int get_joystick_index( const WCHAR *device_path )
+     return i;
+ }
+ 
+-static BOOL get_default_joystick_device_path( WCHAR *device_path )
+-{
+-    BOOL ret;
+-
+-    EnterCriticalSection( &joystick_devices_crit );
+-    if ((ret = !!joystick_device_count)) wcscpy( device_path, joystick_devices[0].device_path );
+-    LeaveCriticalSection( &joystick_devices_crit );
+-    return ret;
+-}
+ 
+ static inline struct hid_joystick_effect *impl_from_IDirectInputEffect( IDirectInputEffect *iface )
+ {
+@@ -2181,15 +2172,8 @@ HRESULT hid_joystick_create_device( struct dinput *dinput, const GUID *guid, IDi
+     impl->base.read_event = CreateEventW( NULL, TRUE, FALSE, NULL );
+ 
+     if (memcmp( device_path_guid.Data4, guid->Data4, sizeof(device_path_guid.Data4) ))
+-    {
+-        /* Let hid_joystick_device_open() populate joystick devices before checking for default joystick GUID. */
+         hr = hid_joystick_device_open( -1, guid, &impl->base.instance, impl->device_path, &impl->device, &impl->preparsed,
+                                        &attrs, &impl->caps, dinput->dwVersion );
+-        if (hr == DIERR_DEVICENOTREG && IsEqualGUID( guid, &GUID_Joystick )
+-            && get_default_joystick_device_path( impl->device_path ))
+-            hr = hid_joystick_device_try_open( impl->device_path, &impl->device, &impl->preparsed, &attrs,
+-                                               &impl->caps, &impl->base.instance, dinput->dwVersion );
+-    }
+     else
+     {
+         impl->wgi_device = TRUE;
+diff --git a/dlls/dinput/tests/joystick8.c b/dlls/dinput/tests/joystick8.c
+index 6e120a35d4e..6becfadf061 100644
+--- a/dlls/dinput/tests/joystick8.c
++++ b/dlls/dinput/tests/joystick8.c
+@@ -6103,11 +6103,14 @@ static void test_joystick_id(void)
+     hr = IDirectInput8_CreateDevice( di8, &GUID_Joystick, &device, NULL );
+     if (d.default_instance_found)
+     {
+-        ok( hr == DI_OK, "got %#lx.\n", hr );
+-        hr = IDirectInputDevice8_GetProperty( device, DIPROP_JOYSTICKID, &prop_dword.diph );
+-        ok( hr == DI_OK, "got hr %#lx.\n", hr );
+-        ok( !prop_dword.dwData, "got %lu.\n", prop_dword.dwData );
+-        IDirectInputDevice8_Release( device );
++        todo_wine ok( hr == DI_OK, "got %#lx.\n", hr );
++        if (hr == DI_OK)
++        {
++            hr = IDirectInputDevice8_GetProperty( device, DIPROP_JOYSTICKID, &prop_dword.diph );
++            ok( hr == DI_OK, "got hr %#lx.\n", hr );
++            ok( !prop_dword.dwData, "got %lu.\n", prop_dword.dwData );
++            IDirectInputDevice8_Release( device );
++        }
+     }
+     else
+     {
+-- 
+2.54.0
+

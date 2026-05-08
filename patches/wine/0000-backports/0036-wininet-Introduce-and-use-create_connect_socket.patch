@@ -1,0 +1,283 @@
+From 24423d23a740a3cc79170437dfdc1f21aed055d0 Mon Sep 17 00:00:00 2001
+From: Paul Gofman <pgofman@codeweavers.com>
+Date: Thu, 30 Apr 2026 14:02:55 -0600
+Subject: [PATCH 36/47] wininet: Introduce and use create_connect_socket().
+
+CW-Bug-Id: #27010
+---
+ dlls/wininet/ftp.c           | 23 +---------------
+ dlls/wininet/http.c          | 12 +--------
+ dlls/wininet/internet.c      |  5 ++--
+ dlls/wininet/internet.h      |  3 ++-
+ dlls/wininet/netconnection.c | 48 ++++++---------------------------
+ dlls/wininet/utility.c       | 52 ++++++++++++++++++++++++++++++++++++
+ 6 files changed, 66 insertions(+), 77 deletions(-)
+
+diff --git a/dlls/wininet/ftp.c b/dlls/wininet/ftp.c
+index 573eb3d09d4..7ae832efe0b 100644
+--- a/dlls/wininet/ftp.c
++++ b/dlls/wininet/ftp.c
+@@ -2525,40 +2525,19 @@ HINTERNET FTP_Connect(appinfo_t *hIC, LPCWSTR lpszServerName,
+         goto lerror;
+     }
+ 
+-    if (server_addr->addr.ss_family != AF_INET)
+-    {
+-        WARN("unsupported address family %d\n", server_addr->addr.ss_family);
+-        INTERNET_SetLastError(ERROR_INTERNET_CANNOT_CONNECT);
+-        goto lerror;
+-    }
+-
+     INTERNET_SendCallback(&hIC->hdr, dwContext, INTERNET_STATUS_NAME_RESOLVED,
+                       server_addr->addr_str, strlen(server_addr->addr_str)+1);
+ 
+     init_winsock();
+-    nsocket = socket(AF_INET,SOCK_STREAM,0);
+-    if (nsocket == -1)
+-    {
+-	INTERNET_SetLastError(ERROR_INTERNET_CANNOT_CONNECT);
+-        goto lerror;
+-    }
+-
+-    INTERNET_SendCallback(&hIC->hdr, dwContext, INTERNET_STATUS_CONNECTING_TO_SERVER,
+-                      server_addr->addr_str, strlen(server_addr->addr_str)+1);
+-
+-    if (connect(nsocket, (struct sockaddr *)&server_addr->addr, server_addr->addr_len) < 0)
++    if ((nsocket = create_connect_socket(server_addr, AF_INET, INFINITE, &hIC->hdr, dwContext)) < 0)
+     {
+ 	ERR("Unable to connect (%d)\n", WSAGetLastError());
+ 	INTERNET_SetLastError(ERROR_INTERNET_CANNOT_CONNECT);
+-	closesocket(nsocket);
+     }
+     else
+     {
+         TRACE("Connected to server\n");
+ 	lpwfs->sndSocket = nsocket;
+-        INTERNET_SendCallback(&hIC->hdr, dwContext, INTERNET_STATUS_CONNECTED_TO_SERVER,
+-                          server_addr->addr_str, strlen(server_addr->addr_str)+1);
+-
+ 	sock_namelen = sizeof(lpwfs->socketAddress);
+ 	getsockname(nsocket, (struct sockaddr *) &lpwfs->socketAddress, &sock_namelen);
+ 
+diff --git a/dlls/wininet/http.c b/dlls/wininet/http.c
+index 5027c8adccc..60325a948a0 100644
+--- a/dlls/wininet/http.c
++++ b/dlls/wininet/http.c
+@@ -4937,12 +4937,7 @@ static DWORD open_http_connection(http_request_t *request, BOOL *reusing)
+           request->proxy ? debugstr_w(request->proxy->name) : "(null)");
+     server = request->proxy ? request->proxy : request->server;
+     assert(server->addr);
+-    INTERNET_SendCallback(&request->hdr, request->hdr.dwContext,
+-                          INTERNET_STATUS_CONNECTING_TO_SERVER,
+-                          server->addr->addr_str,
+-                          strlen(server->addr->addr_str)+1);
+-
+-    res = create_netconn(server, request->security_flags,
++    res = create_netconn(server, &request->hdr, request->hdr.dwContext, request->security_flags,
+                          (request->hdr.ErrorMask & INTERNET_ERROR_MASK_COMBINED_SEC_CERT) != 0,
+                          request->hdr.connect_timeout, &netconn);
+     if(res != ERROR_SUCCESS) {
+@@ -4951,11 +4946,6 @@ static DWORD open_http_connection(http_request_t *request, BOOL *reusing)
+     }
+ 
+     request->netconn = netconn;
+-
+-    INTERNET_SendCallback(&request->hdr, request->hdr.dwContext,
+-            INTERNET_STATUS_CONNECTED_TO_SERVER,
+-            server->addr->addr_str, strlen(server->addr->addr_str)+1);
+-
+     *reusing = FALSE;
+     TRACE("Created connection to %s: %p\n", debugstr_w(request->server->name), netconn);
+     return ERROR_SUCCESS;
+diff --git a/dlls/wininet/internet.c b/dlls/wininet/internet.c
+index 538c9ee2652..e7874996215 100644
+--- a/dlls/wininet/internet.c
++++ b/dlls/wininet/internet.c
+@@ -4190,11 +4190,10 @@ BOOL WINAPI InternetCheckConnectionW( LPCWSTR lpszUrl, DWORD dwFlags, DWORD dwRe
+       if(!b)
+           goto End;
+       init_winsock();
+-      fd = socket(addr->addr.ss_family, SOCK_STREAM, 0);
++      fd = create_connect_socket(addr, AF_UNSPEC, INFINITE, NULL, 0);
+       if (fd != -1)
+       {
+-          if (connect(fd, (struct sockaddr *)&addr->addr, addr->addr_len) == 0)
+-              rc = TRUE;
++          rc = TRUE;
+           closesocket(fd);
+       }
+       free(addr);
+diff --git a/dlls/wininet/internet.h b/dlls/wininet/internet.h
+index 4803bfde433..45c6ab532d2 100644
+--- a/dlls/wininet/internet.h
++++ b/dlls/wininet/internet.h
+@@ -385,6 +385,7 @@ DWORD HTTP_Connect(appinfo_t*,LPCWSTR,
+         DWORD dwInternalFlags, HINTERNET*);
+ 
+ BOOL GetAddress(const WCHAR*,INTERNET_PORT,server_addr_t**);
++int create_connect_socket(server_addr_t*,int,DWORD,object_header_t*,DWORD_PTR);
+ 
+ DWORD get_cookie_header(const WCHAR*,const WCHAR*,WCHAR**);
+ DWORD set_cookie(substr_t,substr_t,substr_t,substr_t,DWORD);
+@@ -399,7 +400,7 @@ VOID INTERNET_SendCallback(object_header_t *hdr, DWORD_PTR dwContext,
+                            DWORD dwStatusInfoLength);
+ WCHAR *INTERNET_FindProxyForProtocol(LPCWSTR szProxy, LPCWSTR proto);
+ 
+-DWORD create_netconn(server_t*,DWORD,BOOL,DWORD,netconn_t**);
++DWORD create_netconn(server_t*,object_header_t*,DWORD_PTR,DWORD,BOOL,DWORD,netconn_t**);
+ void free_netconn(netconn_t*);
+ void NETCON_unload(void);
+ DWORD NETCON_secure_connect(netconn_t*,server_t*);
+diff --git a/dlls/wininet/netconnection.c b/dlls/wininet/netconnection.c
+index 5cf37e0d08f..b2ac91848f6 100644
+--- a/dlls/wininet/netconnection.c
++++ b/dlls/wininet/netconnection.c
+@@ -286,58 +286,26 @@ static void set_socket_blocking(netconn_t *conn, BOOL is_blocking)
+     conn->is_blocking = is_blocking;
+ }
+ 
+-static DWORD create_netconn_socket(server_t *server, netconn_t *netconn, DWORD timeout)
++static DWORD create_netconn_socket(server_t *server, object_header_t *hdr, DWORD_PTR callback_context,
++                                   netconn_t *netconn, DWORD timeout)
+ {
+-    int result;
+     ULONG flag;
+-    DWORD res;
+ 
+     init_winsock();
+ 
+     assert(server->addr);
+-    result = netconn->socket = socket(server->addr->addr.ss_family, SOCK_STREAM, 0);
+-    if(result != -1) {
+-        set_socket_blocking(netconn, FALSE);
+-        result = connect(netconn->socket, (struct sockaddr*)&server->addr->addr, server->addr->addr_len);
+-        if(result == -1)
+-        {
+-            res = WSAGetLastError();
+-            if (res == WSAEINPROGRESS || res == WSAEWOULDBLOCK) {
+-                FD_SET set;
+-                int res;
+-                socklen_t len = sizeof(res);
+-                TIMEVAL timeout_timeval = {0, timeout*1000};
+-
+-                FD_ZERO(&set);
+-                FD_SET(netconn->socket, &set);
+-                res = select(netconn->socket+1, NULL, &set, NULL, &timeout_timeval);
+-                if(!res || res == SOCKET_ERROR) {
+-                    closesocket(netconn->socket);
+-                    netconn->socket = -1;
+-                    return ERROR_INTERNET_CANNOT_CONNECT;
+-                }
+-                if (!getsockopt(netconn->socket, SOL_SOCKET, SO_ERROR, (void *)&res, &len) && !res)
+-                    result = 0;
+-            }
+-        }
+-        if(result == -1)
+-        {
+-            closesocket(netconn->socket);
+-            netconn->socket = -1;
+-        }
+-    }
+-    if(result == -1)
++    if ((netconn->socket = create_connect_socket(server->addr, AF_UNSPEC, timeout, hdr, callback_context)) == -1)
+         return ERROR_INTERNET_CANNOT_CONNECT;
+ 
+     flag = 1;
+-    result = setsockopt(netconn->socket, IPPROTO_TCP, TCP_NODELAY, (void*)&flag, sizeof(flag));
+-    if(result < 0)
++    if(setsockopt(netconn->socket, IPPROTO_TCP, TCP_NODELAY, (void*)&flag, sizeof(flag)) < 0)
+         WARN("setsockopt(TCP_NODELAY) failed\n");
+ 
+     return ERROR_SUCCESS;
+ }
+ 
+-DWORD create_netconn(server_t *server, DWORD security_flags, BOOL mask_errors, DWORD timeout, netconn_t **ret)
++DWORD create_netconn(server_t *server, object_header_t *hdr, DWORD_PTR callback_context, DWORD security_flags,
++                     BOOL mask_errors, DWORD timeout, netconn_t **ret)
+ {
+     netconn_t *netconn;
+     int result;
+@@ -352,7 +320,7 @@ DWORD create_netconn(server_t *server, DWORD security_flags, BOOL mask_errors, D
+     list_init(&netconn->pool_entry);
+     SecInvalidateHandle(&netconn->ssl_ctx);
+ 
+-    result = create_netconn_socket(server, netconn, timeout);
++    result = create_netconn_socket(server, hdr, callback_context, netconn, timeout);
+     if (result != ERROR_SUCCESS) {
+         free(netconn);
+         return result;
+@@ -618,7 +586,7 @@ DWORD NETCON_secure_connect(netconn_t *connection, server_t *server)
+     if (res == ERROR_INTERNET_SECURITY_CHANNEL_ERROR && have_compat_cred_handle)
+     {
+         closesocket(connection->socket);
+-        res = create_netconn_socket(connection->server, connection, 500);
++        res = create_netconn_socket(connection->server, NULL, 0, connection, 500);
+         if (res != ERROR_SUCCESS)
+             return res;
+         res = netcon_secure_connect_setup(connection, TRUE);
+diff --git a/dlls/wininet/utility.c b/dlls/wininet/utility.c
+index 48a2fa7d284..a319754b835 100644
+--- a/dlls/wininet/utility.c
++++ b/dlls/wininet/utility.c
+@@ -92,6 +92,58 @@ BOOL GetAddress(const WCHAR *name, INTERNET_PORT port, server_addr_t **server_ad
+     return TRUE;
+ }
+ 
++int create_connect_socket(server_addr_t *addr, int af, DWORD timeout, object_header_t *hdr, DWORD_PTR callback_context)
++{
++    TIMEVAL timeout_timeval = {0, timeout * 1000};
++    ULONG blocking;
++    socklen_t len;
++    FD_SET set;
++    DWORD err;
++    int res;
++    int s;
++
++    if (hdr)
++        INTERNET_SendCallback(hdr, callback_context, INTERNET_STATUS_CONNECTING_TO_SERVER,
++                              addr->addr_str, strlen(addr->addr_str) + 1);
++
++    if (af != AF_UNSPEC && addr->addr.ss_family != af)
++        return -1;
++
++    if ((s = socket(addr->addr.ss_family, SOCK_STREAM, 0)) == -1)
++        return -1;
++
++    blocking = 0;
++    ioctlsocket(s, FIONBIO, &blocking);
++
++    if (!connect(s, (struct sockaddr *)&addr->addr, addr->addr_len))
++        goto done;
++
++    err = WSAGetLastError();
++    if (err != WSAEINPROGRESS && err != WSAEWOULDBLOCK)
++    {
++        closesocket(s);
++        return -1;
++    }
++
++    FD_ZERO(&set);
++    FD_SET(s, &set);
++    res = select(s + 1, NULL, &set, NULL, timeout == INFINITE ? NULL : &timeout_timeval);
++    len = sizeof(res);
++    if(!res || res == SOCKET_ERROR || getsockopt(s, SOL_SOCKET, SO_ERROR, (void *)&res, &len) || res)
++    {
++        closesocket(s);
++        return -1;
++    }
++
++done:
++    blocking = 1;
++    ioctlsocket(s, FIONBIO, &blocking);
++    if (hdr)
++        INTERNET_SendCallback(hdr, callback_context, INTERNET_STATUS_CONNECTED_TO_SERVER,
++                              addr->addr_str, strlen(addr->addr_str) + 1);
++    return s;
++}
++
+ /*
+  * Helper function for sending async Callbacks
+  */
+-- 
+2.54.0
+

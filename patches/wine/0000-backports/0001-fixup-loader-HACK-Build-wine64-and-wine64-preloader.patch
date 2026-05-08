@@ -1,7 +1,7 @@
-From a66a39208a965a61d5e474fae6c3390f8ce1e2d3 Mon Sep 17 00:00:00 2001
+From e9f032be6ff39cf021444e9b99081bd32769a3db Mon Sep 17 00:00:00 2001
 From: Paul Gofman <pgofman@codeweavers.com>
 Date: Wed, 29 Apr 2026 19:42:04 -0600
-Subject: [PATCH] fixup! loader: HACK: Build wine64 and wine64-preloader.
+Subject: [PATCH 01/47] fixup! loader: HACK: Build wine64 and wine64-preloader.
 
 CW-Bug-Id: #26438
 CW-Bug-Id: #27009

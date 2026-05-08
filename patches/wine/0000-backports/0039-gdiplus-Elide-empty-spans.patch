@@ -1,0 +1,35 @@
+From eca2167c896e6626cb51498f9b72c0077c466603 Mon Sep 17 00:00:00 2001
+From: Conor McCarthy <cmccarthy@codeweavers.com>
+Date: Thu, 23 Apr 2026 14:10:01 +1000
+Subject: [PATCH 39/47] gdiplus: Elide empty spans.
+
+We assume a span is never empty and therefore can never begin at the
+right bound. An empty span there can break the requirement in
+combine_regions_to_spans() that current span Y coordinates are never less
+than the loop Y coordinate. Empty spans also break the in_left and
+in_right calculation.
+
+Wine-Bug: https://bugs.winehq.org/show_bug.cgi?id=59678
+(cherry picked from commit 762e4527e82a3aa29aeae1d3eff97be7452f0aec)
+---
+ dlls/gdiplus/region.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/dlls/gdiplus/region.c b/dlls/gdiplus/region.c
+index e430308685b..0969aa6aacb 100644
+--- a/dlls/gdiplus/region.c
++++ b/dlls/gdiplus/region.c
+@@ -2261,6 +2261,10 @@ static GpStatus edge_list_to_spans_alternate(struct edge_list *edges, struct spa
+ 
+         assert(edge[0].y == edge[1].y);
+ 
++        /* edges can be collapsed to the left or right bound, making an empty span */
++        if (edge[0].x == edge[1].x)
++            continue;
++
+         span = &spans->spans[spans->length++];
+         span->x[0] = edge[0].x;
+         span->x[1] = edge[1].x;
+-- 
+2.54.0
+

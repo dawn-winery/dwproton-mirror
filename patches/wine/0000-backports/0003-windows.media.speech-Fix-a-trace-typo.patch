@@ -1,7 +1,7 @@
-From e4e8ddf0fe49d9337664e8229543b3bca2f4c6c5 Mon Sep 17 00:00:00 2001
+From 5a39b9f4f99cb4076869a30aa90d8a26ccbb601c Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Bernhard=20K=C3=B6lbl?= <bkoelbl@codeweavers.com>
 Date: Wed, 29 Apr 2026 11:15:56 +0200
-Subject: [PATCH] windows.media.speech: Fix a trace typo.
+Subject: [PATCH 03/47] windows.media.speech: Fix a trace typo.
 
 (cherry picked from commit 1d744d4ca948c7ea403a786f21c5fe4ef6de08fe)
 

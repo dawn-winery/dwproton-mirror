@@ -1,0 +1,313 @@
+From decec24a486f18afe0c365906d5dce68e71f22eb Mon Sep 17 00:00:00 2001
+From: Paul Gofman <pgofman@codeweavers.com>
+Date: Thu, 30 Apr 2026 11:55:00 -0600
+Subject: [PATCH 34/47] wininet: Store server address related data in the new
+ server_addr_t structure.
+
+CW-Bug-Id: #27010
+---
+ dlls/wininet/ftp.c           | 19 +++++++++----------
+ dlls/wininet/http.c          | 19 +++++++++----------
+ dlls/wininet/internet.c      | 10 +++++-----
+ dlls/wininet/internet.h      | 14 +++++++++-----
+ dlls/wininet/netconnection.c |  6 +++---
+ dlls/wininet/utility.c       | 29 +++++++++++++----------------
+ 6 files changed, 48 insertions(+), 49 deletions(-)
+
+diff --git a/dlls/wininet/ftp.c b/dlls/wininet/ftp.c
+index f3f586cd6e1..573eb3d09d4 100644
+--- a/dlls/wininet/ftp.c
++++ b/dlls/wininet/ftp.c
+@@ -2428,12 +2428,11 @@ HINTERNET FTP_Connect(appinfo_t *hIC, LPCWSTR lpszServerName,
+ 	LPCWSTR lpszPassword, DWORD dwFlags, DWORD_PTR dwContext,
+ 	DWORD dwInternalFlags)
+ {
+-    struct sockaddr_in socketAddr;
+     INT nsocket = -1;
+     socklen_t sock_namelen;
+     BOOL bSuccess = FALSE;
+     ftp_session_t *lpwfs = NULL;
+-    char szaddr[INET6_ADDRSTRLEN];
++    server_addr_t *server_addr = NULL;
+ 
+     TRACE("%p  Server(%s) Port(%d) User(%s) Paswd(%s)\n",
+ 	    hIC, debugstr_w(lpszServerName),
+@@ -2520,22 +2519,21 @@ HINTERNET FTP_Connect(appinfo_t *hIC, LPCWSTR lpszServerName,
+     INTERNET_SendCallback(&hIC->hdr, dwContext, INTERNET_STATUS_RESOLVING_NAME,
+         (LPWSTR) lpszServerName, (lstrlenW(lpszServerName)+1) * sizeof(WCHAR));
+ 
+-    sock_namelen = sizeof(socketAddr);
+-    if (!GetAddress(lpszServerName, lpwfs->serverport, (struct sockaddr *)&socketAddr, &sock_namelen, szaddr))
++    if (!GetAddress(lpszServerName, lpwfs->serverport, &server_addr))
+     {
+ 	INTERNET_SetLastError(ERROR_INTERNET_NAME_NOT_RESOLVED);
+         goto lerror;
+     }
+ 
+-    if (socketAddr.sin_family != AF_INET)
++    if (server_addr->addr.ss_family != AF_INET)
+     {
+-        WARN("unsupported address family %d\n", socketAddr.sin_family);
++        WARN("unsupported address family %d\n", server_addr->addr.ss_family);
+         INTERNET_SetLastError(ERROR_INTERNET_CANNOT_CONNECT);
+         goto lerror;
+     }
+ 
+     INTERNET_SendCallback(&hIC->hdr, dwContext, INTERNET_STATUS_NAME_RESOLVED,
+-                      szaddr, strlen(szaddr)+1);
++                      server_addr->addr_str, strlen(server_addr->addr_str)+1);
+ 
+     init_winsock();
+     nsocket = socket(AF_INET,SOCK_STREAM,0);
+@@ -2546,9 +2544,9 @@ HINTERNET FTP_Connect(appinfo_t *hIC, LPCWSTR lpszServerName,
+     }
+ 
+     INTERNET_SendCallback(&hIC->hdr, dwContext, INTERNET_STATUS_CONNECTING_TO_SERVER,
+-                      szaddr, strlen(szaddr)+1);
++                      server_addr->addr_str, strlen(server_addr->addr_str)+1);
+ 
+-    if (connect(nsocket, (struct sockaddr *)&socketAddr, sock_namelen) < 0)
++    if (connect(nsocket, (struct sockaddr *)&server_addr->addr, server_addr->addr_len) < 0)
+     {
+ 	ERR("Unable to connect (%d)\n", WSAGetLastError());
+ 	INTERNET_SetLastError(ERROR_INTERNET_CANNOT_CONNECT);
+@@ -2559,7 +2557,7 @@ HINTERNET FTP_Connect(appinfo_t *hIC, LPCWSTR lpszServerName,
+         TRACE("Connected to server\n");
+ 	lpwfs->sndSocket = nsocket;
+         INTERNET_SendCallback(&hIC->hdr, dwContext, INTERNET_STATUS_CONNECTED_TO_SERVER,
+-                          szaddr, strlen(szaddr)+1);
++                          server_addr->addr_str, strlen(server_addr->addr_str)+1);
+ 
+ 	sock_namelen = sizeof(lpwfs->socketAddress);
+ 	getsockname(nsocket, (struct sockaddr *) &lpwfs->socketAddress, &sock_namelen);
+@@ -2572,6 +2570,7 @@ HINTERNET FTP_Connect(appinfo_t *hIC, LPCWSTR lpszServerName,
+     }
+ 
+ lerror:
++    free(server_addr);
+     if (!bSuccess)
+     {
+         WININET_Release(&lpwfs->hdr);
+diff --git a/dlls/wininet/http.c b/dlls/wininet/http.c
+index ab6f8894894..5027c8adccc 100644
+--- a/dlls/wininet/http.c
++++ b/dlls/wininet/http.c
+@@ -151,6 +151,7 @@ void server_release(server_t *server)
+         CertFreeCertificateChain(server->cert_chain);
+     free(server->name);
+     free(server->scheme_host_port);
++    free(server->addr);
+     free(server);
+ }
+ 
+@@ -1761,9 +1762,8 @@ static BOOL HTTP_DealWithProxy(appinfo_t *hIC, http_session_t *session, http_req
+ static DWORD HTTP_ResolveName(http_request_t *request)
+ {
+     server_t *server = request->proxy ? request->proxy : request->server;
+-    int addr_len;
+ 
+-    if(server->addr_len)
++    if(server->addr)
+         return ERROR_SUCCESS;
+ 
+     INTERNET_SendCallback(&request->hdr, request->hdr.dwContext,
+@@ -1771,16 +1771,14 @@ static DWORD HTTP_ResolveName(http_request_t *request)
+                           server->name,
+                           (lstrlenW(server->name)+1) * sizeof(WCHAR));
+ 
+-    addr_len = sizeof(server->addr);
+-    if (!GetAddress(server->name, server->port, (SOCKADDR*)&server->addr, &addr_len, server->addr_str))
++    if (!GetAddress(server->name, server->port, &server->addr))
+         return ERROR_INTERNET_NAME_NOT_RESOLVED;
+ 
+-    server->addr_len = addr_len;
+     INTERNET_SendCallback(&request->hdr, request->hdr.dwContext,
+                           INTERNET_STATUS_NAME_RESOLVED,
+-                          server->addr_str, strlen(server->addr_str)+1);
++                          server->addr->addr_str, strlen(server->addr->addr_str)+1);
+ 
+-    TRACE("resolved %s to %s\n", debugstr_w(server->name), server->addr_str);
++    TRACE("resolved %s to %s\n", debugstr_w(server->name), server->addr->addr_str);
+     return ERROR_SUCCESS;
+ }
+ 
+@@ -4938,10 +4936,11 @@ static DWORD open_http_connection(http_request_t *request, BOOL *reusing)
+     TRACE("connecting to %s, proxy %s\n", debugstr_w(request->server->name),
+           request->proxy ? debugstr_w(request->proxy->name) : "(null)");
+     server = request->proxy ? request->proxy : request->server;
++    assert(server->addr);
+     INTERNET_SendCallback(&request->hdr, request->hdr.dwContext,
+                           INTERNET_STATUS_CONNECTING_TO_SERVER,
+-                          server->addr_str,
+-                          strlen(server->addr_str)+1);
++                          server->addr->addr_str,
++                          strlen(server->addr->addr_str)+1);
+ 
+     res = create_netconn(server, request->security_flags,
+                          (request->hdr.ErrorMask & INTERNET_ERROR_MASK_COMBINED_SEC_CERT) != 0,
+@@ -4955,7 +4954,7 @@ static DWORD open_http_connection(http_request_t *request, BOOL *reusing)
+ 
+     INTERNET_SendCallback(&request->hdr, request->hdr.dwContext,
+             INTERNET_STATUS_CONNECTED_TO_SERVER,
+-            server->addr_str, strlen(server->addr_str)+1);
++            server->addr->addr_str, strlen(server->addr->addr_str)+1);
+ 
+     *reusing = FALSE;
+     TRACE("Created connection to %s: %p\n", debugstr_w(request->server->name), netconn);
+diff --git a/dlls/wininet/internet.c b/dlls/wininet/internet.c
+index aee0b096cc6..538c9ee2652 100644
+--- a/dlls/wininet/internet.c
++++ b/dlls/wininet/internet.c
+@@ -4176,8 +4176,7 @@ BOOL WINAPI InternetCheckConnectionW( LPCWSTR lpszUrl, DWORD dwFlags, DWORD dwRe
+ 
+   if (dwFlags & FLAG_ICC_FORCE_CONNECTION)
+   {
+-      struct sockaddr_storage saddr;
+-      int sa_len = sizeof(saddr);
++      struct server_addr *addr;
+       WCHAR *host_z;
+       int fd;
+       BOOL b;
+@@ -4186,18 +4185,19 @@ BOOL WINAPI InternetCheckConnectionW( LPCWSTR lpszUrl, DWORD dwFlags, DWORD dwRe
+       if (!host_z)
+           return FALSE;
+ 
+-      b = GetAddress(host_z, port, (struct sockaddr *)&saddr, &sa_len, NULL);
++      b = GetAddress(host_z, port, &addr);
+       free(host_z);
+       if(!b)
+           goto End;
+       init_winsock();
+-      fd = socket(saddr.ss_family, SOCK_STREAM, 0);
++      fd = socket(addr->addr.ss_family, SOCK_STREAM, 0);
+       if (fd != -1)
+       {
+-          if (connect(fd, (struct sockaddr *)&saddr, sa_len) == 0)
++          if (connect(fd, (struct sockaddr *)&addr->addr, addr->addr_len) == 0)
+               rc = TRUE;
+           closesocket(fd);
+       }
++      free(addr);
+   }
+   else
+   {
+diff --git a/dlls/wininet/internet.h b/dlls/wininet/internet.h
+index 0e867529232..4803bfde433 100644
+--- a/dlls/wininet/internet.h
++++ b/dlls/wininet/internet.h
+@@ -31,14 +31,18 @@
+ 
+ extern HMODULE WININET_hModule;
+ 
+-typedef struct {
+-    WCHAR *name;
+-    INTERNET_PORT port;
+-    BOOL is_https;
++typedef struct server_addr
++{
+     struct sockaddr_storage addr;
+     int addr_len;
+     char addr_str[INET6_ADDRSTRLEN];
++} server_addr_t;
+ 
++typedef struct {
++    WCHAR *name;
++    INTERNET_PORT port;
++    BOOL is_https;
++    server_addr_t *addr;
+     WCHAR *scheme_host_port;
+     const WCHAR *host_port;
+     const WCHAR *canon_host_port;
+@@ -380,7 +384,7 @@ DWORD HTTP_Connect(appinfo_t*,LPCWSTR,
+         LPCWSTR lpszPassword, DWORD dwFlags, DWORD_PTR dwContext,
+         DWORD dwInternalFlags, HINTERNET*);
+ 
+-BOOL GetAddress(const WCHAR*,INTERNET_PORT,SOCKADDR*,int*,char*);
++BOOL GetAddress(const WCHAR*,INTERNET_PORT,server_addr_t**);
+ 
+ DWORD get_cookie_header(const WCHAR*,const WCHAR*,WCHAR**);
+ DWORD set_cookie(substr_t,substr_t,substr_t,substr_t,DWORD);
+diff --git a/dlls/wininet/netconnection.c b/dlls/wininet/netconnection.c
+index 06aa5c82f6c..5cf37e0d08f 100644
+--- a/dlls/wininet/netconnection.c
++++ b/dlls/wininet/netconnection.c
+@@ -294,11 +294,11 @@ static DWORD create_netconn_socket(server_t *server, netconn_t *netconn, DWORD t
+ 
+     init_winsock();
+ 
+-    assert(server->addr_len);
+-    result = netconn->socket = socket(server->addr.ss_family, SOCK_STREAM, 0);
++    assert(server->addr);
++    result = netconn->socket = socket(server->addr->addr.ss_family, SOCK_STREAM, 0);
+     if(result != -1) {
+         set_socket_blocking(netconn, FALSE);
+-        result = connect(netconn->socket, (struct sockaddr*)&server->addr, server->addr_len);
++        result = connect(netconn->socket, (struct sockaddr*)&server->addr->addr, server->addr->addr_len);
+         if(result == -1)
+         {
+             res = WSAGetLastError();
+diff --git a/dlls/wininet/utility.c b/dlls/wininet/utility.c
+index 8d621d39c7d..daeb77538a8 100644
+--- a/dlls/wininet/utility.c
++++ b/dlls/wininet/utility.c
+@@ -39,14 +39,16 @@
+ 
+ WINE_DEFAULT_DEBUG_CHANNEL(wininet);
+ 
+-BOOL GetAddress(const WCHAR *name, INTERNET_PORT port, struct sockaddr *psa, int *sa_len, char *addr_str)
++BOOL GetAddress(const WCHAR *name, INTERNET_PORT port, server_addr_t **server_addr)
+ {
++    struct sockaddr_storage *addr;
+     ADDRINFOW *res, hints;
+-    void *addr = NULL;
++    void *ip_addr = NULL;
+     int ret;
+ 
+     TRACE("%s\n", debugstr_w(name));
+ 
++    *server_addr = NULL;
+     memset( &hints, 0, sizeof(hints) );
+     /* Prefer IPv4 to IPv6 addresses, since some servers do not listen on
+      * their IPv6 addresses even though they have IPv6 addresses in the DNS.
+@@ -65,29 +67,24 @@ BOOL GetAddress(const WCHAR *name, INTERNET_PORT port, struct sockaddr *psa, int
+         TRACE("failed to get address of %s\n", debugstr_w(name));
+         return FALSE;
+     }
+-    if (*sa_len < res->ai_addrlen)
+-    {
+-        WARN("address too small\n");
+-        FreeAddrInfoW(res);
+-        return FALSE;
+-    }
+-    *sa_len = res->ai_addrlen;
+-    memcpy( psa, res->ai_addr, res->ai_addrlen );
++    *server_addr = malloc(sizeof(**server_addr));
++    addr = &(*server_addr)->addr;
++    (*server_addr)->addr_len = res->ai_addrlen;
++    memcpy( addr, res->ai_addr, res->ai_addrlen );
+     /* Copy port */
+     switch (res->ai_family)
+     {
+     case AF_INET:
+-        addr = &((struct sockaddr_in *)psa)->sin_addr;
+-        ((struct sockaddr_in *)psa)->sin_port = htons(port);
++        ip_addr = &((struct sockaddr_in *)addr)->sin_addr;
++        ((struct sockaddr_in *)addr)->sin_port = htons(port);
+         break;
+     case AF_INET6:
+-        addr = &((struct sockaddr_in6 *)psa)->sin6_addr;
+-        ((struct sockaddr_in6 *)psa)->sin6_port = htons(port);
++        ip_addr = &((struct sockaddr_in6 *)addr)->sin6_addr;
++        ((struct sockaddr_in6 *)addr)->sin6_port = htons(port);
+         break;
+     }
+ 
+-    if(addr_str)
+-        inet_ntop(res->ai_family, addr, addr_str, INET6_ADDRSTRLEN);
++    inet_ntop(res->ai_family, ip_addr, (*server_addr)->addr_str, INET6_ADDRSTRLEN);
+     FreeAddrInfoW(res);
+     return TRUE;
+ }
+-- 
+2.54.0
+

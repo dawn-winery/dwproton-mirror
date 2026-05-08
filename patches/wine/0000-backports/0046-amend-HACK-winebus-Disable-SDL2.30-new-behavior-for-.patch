@@ -1,0 +1,38 @@
+From 3082afbf2f941577db88c7f80190aa6e115c2080 Mon Sep 17 00:00:00 2001
+From: Arkadiusz Hiler <ahiler@codeweavers.com>
+Date: Tue, 5 May 2026 12:20:17 +0300
+Subject: [PATCH 46/47] amend! HACK: winebus: Disable SDL2.30 new behavior for
+ the SDL unix backend.
+
+HACK: winebus: Disable SDL2.30 new behavior for the SDL unix backend.
+
+Starting with 517a3d20e8cf ("Support calling SteamAPI_InitEx() before
+SDL_Init(SDL_INIT_GAMEPAD)") SDL no longer respects overriding
+SteamVirtualGamepadInfo using hint system. It queries env varaible using
+`SDL_getenv_unsafe()` so we have to completely unset it for
+`winedevice.exe`.
+
+SDL also has a hack that disables overriding if SDL_GetExeName() ==
+"wine64-preloader" but that doesn't work on ARM64.
+
+CW-Bug-Id: #23185
+CW-Bug-Id: #27027
+---
+ dlls/winebus.sys/bus_sdl.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/dlls/winebus.sys/bus_sdl.c b/dlls/winebus.sys/bus_sdl.c
+index 60e7b5161f2..cc778c4523d 100644
+--- a/dlls/winebus.sys/bus_sdl.c
++++ b/dlls/winebus.sys/bus_sdl.c
+@@ -1193,6 +1193,7 @@ NTSTATUS sdl_bus_init(void *args)
+     /* CW-Bug-Id: #23185: Disable SDL 2.30 new behavior, we need the steam virtual
+      * controller name to figure which slot number it represents. */
+     pSDL_SetHintWithPriority("SteamVirtualGamepadInfo", "", SDL_HINT_OVERRIDE);
++    unsetenv("SteamVirtualGamepadInfo");
+ 
+     if (pSDL_Init(SDL_INIT_GAMECONTROLLER | SDL_INIT_HAPTIC) < 0)
+     {
+-- 
+2.54.0
+

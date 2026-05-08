@@ -1,0 +1,85 @@
+From f880f42bc769fbad4d247a1735b2bd4b6e1d4107 Mon Sep 17 00:00:00 2001
+From: Connor McAdams <cmcadams@codeweavers.com>
+Date: Mon, 6 Apr 2026 08:49:04 -0400
+Subject: [PATCH 18/47] dinput: Only pass instance name string to
+ device_instance_is_disabled().
+
+Signed-off-by: Connor McAdams <cmcadams@codeweavers.com>
+(cherry picked from commit fa565d8d28336b2a8944b9c345dda79c37f157cf)
+
+CW-Bug-Id: #25883
+---
+ dlls/dinput/device.c         | 16 +++++++---------
+ dlls/dinput/device_private.h |  2 +-
+ dlls/dinput/joystick_hid.c   |  2 +-
+ 3 files changed, 9 insertions(+), 11 deletions(-)
+
+diff --git a/dlls/dinput/device.c b/dlls/dinput/device.c
+index 31240d03f65..6748ec60e7a 100644
+--- a/dlls/dinput/device.c
++++ b/dlls/dinput/device.c
+@@ -145,11 +145,9 @@ DWORD get_config_key( HKEY defkey, HKEY appkey, const WCHAR *name, WCHAR *buffer
+     return ERROR_FILE_NOT_FOUND;
+ }
+ 
+-BOOL device_instance_is_disabled( DIDEVICEINSTANCEW *instance, BOOL *override )
++BOOL device_instance_is_disabled( const WCHAR *instance, BOOL *override )
+ {
+-    static const WCHAR disabled_str[] = {'d', 'i', 's', 'a', 'b', 'l', 'e', 'd', 0};
+-    static const WCHAR override_str[] = {'o', 'v', 'e', 'r', 'r', 'i', 'd', 'e', 0};
+-    static const WCHAR joystick_key[] = {'J', 'o', 'y', 's', 't', 'i', 'c', 'k', 's', 0};
++    static const WCHAR *joystick_key = L"Joysticks";
+     WCHAR buffer[MAX_PATH];
+     HKEY hkey, appkey, temp;
+     BOOL disable = FALSE;
+@@ -173,16 +171,16 @@ BOOL device_instance_is_disabled( DIDEVICEINSTANCEW *instance, BOOL *override )
+     }
+ 
+     /* Look for the "controllername"="disabled" key */
+-    if (!get_config_key( hkey, appkey, instance->tszInstanceName, buffer, sizeof(buffer) ))
++    if (!get_config_key( hkey, appkey, instance, buffer, sizeof(buffer) ))
+     {
+-        if (!wcscmp( disabled_str, buffer ))
++        if (!wcscmp( L"disabled", buffer ))
+         {
+-            TRACE( "Disabling joystick '%s' based on registry key.\n", debugstr_w(instance->tszInstanceName) );
++            TRACE( "Disabling joystick '%s' based on registry key.\n", debugstr_w(instance) );
+             disable = TRUE;
+         }
+-        else if (override && !wcscmp( override_str, buffer ))
++        else if (override && !wcscmp( L"override", buffer ))
+         {
+-            TRACE( "Force enabling joystick '%s' based on registry key.\n", debugstr_w(instance->tszInstanceName) );
++            TRACE( "Force enabling joystick '%s' based on registry key.\n", debugstr_w(instance) );
+             *override = TRUE;
+         }
+     }
+diff --git a/dlls/dinput/device_private.h b/dlls/dinput/device_private.h
+index fa791f08a9d..fcab99779c5 100644
+--- a/dlls/dinput/device_private.h
++++ b/dlls/dinput/device_private.h
+@@ -134,7 +134,7 @@ extern BOOL device_object_matches_semantic( const DIDEVICEINSTANCEW *instance, c
+ 
+ extern BOOL get_app_key(HKEY*, HKEY*);
+ extern DWORD get_config_key( HKEY, HKEY, const WCHAR *, WCHAR *, DWORD );
+-extern BOOL device_instance_is_disabled( DIDEVICEINSTANCEW *instance, BOOL *override );
++extern BOOL device_instance_is_disabled( const WCHAR *instance, BOOL *override );
+ extern void queue_event( IDirectInputDevice8W *iface, int index, DWORD data, DWORD time, DWORD seq );
+ 
+ extern const GUID dinput_pidvid_guid;
+diff --git a/dlls/dinput/joystick_hid.c b/dlls/dinput/joystick_hid.c
+index cfde3bd2c0d..2a83e9517ba 100644
+--- a/dlls/dinput/joystick_hid.c
++++ b/dlls/dinput/joystick_hid.c
+@@ -1688,7 +1688,7 @@ static HRESULT hid_joystick_device_open( int index, const GUID *guid, DIDEVICEIN
+                                                  attrs, caps, instance, version )))
+             continue;
+ 
+-        if (device_instance_is_disabled( instance, &override ))
++        if (device_instance_is_disabled( instance->tszInstanceName, &override ))
+             goto next;
+ 
+         if (override && SetupDiGetDeviceInstanceIdW( set, &devinfo, device_id, MAX_PATH, NULL ) &&
+-- 
+2.54.0
+

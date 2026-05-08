@@ -1,0 +1,83 @@
+From 9ccfddfeb6444446a8734d33534728dd2d4b4f25 Mon Sep 17 00:00:00 2001
+From: Conor McCarthy <cmccarthy@codeweavers.com>
+Date: Thu, 23 Apr 2026 14:20:22 +1000
+Subject: [PATCH 40/47] gdiplus/tests: Test a region intersect which produces
+ empty spans.
+
+(cherry picked from commit 6ae2442d1230a81d1d5ae6b2320dd621a8b4b756)
+---
+ dlls/gdiplus/tests/region.c | 51 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 51 insertions(+)
+
+diff --git a/dlls/gdiplus/tests/region.c b/dlls/gdiplus/tests/region.c
+index 00837096092..bbba50a8080 100644
+--- a/dlls/gdiplus/tests/region.c
++++ b/dlls/gdiplus/tests/region.c
+@@ -2727,6 +2727,56 @@ static void test_rounding(void)
+     GdipDeleteMatrix(matrix);
+ }
+ 
++static void test_empty_spans(void)
++{
++    GpStatus status;
++    GpGraphics *graphics;
++    GpBitmap *bitmap;
++    GpPath *path, *path2;
++    const GpPointF inside_path_points[] = { { 20, 20 }, { 80, 20 }, { 80, 80 } };
++    const GpPointF outside_path_points[] = { { 100, 20 }, { 101, 20 }, { 101, 80 } };
++    GpRegion *region;
++    GpBrush *brush;
++
++    status = GdipCreateBitmapFromScan0(100, 100, 400, PixelFormat32bppARGB, NULL, &bitmap);
++    expect(Ok, status);
++
++    status = GdipGetImageGraphicsContext((GpImage*)bitmap, &graphics);
++    expect(Ok, status);
++
++    status = GdipCreatePath(FillModeAlternate, &path);
++    expect(Ok, status);
++    status = GdipAddPathPolygon(path, inside_path_points, ARRAY_SIZE(inside_path_points));
++    expect(Ok, status);
++
++    status = GdipCreatePath(FillModeAlternate, &path2);
++    expect(Ok, status);
++    /* add a path inside the device bounds and one outside,
++     * resulting in an empty span at the end of each scanline */
++    status = GdipAddPathPolygon(path2, inside_path_points, ARRAY_SIZE(inside_path_points));
++    expect(Ok, status);
++    status = GdipAddPathPolygon(path2, outside_path_points, ARRAY_SIZE(outside_path_points));
++    expect(Ok, status);
++
++    status = GdipCreateRegionPath(path, &region);
++    expect(Ok, status);
++    status = GdipCombineRegionPath(region, path2, CombineModeIntersect);
++    expect(Ok, status);
++
++    status = GdipCreateSolidFill(0xffffffff, (GpSolidFill**)&brush);
++    expect(Ok, status);
++
++    status = GdipFillRegion(graphics, brush, region);
++    expect(Ok, status);
++
++    GdipDeleteBrush(brush);
++    GdipDeleteRegion(region);
++    GdipDeletePath(path2);
++    GdipDeletePath(path);
++    GdipDisposeImage((GpImage*)bitmap);
++    GdipDeleteGraphics(graphics);
++}
++
+ START_TEST(region)
+ {
+     struct GdiplusStartupInput gdiplusStartupInput;
+@@ -2763,6 +2813,7 @@ START_TEST(region)
+     test_GdipCreateRegionRgnData();
+     test_incombinedregion();
+     test_rounding();
++    test_empty_spans();
+ 
+     GdiplusShutdown(gdiplusToken);
+ }
+-- 
+2.54.0
+

@@ -1,0 +1,57 @@
+From eb17c8d874965264aa29e96a13e621e4e8602ae7 Mon Sep 17 00:00:00 2001
+From: Connor McAdams <cmcadams@codeweavers.com>
+Date: Fri, 24 Apr 2026 15:07:33 -0400
+Subject: [PATCH 31/47] dinput: Add support for GUID_Joystick.
+
+Signed-off-by: Connor McAdams <cmcadams@codeweavers.com>
+(cherry picked from commit 40f99c294e1ca2225dce880ae91b02b8f0ac2411)
+
+CW-Bug-Id: #25883
+CW-Bug-Id: #24406
+---
+ dlls/dinput/joystick_hid.c    |  3 +++
+ dlls/dinput/tests/joystick8.c | 13 ++++++-------
+ 2 files changed, 9 insertions(+), 7 deletions(-)
+
+diff --git a/dlls/dinput/joystick_hid.c b/dlls/dinput/joystick_hid.c
+index 90744606637..4e71bd877f6 100644
+--- a/dlls/dinput/joystick_hid.c
++++ b/dlls/dinput/joystick_hid.c
+@@ -268,7 +268,10 @@ static HRESULT get_instance_from_guid( const GUID *guid, DIDEVICEINSTANCEW *inst
+ 
+     LIST_FOR_EACH_ENTRY( entry, &joystick_cache, struct cache_entry, entry )
+     {
++        GUID guid_joystick = GUID_Joystick;
++        guid_joystick.Data1 += entry->joy_id;
+         if (!*entry->path) continue;
++        if (IsEqualGUID( &guid_joystick, guid )) break;
+         if (IsEqualGUID( &entry->instance.guidProduct, guid )) break;
+         if (IsEqualGUID( &entry->instance.guidInstance, guid )) break;
+     }
+diff --git a/dlls/dinput/tests/joystick8.c b/dlls/dinput/tests/joystick8.c
+index 27c9e8de177..90e41553001 100644
+--- a/dlls/dinput/tests/joystick8.c
++++ b/dlls/dinput/tests/joystick8.c
+@@ -6854,13 +6854,12 @@ static void test_joystick_id( DWORD version )
+ 
+             joystick_id_guid.Data1 += i;
+             hr = dinput_create_device( &di, &joystick_id_guid, &device );
+-            todo_wine ok( hr == DI_OK, "Unexpected hr %#lx.\n", hr );
+-            if (device)
+-            {
+-                check_device_hid_serial( device, descs_bulk[i].serial_str );
+-                check_device_joystick_id( device, i, TRUE );
+-                IDirectInputDevice8_Release( device );
+-            }
++            ok( hr == DI_OK, "Unexpected hr %#lx.\n", hr );
++
++            check_device_hid_serial( device, descs_bulk[i].serial_str );
++            check_device_joystick_id( device, i, FALSE );
++
++            IDirectInputDevice8_Release( device );
+         }
+ 
+         winetest_pop_context();
+-- 
+2.54.0
+

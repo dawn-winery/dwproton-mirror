@@ -1,0 +1,172 @@
+From 383be27c8730ee1034afdcbce36e02b670f159d7 Mon Sep 17 00:00:00 2001
+From: Connor McAdams <cmcadams@codeweavers.com>
+Date: Wed, 4 Mar 2026 13:03:03 -0500
+Subject: [PATCH 10/47] dinput/tests: Add tests for HID device indexed strings.
+
+Signed-off-by: Connor McAdams <cmcadams@codeweavers.com>
+(cherry picked from commit 00dbaeba2d0cfaef542236bc2cba4981050dc4f8)
+
+CW-Bug-Id: #25883
+---
+ dlls/dinput/tests/driver_bus.c | 48 +++++++++++++++++++++++++++++++---
+ dlls/dinput/tests/driver_hid.h |  3 +++
+ dlls/dinput/tests/hid.c        | 21 ++++++++++++---
+ 3 files changed, 64 insertions(+), 8 deletions(-)
+
+diff --git a/dlls/dinput/tests/driver_bus.c b/dlls/dinput/tests/driver_bus.c
+index 788ac5cebd7..5bc6332a63c 100644
+--- a/dlls/dinput/tests/driver_bus.c
++++ b/dlls/dinput/tests/driver_bus.c
+@@ -505,6 +505,10 @@ struct phys_device
+     struct device base;
+     struct func_device *fdo; /* parent FDO */
+ 
++    WCHAR vendor_str[64];
++    WCHAR product_str[64];
++    WCHAR serial_str[64];
++
+     WCHAR instance_id[MAX_PATH];
+     WCHAR device_id[MAX_PATH];
+     IRP *pending_remove;
+@@ -903,11 +907,16 @@ static NTSTATUS create_child_pdo( DEVICE_OBJECT *device, struct hid_device_desc
+ 
+     impl = pdo_from_DEVICE_OBJECT( child );
+     KeInitializeSpinLock( &impl->base.lock );
++
++    wcscpy( impl->vendor_str, *desc->vendor_str ? desc->vendor_str : L"WineTest" );
++    wcscpy( impl->product_str, *desc->product_str ? desc->product_str : L"Wine Test" );
++    wcscpy( impl->serial_str, *desc->serial_str ? desc->serial_str : L"0&0000&0" );
++
+     swprintf( impl->device_id, MAX_PATH, L"WINETEST\\VID_%04X&PID_%04X", desc->attributes.VendorID,
+               desc->attributes.ProductID );
+     /* use a different device ID so that driver cache select the polled driver */
+     if (desc->is_polled) wcscat( impl->device_id, L"&POLL" );
+-    swprintf( impl->instance_id, MAX_PATH, L"0&0000&0" );
++    swprintf( impl->instance_id, MAX_PATH, L"%s", impl->serial_str );
+     impl->base.is_phys = TRUE;
+     impl->fdo = fdo;
+ 
+@@ -1238,10 +1247,41 @@ static NTSTATUS pdo_internal_ioctl( DEVICE_OBJECT *device, IRP *irp )
+     }
+ 
+     case IOCTL_HID_GET_STRING:
+-        memcpy( irp->UserBuffer, L"Wine Test", sizeof(L"Wine Test") );
+-        irp->IoStatus.Information = sizeof(L"Wine Test");
+-        status = STATUS_SUCCESS;
++    {
++        UINT index = (UINT_PTR)stack->Parameters.DeviceIoControl.Type3InputBuffer & 0xffff;
++        UINT lcid = ((UINT_PTR)stack->Parameters.DeviceIoControl.Type3InputBuffer) >> 16;
++
++        todo_wine ok( lcid, "Unexpected LCID %#x.\n", lcid );
++        if (winetest_debug > 1)
++            trace( "%s: device %p, code %#lx %s, lcid %#x, idx %#x.\n", __func__, device, code, debugstr_ioctl(code),
++                    lcid, index );
++        switch (index)
++        {
++        case HID_STRING_ID_IMANUFACTURER:
++            irp->IoStatus.Information = (wcslen( impl->vendor_str ) + 1) * sizeof(WCHAR);
++            memcpy( irp->UserBuffer, impl->vendor_str, irp->IoStatus.Information );
++            status = STATUS_SUCCESS;
++            break;
++
++        case HID_STRING_ID_IPRODUCT:
++            irp->IoStatus.Information = (wcslen( impl->product_str ) + 1) * sizeof(WCHAR);
++            memcpy( irp->UserBuffer, impl->product_str, irp->IoStatus.Information );
++            status = STATUS_SUCCESS;
++            break;
++
++        case HID_STRING_ID_ISERIALNUMBER:
++            irp->IoStatus.Information = (wcslen(impl->serial_str) + 1) * sizeof(WCHAR);
++            memcpy( irp->UserBuffer, impl->serial_str, irp->IoStatus.Information );
++            status = STATUS_SUCCESS;
++            break;
++
++        default:
++            ok(0, "Unknown string type %#x.\n", index);
++            status = STATUS_NOT_IMPLEMENTED;
++            break;
++        }
+         break;
++    }
+ 
+     case IOCTL_GET_PHYSICAL_DESCRIPTOR:
+         irp->IoStatus.Information = 0;
+diff --git a/dlls/dinput/tests/driver_hid.h b/dlls/dinput/tests/driver_hid.h
+index 8ba01d14b1e..1ae8fd90e43 100644
+--- a/dlls/dinput/tests/driver_hid.h
++++ b/dlls/dinput/tests/driver_hid.h
+@@ -85,6 +85,9 @@ struct hid_device_desc
+ 
+     HIDP_CAPS caps;
+     HID_DEVICE_ATTRIBUTES attributes;
++    WCHAR vendor_str[64];
++    WCHAR product_str[64];
++    WCHAR serial_str[64];
+ 
+     ULONG input_size;
+     struct hid_expect input[64];
+diff --git a/dlls/dinput/tests/hid.c b/dlls/dinput/tests/hid.c
+index c9cdb649f26..273e94e82bb 100644
+--- a/dlls/dinput/tests/hid.c
++++ b/dlls/dinput/tests/hid.c
+@@ -2713,10 +2713,10 @@ static void test_hidp( HANDLE file, HANDLE async_file, int report_id, BOOL polle
+     HidD_FreePreparsedData( preparsed_data );
+ }
+ 
+-static void test_hid_device( DWORD report_id, DWORD polled, const HIDP_CAPS *expect_caps, WORD vid, WORD pid )
++static void test_hid_device( DWORD report_id, DWORD polled, const HIDP_CAPS *expect_caps, struct hid_device_desc *desc )
+ {
++    WCHAR device_path[MAX_PATH], buffer[1024];
+     ULONG count, poll_freq, out_len;
+-    WCHAR device_path[MAX_PATH];
+     HANDLE file, async_file;
+     DWORD ret;
+ 
+@@ -2730,7 +2730,7 @@ static void test_hid_device( DWORD report_id, DWORD polled, const HIDP_CAPS *exp
+         ok( !ret, "WaitForSingleObject returned %#lx\n", ret );
+     }
+ 
+-    swprintf( device_path, MAX_PATH, L"\\\\?\\hid#vid_%04x&pid_%04x", vid, pid );
++    swprintf( device_path, MAX_PATH, L"\\\\?\\hid#vid_%04x&pid_%04x", desc->attributes.VendorID, desc->attributes.ProductID );
+     ret = find_hid_device_path( device_path );
+     ok( ret, "Failed to find HID device matching %s\n", debugstr_w( device_path ) );
+ 
+@@ -2738,6 +2738,16 @@ static void test_hid_device( DWORD report_id, DWORD polled, const HIDP_CAPS *exp
+                         FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL );
+     ok( file != INVALID_HANDLE_VALUE, "got error %lu\n", GetLastError() );
+ 
++    ret = HidD_GetManufacturerString( file, buffer, ARRAY_SIZE(buffer) );
++    ok( ret, "HidD_GetManufacturerString failed last error %lu\n", GetLastError() );
++    ok( !wcscmp( desc->vendor_str, buffer ), "HidD_GetManufacturerString returned %s\n", debugstr_w(buffer) );
++    ret = HidD_GetProductString( file, buffer, ARRAY_SIZE(buffer) );
++    ok( ret, "HidD_GetProductString failed last error %lu\n", GetLastError() );
++    ok( !wcscmp( desc->product_str, buffer ), "HidD_GetProductString returned %s\n", debugstr_w(buffer) );
++    ret = HidD_GetSerialNumberString( file, buffer, ARRAY_SIZE(buffer) );
++    ok( ret, "HidD_GetSerialNumberString failed last error %lu\n", GetLastError() );
++    ok( !wcscmp( desc->serial_str, buffer ), "HidD_GetSerialNumberString returned %s\n", debugstr_w(buffer) );
++
+     count = 0xdeadbeef;
+     SetLastError( 0xdeadbeef );
+     ret = HidD_GetNumInputBuffers( file, &count );
+@@ -3150,6 +3160,9 @@ static void test_hid_driver( DWORD report_id, DWORD polled )
+         .use_report_id = report_id,
+         .caps = caps,
+         .attributes = default_attributes,
++        .vendor_str = L"Wine",
++        .product_str = L"Test Device",
++        .serial_str = L"0&1234&5",
+     };
+ 
+     desc.report_descriptor_len = sizeof(report_desc);
+@@ -3158,7 +3171,7 @@ static void test_hid_driver( DWORD report_id, DWORD polled )
+     memcpy( desc.input, &expect_in, sizeof(expect_in) );
+     fill_context( desc.context, ARRAY_SIZE(desc.context) );
+ 
+-    if (hid_device_start( &desc, 1 )) test_hid_device( report_id, polled, &caps, desc.attributes.VendorID, desc.attributes.ProductID );
++    if (hid_device_start( &desc, 1 )) test_hid_device( report_id, polled, &caps, &desc );
+     hid_device_stop( &desc, 1 );
+ }
+ 
+-- 
+2.54.0
+

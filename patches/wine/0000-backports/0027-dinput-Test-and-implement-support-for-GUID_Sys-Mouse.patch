@@ -1,0 +1,121 @@
+From 9aa2f7fc3bf2915a5f4f417bfd8fab418e81d237 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?R=C3=A9mi=20Bernon?= <rbernon@codeweavers.com>
+Date: Tue, 28 Apr 2026 19:27:44 +0200
+Subject: [PATCH 27/47] dinput: Test and implement support for
+ GUID_Sys(Mouse|Keyboard)Em.
+
+(cherry picked from commit 9547896055824adef43ff0b41d1fa5ebd52e7b90)
+
+CW-Bug-Id: #25883
+---
+ dlls/dinput/dinput.c        | 10 ++++++++--
+ dlls/dinput/keyboard.c      |  1 -
+ dlls/dinput/mouse.c         |  1 -
+ dlls/dinput/tests/device8.c | 18 ++++++++++++++++--
+ 4 files changed, 24 insertions(+), 6 deletions(-)
+
+diff --git a/dlls/dinput/dinput.c b/dlls/dinput/dinput.c
+index f3161ca92f3..4a28b4240fd 100644
+--- a/dlls/dinput/dinput.c
++++ b/dlls/dinput/dinput.c
+@@ -280,8 +280,14 @@ static HRESULT WINAPI dinput7_CreateDeviceEx( IDirectInput7W *iface, const GUID
+     if (!guid) return E_POINTER;
+     if (!impl->dwVersion) return DIERR_NOTINITIALIZED;
+ 
+-    if (IsEqualGUID( &GUID_SysKeyboard, guid )) hr = keyboard_create_device( impl, guid, &device );
+-    else if (IsEqualGUID( &GUID_SysMouse, guid )) hr = mouse_create_device( impl, guid, &device );
++    if (IsEqualGUID( &GUID_SysKeyboard, guid ) ||
++        IsEqualGUID( &GUID_SysKeyboardEm, guid ) ||
++        IsEqualGUID( &GUID_SysKeyboardEm2, guid ))
++        hr = keyboard_create_device( impl, guid, &device );
++    else if (IsEqualGUID( &GUID_SysMouse, guid ) ||
++             IsEqualGUID( &GUID_SysMouseEm, guid ) ||
++             IsEqualGUID( &GUID_SysMouseEm2, guid ))
++        hr = mouse_create_device( impl, guid, &device );
+     else
+     {
+         hr = hid_joystick_create_device( impl, guid, &device );
+diff --git a/dlls/dinput/keyboard.c b/dlls/dinput/keyboard.c
+index 8ec9dd47150..5f3710ee7c9 100644
+--- a/dlls/dinput/keyboard.c
++++ b/dlls/dinput/keyboard.c
+@@ -196,7 +196,6 @@ HRESULT keyboard_create_device( struct dinput *dinput, const GUID *guid, IDirect
+     TRACE( "dinput %p, guid %s, out %p.\n", dinput, debugstr_guid( guid ), out );
+ 
+     *out = NULL;
+-    if (!IsEqualGUID( &GUID_SysKeyboard, guid )) return DIERR_DEVICENOTREG;
+ 
+     if (!(impl = calloc( 1, sizeof(*impl) ))) return E_OUTOFMEMORY;
+     dinput_device_init( &impl->base, &keyboard_vtbl, guid, dinput );
+diff --git a/dlls/dinput/mouse.c b/dlls/dinput/mouse.c
+index eec022974b5..5c0bdbcf768 100644
+--- a/dlls/dinput/mouse.c
++++ b/dlls/dinput/mouse.c
+@@ -519,7 +519,6 @@ HRESULT mouse_create_device( struct dinput *dinput, const GUID *guid, IDirectInp
+     TRACE( "dinput %p, guid %s, out %p\n", dinput, debugstr_guid( guid ), out );
+ 
+     *out = NULL;
+-    if (!IsEqualGUID( &GUID_SysMouse, guid )) return DIERR_DEVICENOTREG;
+ 
+     if (!(impl = calloc( 1, sizeof(*impl) ))) return E_OUTOFMEMORY;
+     dinput_device_init( &impl->base, &mouse_vtbl, guid, dinput );
+diff --git a/dlls/dinput/tests/device8.c b/dlls/dinput/tests/device8.c
+index b3774abfdba..8df9a4e2d78 100644
+--- a/dlls/dinput/tests/device8.c
++++ b/dlls/dinput/tests/device8.c
+@@ -1182,11 +1182,11 @@ static void test_sys_mouse( DWORD version )
+             .dwHow = DIPH_DEVICE,
+         },
+     };
++    IDirectInputDevice8W *device, *tmp_device;
+     DIDEVICEOBJECTINSTANCEW objinst = {0};
+     DIDEVICEOBJECTDATA objdata = {0};
+     DIDEVICEINSTANCEW devinst = {0};
+     BOOL old_localized = localized;
+-    IDirectInputDevice8W *device;
+     HWND hwnd, tmp_hwnd, child;
+     DIDEVCAPS caps = {0};
+     DIMOUSESTATE state;
+@@ -1212,6 +1212,13 @@ static void test_sys_mouse( DWORD version )
+     ok( IsEqualGUID( &guid, &GUID_SysMouseEm ), "got %s expected %s\n", debugstr_guid( &guid ),
+         debugstr_guid( &GUID_SysMouseEm ) );
+ 
++    hr = create_dinput_device( version, &GUID_SysMouseEm, &tmp_device );
++    ok( hr == DI_OK, "Initialize returned %#lx\n", hr );
++    if (hr == DI_OK) IDirectInputDevice8_Release( tmp_device );
++    hr = create_dinput_device( version, &GUID_SysMouseEm2, &tmp_device );
++    ok( hr == DI_OK, "Initialize returned %#lx\n", hr );
++    if (hr == DI_OK) IDirectInputDevice8_Release( tmp_device );
++
+     hr = IDirectInputDevice8_Initialize( device, instance, version, &GUID_SysMouse );
+     ok( hr == DI_OK, "Initialize returned %#lx\n", hr );
+ 
+@@ -3037,10 +3044,10 @@ static void test_sys_keyboard( DWORD version )
+         sizeof(key_state), ARRAY_SIZE(obj_data_format), obj_data_format,
+     };
+ 
++    IDirectInputDevice8W *device, *tmp_device;
+     DIDEVICEOBJECTINSTANCEW objinst = {0};
+     DIDEVICEINSTANCEW devinst = {0};
+     BOOL old_localized = localized;
+-    IDirectInputDevice8W *device;
+     DIDEVCAPS caps = {0};
+     BYTE full_state[256];
+     HKL hkl, old_hkl;
+@@ -3065,6 +3072,13 @@ static void test_sys_keyboard( DWORD version )
+     ok( IsEqualGUID( &guid, &GUID_SysKeyboardEm ), "got %s expected %s\n", debugstr_guid( &guid ),
+         debugstr_guid( &GUID_SysKeyboardEm ) );
+ 
++    hr = create_dinput_device( version, &GUID_SysKeyboardEm, &tmp_device );
++    ok( hr == DI_OK, "Initialize returned %#lx\n", hr );
++    if (hr == DI_OK) IDirectInputDevice8_Release( tmp_device );
++    hr = create_dinput_device( version, &GUID_SysKeyboardEm2, &tmp_device );
++    ok( hr == DI_OK, "Initialize returned %#lx\n", hr );
++    if (hr == DI_OK) IDirectInputDevice8_Release( tmp_device );
++
+     hr = IDirectInputDevice8_Initialize( device, instance, version, &GUID_SysKeyboard );
+     ok( hr == DI_OK, "Initialize returned %#lx\n", hr );
+ 
+-- 
+2.54.0
+

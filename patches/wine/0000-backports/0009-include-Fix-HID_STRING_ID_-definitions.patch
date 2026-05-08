@@ -1,0 +1,50 @@
+From 9cb280ec04dc5ea233993493e6310e76dd09485d Mon Sep 17 00:00:00 2001
+From: Connor McAdams <cmcadams@codeweavers.com>
+Date: Mon, 23 Feb 2026 13:03:32 -0500
+Subject: [PATCH 09/47] include: Fix HID_STRING_ID_* definitions.
+
+Signed-off-by: Connor McAdams <cmcadams@codeweavers.com>
+(cherry picked from commit a0b3b7a1c35ccbe4e0d8b0c93186ff2998ebe4b6)
+
+CW-Bug-Id: #25883
+---
+ include/ddk/hidport.h  | 8 ++++++++
+ include/ddk/hidtypes.h | 3 ---
+ 2 files changed, 8 insertions(+), 3 deletions(-)
+
+diff --git a/include/ddk/hidport.h b/include/ddk/hidport.h
+index bd3ddb3f2a5..6574aba75bb 100644
+--- a/include/ddk/hidport.h
++++ b/include/ddk/hidport.h
+@@ -68,6 +68,14 @@ typedef struct _HID_DESCRIPTOR
+ #define HID_HID_DESCRIPTOR_TYPE 0x21
+ #define HID_REPORT_DESCRIPTOR_TYPE 0x22
+ 
++/*
++ * String IDs used with IOCTL_HID_GET_STRING.
++ * These values match the string field offsets in chapter 9 of the USB spec.
++ */
++#define HID_STRING_ID_IMANUFACTURER 14
++#define HID_STRING_ID_IPRODUCT      15
++#define HID_STRING_ID_ISERIALNUMBER 16
++
+ #define IOCTL_HID_GET_DEVICE_DESCRIPTOR          HID_CTL_CODE(0)
+ #define IOCTL_HID_GET_REPORT_DESCRIPTOR          HID_CTL_CODE(1)
+ #define IOCTL_HID_READ_REPORT                    HID_CTL_CODE(2)
+diff --git a/include/ddk/hidtypes.h b/include/ddk/hidtypes.h
+index dfd1061de18..8e6f76955e9 100644
+--- a/include/ddk/hidtypes.h
++++ b/include/ddk/hidtypes.h
+@@ -20,9 +20,6 @@
+ 
+ typedef enum _HID_STRING_TYPE {
+     HID_STRING_INDEXED = 0,
+-    HID_STRING_ID_IMANUFACTURER,
+-    HID_STRING_ID_IPRODUCT,
+-    HID_STRING_ID_ISERIALNUMBER,
+     HID_STRING_MAX
+ } HID_STRING_TYPE;
+ 
+-- 
+2.54.0
+

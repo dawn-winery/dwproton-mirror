@@ -1,0 +1,51 @@
+From 781b3e2563709a7adc64671d497a2aa459093f9c Mon Sep 17 00:00:00 2001
+From: Connor McAdams <cmcadams@codeweavers.com>
+Date: Tue, 28 Apr 2026 19:09:06 +0200
+Subject: [PATCH 30/47] dinput/tests: Add tests for GUID_Joystick.
+
+Signed-off-by: Connor McAdams <cmcadams@codeweavers.com>
+(cherry picked from commit c2e5dd7df92821356ed031ceea197fd9fb1ea643)
+
+CW-Bug-Id: #25883
+CW-Bug-Id: #24406
+---
+ dlls/dinput/tests/joystick8.c | 23 +++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
+
+diff --git a/dlls/dinput/tests/joystick8.c b/dlls/dinput/tests/joystick8.c
+index 4004a85f9ba..27c9e8de177 100644
+--- a/dlls/dinput/tests/joystick8.c
++++ b/dlls/dinput/tests/joystick8.c
+@@ -6840,6 +6840,29 @@ static void test_joystick_id( DWORD version )
+         else check_device_joystick_id( device, i, FALSE );
+ 
+         IDirectInputDevice8_Release( device );
++
++        /*
++         * Undocumented behavior, guessed at by seeing GUID_SysMouseEm/GUID_SysMouseEm2
++         * where their Data1 values are 0x6f1d2b80/0x6f1d2b81 respectively.
++         * GUID_Joystick has a Data1 value of 0x6f1d2b70, which gives us 16
++         * possible values before hitting GUID_SysMouseEm. This aligns with
++         * the maximum possible unique joystick ID being 15.
++         */
++        if (i <= 15)
++        {
++            GUID joystick_id_guid = GUID_Joystick;
++
++            joystick_id_guid.Data1 += i;
++            hr = dinput_create_device( &di, &joystick_id_guid, &device );
++            todo_wine ok( hr == DI_OK, "Unexpected hr %#lx.\n", hr );
++            if (device)
++            {
++                check_device_hid_serial( device, descs_bulk[i].serial_str );
++                check_device_joystick_id( device, i, TRUE );
++                IDirectInputDevice8_Release( device );
++            }
++        }
++
+         winetest_pop_context();
+     }
+ 
+-- 
+2.54.0
+
