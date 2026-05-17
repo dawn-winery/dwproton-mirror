@@ -1,6 +1,7 @@
 [submodule "wine"]
 	path = wine
-	url = https://github.com/CachyOS/wine-cachyos.git
+	url = https://dawn.wine/dawn-winery/wine-dwproton.git
+	branch = base
 [submodule "meson"]
 	path = meson
 	url = https://github.com/mesonbuild/meson.git
