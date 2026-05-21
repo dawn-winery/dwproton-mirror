@@ -238,6 +238,96 @@ static BOOL should_use_shell_execute(WCHAR *cmdline)
     return use_shell_execute;
 }
 
+static BOOL try_recover_eadesktop_symlink(void)
+{
+    WIN32_FIND_DATAA ff;
+    HANDLE handle, file;
+    char path[MAX_PATH];
+
+    handle = CreateFileA( "C:\\Program Files\\Electronic Arts\\EA Desktop\\EA Desktop", GENERIC_READ,
+                          FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0 );
+    if (handle != INVALID_HANDLE_VALUE || GetLastError() != ERROR_FILE_NOT_FOUND)
+    {
+        TRACE( "directory handle %p, err %ld.\n", handle, GetLastError() );
+        if (handle != INVALID_HANDLE_VALUE) CloseHandle( handle );
+        return FALSE;
+    }
+
+    if ((handle = FindFirstFileA( "C:\\Program Files\\Electronic Arts\\EA Desktop\\*.*", &ff )) == INVALID_HANDLE_VALUE)
+        return FALSE;
+
+    do
+    {
+        if (!(ff.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) continue;
+        if (!strcmp( ff.cFileName, "." ) || !strcmp( ff.cFileName, ".." )) continue;
+        sprintf( path, "C:\\Program Files\\Electronic Arts\\EA Desktop\\%s\\EA Desktop\\Link2EA.exe", ff.cFileName );
+        file = CreateFileA( path, GENERIC_READ,
+                            FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, 0 );
+        if (file == INVALID_HANDLE_VALUE) continue;
+        CloseHandle( file );
+        sprintf( path, "%s\\EA Desktop", ff.cFileName );
+        if (CreateSymbolicLinkA( "C:\\Program Files\\Electronic Arts\\EA Desktop\\EA Desktop", path,
+                                 SYMBOLIC_LINK_FLAG_DIRECTORY | SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE ))
+        {
+            TRACE( "linked to %s.\n", debugstr_a(path) );
+            FindClose( handle );
+            return TRUE;
+        }
+        else TRACE( "CreateSymbolicLinkA to %s failed, err %ld.\n", debugstr_a(path), GetLastError() );
+    } while (FindNextFileA( handle, &ff ));
+    FindClose( handle );
+    return FALSE;
+}
+
+static void setup_discord_bridge_service(void)
+{
+    SC_HANDLE manager, service;
+    WCHAR bridge_path[MAX_PATH] = L"c:\\windows\\system32\\discord\\bridge.exe --service";
+    DWORD id;
+    BOOL start;
+
+    manager = OpenSCManagerW( NULL, NULL, SC_MANAGER_ALL_ACCESS );
+    if ( !manager ) {
+        ERR( "(discord-bridge) OpenSCManagerW failed, error %lu\n", GetLastError() );
+        return;
+    }
+
+    service = OpenServiceW( manager, L"discord-bridge", SERVICE_START );
+    if ( !service ) {
+        if ( GetLastError() != ERROR_SERVICE_DOES_NOT_EXIST ) {
+            ERR( "(discord-bridge) OpenServiceW failed, error %lu\n", GetLastError() );
+            CloseServiceHandle( manager );
+            return;
+        }
+        WARN( "(discord-bridge) Service does not exist, registering %s\n", debugstr_w(bridge_path) );
+
+        service = CreateServiceW(
+            manager, L"discord-bridge", L"Wine Discord RPC Bridge",
+            SERVICE_ALL_ACCESS, SERVICE_WIN32_OWN_PROCESS, SERVICE_DEMAND_START, SERVICE_ERROR_NORMAL,
+            bridge_path, NULL, &id, NULL, NULL, NULL);
+        if ( !service ) {
+            ERR( "(discord-bridge) CreateServiceW failed, error %lu\n", GetLastError() );
+            CloseServiceHandle( manager );
+            return;
+        }
+
+        service = OpenServiceW( manager, L"discord-bridge", SERVICE_START );
+        if ( !service ) {
+            ERR( "(discord-bridge) OpenServiceW failed after creation, error %lu\n", GetLastError() );
+            CloseServiceHandle( manager );
+            return;
+        }
+    }
+
+    if ( env_nonzero( "PROTON_DISCORD_BRIDGE" ) ) {
+        start = StartServiceW( service, 0, NULL );
+        if ( !start ) ERR( "(discord-bridge) StartServiceW failed, error %lu\n", GetLastError() );
+    }
+
+    CloseServiceHandle( service );
+    CloseServiceHandle( manager );
+}
+
 static HANDLE run_process(BOOL *should_await, BOOL game_process)
 {
     WCHAR *cmdline = GetCommandLineW();
@@ -518,6 +608,9 @@ int main(int argc, char *argv[])
 
         if (game_process)
             setup_vr_registry();
+
+        if (game_process)
+            setup_discord_bridge_service();
 
         child = run_process(&should_await, game_process);
 
