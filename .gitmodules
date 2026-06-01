@@ -147,6 +147,9 @@
 [submodule "vklayers/low_latency_layer"]
 	path = vklayers/low_latency_layer
 	url = https://github.com/Korthos-Software/low_latency_layer.git
+[submodule "vklayers/vkbasalt"]
+	path = vklayers/vkbasalt
+	url = https://github.com/DadSchoorse/vkBasalt.git
 [submodule "dxvk-igdext"]
 	path = dxvk-igdext
 	url = https://github.com/GameTechDev/dxvk-igdext
