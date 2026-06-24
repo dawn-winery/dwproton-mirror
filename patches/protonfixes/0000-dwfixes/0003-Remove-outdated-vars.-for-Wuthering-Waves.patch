@@ -1,0 +1,39 @@
+From aebecc12c098de4c3f2094831e06c9f857a83f63 Mon Sep 17 00:00:00 2001
+From: NelloKudo <marshnelloosu@gmail.com>
+Date: Thu, 25 Jun 2026 01:11:17 +0200
+Subject: [PATCH] Remove outdated vars. for Wuthering Waves
+
+SteamOS=1/SteamDeck=1 no longer allow the game to work since the 3.4
+update, and all downstream Proton forks now carry patches to run it
+anyway. On top of that, the SteamOS/SteamDeck env vars force the game to
+load a broken Unreal Engine video plugin, resulting in no video during
+certain cutscenes.
+
+Also removed KRSDK-related override, which is no longer in the game.
+---
+ gamefixes-steam/3513350.py | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/gamefixes-steam/3513350.py b/gamefixes-steam/3513350.py
+index af5f054..0a7b5de 100644
+--- a/gamefixes-steam/3513350.py
++++ b/gamefixes-steam/3513350.py
+@@ -6,10 +6,12 @@ from protonfixes import util
+ 
+ 
+ def main() -> None:
+-    """In-game browser fix."""
+-    util.wineexe_override('KRSDKExternal', util.OverrideOrder.DISABLED)
+     """Font fixes for in-game resources, if any."""
+     util.protontricks('sourcehansans')
+     util.protontricks('fakechinese')
+     util.protontricks('corefonts')
+-    util.set_environment('SteamOS', '1')
++
++    """As of version 3.4, SteamOS/SteamDeck env vars force a broken plugin in-game to play videos."""
++    """Unsetting them to also prevent issues on Steam Decks where they are set by default."""
++    util.del_environment('SteamOS')
++    util.del_environment('SteamDeck')
+-- 
+2.54.0
+
