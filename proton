@@ -1695,6 +1695,16 @@ class Session:
         self.env["GST_PLUGIN_SYSTEM_PATH_1_0"] = ':'.join([lib + "/gstreamer-1.0" for lib in ld_library_path])
         self.env["WINE_GST_REGISTRY_DIR"] = g_compatdata.path("gstreamer-1.0/")
 
+        # libsoup/souphttpsrc need a gio tls backend (glib-networking) for https.
+        # the steam runtime ships it, but the bundled libsoup won't pick it up
+        # unless gio is pointed at the module dir explicitly.
+        gio_module_dirs = [
+            "/usr/lib/x86_64-linux-gnu/gio/modules",
+            "/usr/lib/i386-linux-gnu/gio/modules",
+            "/usr/lib/aarch64-linux-gnu/gio/modules",
+        ]
+        prepend_to_env_str(self.env, "GIO_EXTRA_MODULES", ":".join(gio_module_dirs), ":")
+
         if "STEAM_COMPAT_MEDIA_PATH" in os.environ:
             old_audiofoz_path = os.environ["STEAM_COMPAT_MEDIA_PATH"] + "/audio.foz"
             if file_exists(old_audiofoz_path, follow_symlinks=False):
