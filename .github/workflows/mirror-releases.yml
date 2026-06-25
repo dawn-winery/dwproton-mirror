@@ -33,26 +33,37 @@ jobs:
 
           mapfile -t existing < <(gh release list --limit 300 --json tagName --jq '.[].tagName')
 
-          jq -r '.[] | select(.draft == false) | .tag_name' upstream.json | while read -r tag; do
+          jq -c '.[] | select(.draft == false)' upstream.json | while read -r rel; do
+            tag=$(jq -r '.tag_name' <<<"$rel")
+            name=$(jq -r '.name' <<<"$rel")
+            pre=$(jq -r '.prerelease' <<<"$rel")
+            sha=$(jq -r --arg t "$tag" '.[] | select(.name == $t) | .commit.sha' tags.json)
+
             if printf '%s\n' "${existing[@]:-}" | grep -qxF "$tag"; then
-              continue
+              echo "Release $tag already exists, checking assets"
+            else
+              jq -r '.body' <<<"$rel" > notes.md
+              args=(--title "$name" --notes-file notes.md)
+              if [ -n "$sha" ] && [ "$sha" != "null" ]; then
+                args+=(--target "$sha")
+              fi
+              if [ "$pre" = "true" ]; then
+                args+=(--prerelease)
+              fi
+              echo "Creating release $tag"
+              # Created through GITHUB_TOKEN, so it does not trigger the mirrored
+              # branches' own workflows.
+              gh release create "$tag" "${args[@]}" || { echo "Skipped $tag, target commit not mirrored yet"; continue; }
             fi
 
-            jq -r --arg t "$tag" '.[] | select(.tag_name == $t) | .body' upstream.json > notes.md
-            name=$(jq -r --arg t "$tag" '.[] | select(.tag_name == $t) | .name' upstream.json)
-            pre=$(jq -r  --arg t "$tag" '.[] | select(.tag_name == $t) | .prerelease' upstream.json)
-            sha=$(jq -r  --arg t "$tag" '.[] | select(.name == $t) | .commit.sha' tags.json)
-
-            args=(--title "$name" --notes-file notes.md)
-            if [ -n "$sha" ] && [ "$sha" != "null" ]; then
-              args+=(--target "$sha")
-            fi
-            if [ "$pre" = "true" ]; then
-              args+=(--prerelease)
-            fi
-
-            echo "Creating release $tag"
-            # Created through GITHUB_TOKEN, so it does not trigger the mirrored
-            # branches' own workflows.
-            gh release create "$tag" "${args[@]}" || echo "Skipped $tag, target commit not mirrored yet"
+            have=$(gh release view "$tag" --json assets --jq '.assets[].name' 2>/dev/null || true)
+            jq -r '.assets[] | .name + "\t" + .browser_download_url' <<<"$rel" | while IFS=$'\t' read -r aname aurl; do
+              if printf '%s\n' "$have" | grep -qxF "$aname"; then
+                continue
+              fi
+              echo "Uploading $aname to $tag"
+              curl -fsSL "$aurl" -o "$aname"
+              gh release upload "$tag" "$aname" --clobber
+              rm -f "$aname"
+            done
           done
