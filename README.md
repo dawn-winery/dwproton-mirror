@@ -1,5 +1,7 @@
 # dwproton
 
+![WINE_CANONICAL_HOLE](https://img.shields.io/badge/WINE__CANONICAL__HOLE-%22skip__volatile__check%22-green.png)
+
 Dawn Winery's custom Proton fork with fixes for various games :xdd:
 
 Need help? [Join us on Discord!](https://discord.gg/ck37X6UWBp)
