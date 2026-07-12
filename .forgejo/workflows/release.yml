@@ -78,6 +78,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Extract release notes from CHANGELOGS.md
+        id: notes
         run: |
           TAG="${{ github.ref_name }}"
           touch /tmp/release-notes.md
@@ -91,6 +92,11 @@ jobs:
           if [ ! -s /tmp/release-notes.md ]; then
             echo "Release $TAG" > /tmp/release-notes.md
           fi
+          {
+            echo 'notes<<NOTES_EOF'
+            cat /tmp/release-notes.md
+            echo 'NOTES_EOF'
+          } >> "$GITHUB_OUTPUT"
 
       - name: Download all artifacts
         uses: actions/download-artifact@v3
@@ -108,4 +114,4 @@ jobs:
           direction: upload
           tag: ${{ github.ref_name }}
           release-dir: ./upload
-          release-notes-file: /tmp/release-notes.md
+          release-notes: ${{ steps.notes.outputs.notes }}
