@@ -1,5 +1,8 @@
 # Changelog
 
+## [dwproton-11.0-7]
+- Hotfix release fixing launch issues with AK: Endfield.
+
 ## [dwproton-11.0-6]
 - Updated Proton and components to `cachyos-11.0-20260702-slr`
   - This includes many important changes such as FSR4.1.1 automation, winepipewire.drv and more. Refer [here for more](https://github.com/CachyOS/proton-cachyos/releases/tag/cachyos-11.0-20260702-slr).
