@@ -1,0 +1,40 @@
+From a490162c38ce64348c62c9a5703efe254c8f4779 Mon Sep 17 00:00:00 2001
+From: NelloKudo <marshnelloosu@gmail.com>
+Date: Tue, 21 Jul 2026 16:39:16 +0200
+Subject: [PATCH] dwfixes: Automate setting protonfix for Endfield.
+
+---
+ dwfixes.py | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/dwfixes.py b/dwfixes.py
+index b4ce905..32658bb 100644
+--- a/dwfixes.py
++++ b/dwfixes.py
+@@ -5,10 +5,14 @@ import sys
+ def _is_hoyo_launcher(exe_path: str) -> bool:
+     return "HoYoPlay" in exe_path.split(os.sep)
+ 
++def _is_gryphlink_launcher(exe_path: str) -> bool:
++    return "GRYPHLINK" in exe_path.split(os.sep)
++
+ UMU_IDS = {
+     "GenshinImpact.exe":   "umu-genshin",
+     "ZenlessZoneZero.exe": "umu-zenlesszonezero",
+     "nikke_launcher.exe":  "umu-nikke",
++    "Endfield.exe":        "umu-endfield",
+ }
+ 
+ def apply_dwfixes(env: dict):
+@@ -20,6 +24,8 @@ def apply_dwfixes(env: dict):
+ 
+     if exe == "launcher.exe" and _is_hoyo_launcher(exe_path):
+         umu_id = "umu-zenlesszonezero"
++    elif exe == "Launcher.exe" and _is_gryphlink_launcher(exe_path):
++        umu_id = "umu-endfield"
+     else:
+         umu_id = UMU_IDS.get(exe)
+ 
+-- 
+2.55.0
+
