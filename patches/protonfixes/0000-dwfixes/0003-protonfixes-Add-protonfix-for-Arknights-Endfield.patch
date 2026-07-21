@@ -1,0 +1,35 @@
+From 021ed875d002e7caabb650b302cbcfd7699f0f06 Mon Sep 17 00:00:00 2001
+From: dotnotation <dot.notation@outlook.com>
+Date: Mon, 20 Jul 2026 00:47:02 -0400
+Subject: [PATCH 2/2] protonfixes: Add protonfix for Arknights: Endfield.
+
+---
+ gamefixes-umu/umu-endfield.py | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+ create mode 100644 gamefixes-umu/umu-endfield.py
+
+diff --git a/gamefixes-umu/umu-endfield.py b/gamefixes-umu/umu-endfield.py
+new file mode 100644
+index 0000000..bf37340
+--- /dev/null
++++ b/gamefixes-umu/umu-endfield.py
+@@ -0,0 +1,16 @@
++"""Game fix for Arknights: Endfield"""
++
++import os
++from protonfixes import util
++
++def main() -> None:
++    # Endfield will write large amounts of data while loading to LocalLow as mmapped files
++    # these files appear to be jit code for worker threads as some form of ipc
++    # no need for them to be on the disk and slow down loading, so symlink them to ram
++
++    local_low = os.path.join(util.protonprefix(), 'drive_c/users/steamuser/AppData/LocalLow')
++    for i in range(64):
++        file = "HG_IL2CPP_MMAP" + str(i)
++        if os.path.lexists(os.path.join(local_low, file)):
++            os.remove(os.path.join(local_low, file))
++        os.symlink(os.path.join("/dev/shm", file), os.path.join(local_low, file))
+-- 
+2.55.0
+
