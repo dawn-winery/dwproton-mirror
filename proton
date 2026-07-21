@@ -1548,8 +1548,6 @@ def default_compat_config():
     ):
         ret.add("dxvksarek")
 
-    ret.add("pipewire")
-
     if "STEAM_COMPAT_APP_ID" in os.environ:
         appid = os.environ["STEAM_COMPAT_APP_ID"]
 
@@ -1949,8 +1947,8 @@ class Session:
             self.compat_config.add("nvml")
             self.compat_config.add("nvoptix")
 
-        if "pipewire" not in self.compat_config:
-            self.env.setdefault("WINE_AUDIO_DRIVER", "pulse,alsa")
+        if "pipewire" in self.compat_config:
+            self.env.setdefault("WINE_AUDIO_DRIVER", "pipewire,pulse,alsa")
 
         if os.environ.get("SteamGameId", 0) in [
                 "462780", #Darksiders Warmastered Edition
