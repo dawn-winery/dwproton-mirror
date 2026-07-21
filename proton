@@ -1528,6 +1528,7 @@ def default_compat_config():
                 "312530", # Duck Game
                 "448230", # AsteroidsHD
                 "1072860", # Real Scary
+                "512490", # Zombie Estate 2
                 ]:
             ret.add("fnad3d11")
 
@@ -1561,7 +1562,10 @@ def default_compat_config():
             ret.add("nohardwarescheduling")
 
         if appid in [
-                    "4920",
+                    "4920", #Natural Selection 2
+                    "552440", #The Talos Principle VR
+                    "257510", #The Talos Principle
+
                 ]:
             ret.discard("gamedrive")
 
@@ -2076,8 +2080,15 @@ class Session:
                     "374320", #DARK SOULS III
                     "357190", #Ultimate Marvel vs Capcom 3
                     "730830", #Escape from Monkey Island
+                    "229480", #Dungeons & Dragons: Chronicles of Mystara
                     ]:
                 self.env["PROTON_LIMIT_RESOLUTIONS"] = "32"
+
+        if "PROTON_SPOOF_STEAMINPUT_VIDPID" not in self.env:
+            if os.environ.get("SteamGameId", 0) in [
+                    "939960",
+                    ]:
+                self.env["PROTON_SPOOF_STEAMINPUT_VIDPID"] = "1"
 
         if "forcelgadd" in self.compat_config:
             self.env["WINE_LARGE_ADDRESS_AWARE"] = "1"
