@@ -1,0 +1,25 @@
+From 74f2d8017fb7fbe45206d9dc4f15e70bfe606694 Mon Sep 17 00:00:00 2001
+From: Paul Gofman <pgofman@codeweavers.com>
+Date: Mon, 20 Jul 2026 18:20:36 -0600
+Subject: [PATCH 48/48] wine.inf: Enable builtin atiadlxx for Far Cry New Dawn.
+
+CW-Bug-Id: #27396
+---
+ loader/wine.inf.in | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/loader/wine.inf.in b/loader/wine.inf.in
+index 56e3af73d53..8e676c9bc36 100644
+--- a/loader/wine.inf.in
++++ b/loader/wine.inf.in
+@@ -1528,6 +1528,7 @@ HKCU,Software\Wine\AppDefaults\Spider-Man.exe\DllOverrides,"atiadlxx",,"builtin"
+ HKCU,Software\Wine\AppDefaults\RiftApart.exe\DllOverrides,"atiadlxx",,"builtin"
+ HKCU,Software\Wine\AppDefaults\ffxvi.exe\DllOverrides,"atiadlxx",,"builtin"
+ HKCU,Software\Wine\AppDefaults\ffxvi_demo.exe\DllOverrides,"atiadlxx",,"builtin"
++HKCU,Software\Wine\AppDefaults\FarCryNewDawn.exe\DllOverrides,"atiadlxx",,"builtin"
+ HKCU,Software\Wine\AppDefaults\rayne1.exe\DllOverrides,"d3d8",,"native"
+ HKCU,Software\Wine\AppDefaults\rayne2.exe\DllOverrides,"d3d8",,"native"
+ HKLM,Software\Wow6432Node\lucasarts entertainment company llc\Star Wars: Episode I Racer\v1.0,"Display Height",0x10001,480
+-- 
+2.55.0
+

@@ -1,0 +1,30 @@
+From d4f6dac370f8ed49cd3862b416ee82520d572560 Mon Sep 17 00:00:00 2001
+From: Paul Gofman <pgofman@codeweavers.com>
+Date: Mon, 13 Jul 2026 18:18:29 -0600
+Subject: [PATCH 21/48] Revert "fixup! ntdll: HACK: Force en-US locale for EAC
+ launcher."
+
+This reverts commit 2a1fe0f7dbd593f2e34683dbfa52fee5e84d0ddc.
+---
+ dlls/ntdll/unix/env.c | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
+
+diff --git a/dlls/ntdll/unix/env.c b/dlls/ntdll/unix/env.c
+index 25cacdfc8f4..55e8a967453 100644
+--- a/dlls/ntdll/unix/env.c
++++ b/dlls/ntdll/unix/env.c
+@@ -744,10 +744,7 @@ static void init_locale(void)
+     if (!unix_to_win_locale( ctype, system_locale )) system_locale[0] = 0;
+     TRACE_(nls)( "Unix LC_CTYPE is %s, setting system locale to %s\n", debugstr_a(ctype), debugstr_a(user_locale) );
+ 
+-    if (main_argc > 1 && (
+-            strstr(main_argv[1], "start_protected_game.exe")
+-            || strstr(main_argv[1], "RocketLeague_EAC.exe")
+-       ))
++    if (main_argc > 1 && strstr(main_argv[1], "start_protected_game.exe"))
+     {
+         FIXME( "HACK setting EN locale.\n" );
+         messages = "en-US";
+-- 
+2.55.0
+

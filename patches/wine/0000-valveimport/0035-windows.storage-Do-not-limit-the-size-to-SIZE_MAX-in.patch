@@ -1,0 +1,29 @@
+From b7860fe0d563ce325ec2552dda6e8715fdd05c1b Mon Sep 17 00:00:00 2001
+From: Conor McCarthy <cmccarthy@codeweavers.com>
+Date: Wed, 8 Jul 2026 10:37:15 +1000
+Subject: [PATCH 35/48] windows.storage: Do not limit the size to SIZE_MAX in
+ memory_stream_random_access_put_Size().
+
+To match native and the allocation size.
+
+(cherry picked from commit 58ab210fd2646701ffcdb0751694dfc1cc7b5947)
+---
+ dlls/windows.storage/streams.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/dlls/windows.storage/streams.c b/dlls/windows.storage/streams.c
+index f321ee55280..b5d0eefc033 100644
+--- a/dlls/windows.storage/streams.c
++++ b/dlls/windows.storage/streams.c
+@@ -332,7 +332,7 @@ static HRESULT WINAPI memory_stream_random_access_put_Size( IRandomAccessStream
+     if (FAILED(hr = memory_stream_require_capacity( impl, value )))
+         return hr;
+ 
+-    impl->size = min( value, SIZE_MAX );
++    impl->size = value;
+     return S_OK;
+ }
+ 
+-- 
+2.55.0
+

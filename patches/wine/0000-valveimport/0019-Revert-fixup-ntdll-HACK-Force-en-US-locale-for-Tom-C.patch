@@ -1,0 +1,31 @@
+From 4a047df03718fe12e2a5a5fa84ffe668b43bf7ed Mon Sep 17 00:00:00 2001
+From: Paul Gofman <pgofman@codeweavers.com>
+Date: Mon, 13 Jul 2026 18:18:05 -0600
+Subject: [PATCH 19/48] =?UTF-8?q?Revert=20"fixup!=20ntdll:=20HACK:=20Force?=
+ =?UTF-8?q?=20en-US=20locale=20for=20Tom=20Clancy=E2=80=99s=20The=20Divisi?=
+ =?UTF-8?q?on=202=20EAC=20launcher."?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This reverts commit 3be3f2ebbcf48096737ace8463d61d7fb267e022.
+---
+ dlls/ntdll/unix/env.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/dlls/ntdll/unix/env.c b/dlls/ntdll/unix/env.c
+index 042daa27ac7..b8ed539610f 100644
+--- a/dlls/ntdll/unix/env.c
++++ b/dlls/ntdll/unix/env.c
+@@ -747,7 +747,7 @@ static void init_locale(void)
+     if (main_argc > 1 && (
+             strstr(main_argv[1], "start_protected_game.exe")
+             || strstr(main_argv[1], "RocketLeague_EAC.exe")
+-            || ((p = getenv( "SteamGameId" )) && !strcmp( p, "2221490" ) && !strcmp( main_argv[1], "-public_key_store_address" ))
++            || strstr(main_argv[1], "EACLaunch.exe")
+        ))
+     {
+         FIXME( "HACK setting EN locale.\n" );
+-- 
+2.55.0
+

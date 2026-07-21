@@ -1,0 +1,58 @@
+From b60907e120e43a916fda2a0f518435254f25916d Mon Sep 17 00:00:00 2001
+From: Conor McCarthy <cmccarthy@codeweavers.com>
+Date: Thu, 2 Jul 2026 23:55:43 +1000
+Subject: [PATCH 40/48] wintypes: Implement IDataWriter::DetachBuffer().
+
+(cherry picked from commit 719bc977a3520102abef928461e7c7bdf3e746b1)
+---
+ dlls/wintypes/storage.c        | 9 ++++++---
+ dlls/wintypes/tests/wintypes.c | 4 ----
+ 2 files changed, 6 insertions(+), 7 deletions(-)
+
+diff --git a/dlls/wintypes/storage.c b/dlls/wintypes/storage.c
+index 54decf96a50..5b9fcadb0df 100644
+--- a/dlls/wintypes/storage.c
++++ b/dlls/wintypes/storage.c
+@@ -322,10 +322,13 @@ static HRESULT WINAPI data_writer_FlushAsync(IDataWriter *iface, IAsyncOperation
+ 
+ static HRESULT WINAPI data_writer_DetachBuffer(IDataWriter *iface, IBuffer **buffer)
+ {
+-    FIXME("iface %p, buffer %p stub!\n", iface, buffer);
++    struct data_writer *impl = impl_from_IDataWriter(iface);
+ 
+-    *buffer = NULL;
+-    return E_NOTIMPL;
++    TRACE("iface %p, buffer %p.\n", iface, buffer);
++
++    *buffer = impl->buffer;
++    impl->buffer = NULL;
++    return data_writer_init_buffer(impl, 0);
+ }
+ 
+ static HRESULT WINAPI data_writer_DetachStream(IDataWriter *iface, IOutputStream **output_stream)
+diff --git a/dlls/wintypes/tests/wintypes.c b/dlls/wintypes/tests/wintypes.c
+index df74e550d90..16b044070ed 100644
+--- a/dlls/wintypes/tests/wintypes.c
++++ b/dlls/wintypes/tests/wintypes.c
+@@ -1705,10 +1705,7 @@ static void test_DataWriter(void)
+     ok(hr == HRESULT_FROM_WIN32(ERROR_INVALID_OPERATION), "got hr %#lx.\n", hr);
+ 
+     hr = IDataWriter_DetachBuffer(data_writer, &buffer);
+-    todo_wine
+     ok(hr == S_OK, "got hr %#lx.\n", hr);
+-    if (SUCCEEDED(hr))
+-    {
+     hr = IBuffer_get_Length(buffer, &value);
+     ok(hr == S_OK, "got hr %#lx.\n", hr);
+     ok(value == 8, "got length %u.\n", value);
+@@ -1718,7 +1715,6 @@ static void test_DataWriter(void)
+     ok(value64 == uint64_value, "got %I64x.\n", value64);
+ 
+     IBuffer_Release(buffer);
+-    }
+ 
+     ref = IDataWriter_Release(data_writer);
+     ok(ref == 0, "got ref %ld.\n", ref);
+-- 
+2.55.0
+

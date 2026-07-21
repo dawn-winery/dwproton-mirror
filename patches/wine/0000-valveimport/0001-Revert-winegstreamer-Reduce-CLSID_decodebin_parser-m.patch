@@ -1,0 +1,31 @@
+From 24310994bbf2627460093c71ee912b06252f1c6e Mon Sep 17 00:00:00 2001
+From: Paul Gofman <pgofman@codeweavers.com>
+Date: Thu, 2 Jul 2026 13:10:26 -0600
+Subject: [PATCH 01/48] Revert "winegstreamer: Reduce CLSID_decodebin_parser
+ merit, so the MPEG splitter is chosen instead for MPEGs."
+
+This reverts commit e870f31d773376f3824c7803b5451f7025c3e92b.
+
+The commit itself is not wrong but WMVideo Decoder DMO currently doesn't work with Proton transcoding.
+
+CW-Bug-Id: #27265
+---
+ dlls/winegstreamer/main.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/dlls/winegstreamer/main.c b/dlls/winegstreamer/main.c
+index 59b86bdb542..5668e282681 100644
+--- a/dlls/winegstreamer/main.c
++++ b/dlls/winegstreamer/main.c
+@@ -1106,7 +1106,7 @@ static const REGFILTERPINS2 reg_decodebin_parser_pins[3] =
+ static const REGFILTER2 reg_decodebin_parser =
+ {
+     .dwVersion = 2,
+-    .dwMerit = MERIT_NORMAL - 1,
++    .dwMerit = MERIT_PREFERRED,
+     .cPins2 = 3,
+     .rgPins2 = reg_decodebin_parser_pins,
+ };
+-- 
+2.55.0
+

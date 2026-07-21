@@ -1,0 +1,67 @@
+From f51244bab0701b292ab668bad3aeb1cdcd6ef84b Mon Sep 17 00:00:00 2001
+From: Paul Gofman <pgofman@codeweavers.com>
+Date: Tue, 14 Jul 2026 18:17:59 -0600
+Subject: [PATCH 24/48] winebus.sys: Avoid spurious device recreation in
+ process_inotify_event().
+
+CW-Bug-Id: #27366
+---
+ dlls/winebus.sys/bus_udev.c | 28 ++++++++++++++++++++--------
+ 1 file changed, 20 insertions(+), 8 deletions(-)
+
+diff --git a/dlls/winebus.sys/bus_udev.c b/dlls/winebus.sys/bus_udev.c
+index 0d54318b202..2f800b14627 100644
+--- a/dlls/winebus.sys/bus_udev.c
++++ b/dlls/winebus.sys/bus_udev.c
+@@ -1919,6 +1919,24 @@ static void maybe_remove_devnode(const char *base, const char *dir)
+     else WARN("failed to find device for path %s\n", devnode);
+ }
+ 
++static void process_attrib_change(const char *base, const char *dir, const char *subsystem)
++{
++    char devnode[MAX_PATH];
++    int fd;
++
++    snprintf(devnode, sizeof(devnode), "%s/%s", dir, base);
++    if (!find_device_from_devnode(devnode))
++    {
++        maybe_add_devnode(base, dir, subsystem);
++        return;
++    }
++
++    if ((fd = open(devnode, O_RDWR)) < 0)
++        maybe_remove_devnode(base, dir);
++    else
++        close(fd);
++}
++
+ static void process_inotify_event(int fd)
+ {
+     union
+@@ -1945,10 +1963,7 @@ static void process_inotify_event(int fd)
+                 else if (buf.event.mask & (IN_CREATE | IN_MOVED_TO))
+                     maybe_add_devnode(buf.event.name, "/dev", "hidraw");
+                 else if (buf.event.mask & IN_ATTRIB)
+-                {
+-                    maybe_remove_devnode(buf.event.name, "/dev");
+-                    maybe_add_devnode(buf.event.name, "/dev", "hidraw");
+-                }
++                    process_attrib_change(buf.event.name, "/dev", "hidraw");
+             }
+ #ifdef HAS_PROPER_INPUT_HEADER
+             else if (buf.event.wd == devinput_watch)
+@@ -1960,10 +1975,7 @@ static void process_inotify_event(int fd)
+                 else if (buf.event.mask & (IN_CREATE | IN_MOVED_TO))
+                     maybe_add_devnode(buf.event.name, "/dev/input", "input");
+                 else if (buf.event.mask & IN_ATTRIB)
+-                {
+-                    maybe_remove_devnode(buf.event.name, "/dev/input");
+-                    maybe_add_devnode(buf.event.name, "/dev/input", "input");
+-                }
++                    process_attrib_change(buf.event.name, "/dev/input", "input");
+             }
+ #endif
+         }
+-- 
+2.55.0
+

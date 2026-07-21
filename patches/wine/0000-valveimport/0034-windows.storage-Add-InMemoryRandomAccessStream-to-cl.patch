@@ -1,0 +1,26 @@
+From cf8413ea2a6854473293bb3e3c9e7a3464519f20 Mon Sep 17 00:00:00 2001
+From: Conor McCarthy <cmccarthy@codeweavers.com>
+Date: Wed, 8 Jul 2026 10:17:41 +1000
+Subject: [PATCH 34/48] windows.storage: Add InMemoryRandomAccessStream to
+ class registration.
+
+(cherry picked from commit ce592710f1aee6a33b25c3e3ab1f1b6ffda24ac2)
+
+CW-Bug-Id: #27221
+---
+ dlls/windows.storage/classes.idl | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/dlls/windows.storage/classes.idl b/dlls/windows.storage/classes.idl
+index d64d1c45ec8..13f056fcc8f 100644
+--- a/dlls/windows.storage/classes.idl
++++ b/dlls/windows.storage/classes.idl
+@@ -31,4 +31,5 @@ import "windows.storage.idl";
+ 
+ namespace Windows.Storage.Streams {
+     runtimeclass RandomAccessStreamReference;
++    runtimeclass InMemoryRandomAccessStream;
+ }
+-- 
+2.55.0
+

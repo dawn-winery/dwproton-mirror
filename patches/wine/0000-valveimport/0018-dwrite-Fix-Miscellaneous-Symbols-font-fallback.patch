@@ -1,0 +1,29 @@
+From be6baf31df816f7b653474bbe8c9bd28e19602c3 Mon Sep 17 00:00:00 2001
+From: Ziqing Hui <zhui@codeweavers.com>
+Date: Fri, 26 Jun 2026 10:04:58 +0800
+Subject: [PATCH 18/48] dwrite: Fix Miscellaneous Symbols font fallback.
+
+(cherry picked from commit d7b1a680a0438397bbb1a664bd82f26a172c9eff)
+
+CW-Bug-Id: #27103
+---
+ dlls/dwrite/analyzer.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/dlls/dwrite/analyzer.c b/dlls/dwrite/analyzer.c
+index 74a1e8819ea..ebad42655c3 100644
+--- a/dlls/dwrite/analyzer.c
++++ b/dlls/dwrite/analyzer.c
+@@ -308,6 +308,9 @@ system_fallback_config[] =
+     { "1C00-1C4F",              L"Noto Sans Lepcha" },
+     { "1C50-1C7F",              L"Noto Sans Ol Chiki" },
+ 
++    /* Miscellaneous Symbols - 2600-26FF */
++    { "2600-26FF",              L"Noto Sans Symbols2, Noto Sans Symbols 2, Noto Sans Symbols" },
++
+     /* Dingbats - 2700-27BF */
+     { "2700-27BF",              L"Noto Sans Symbols2, Noto Sans Symbols 2" },
+ 
+-- 
+2.55.0
+

@@ -1,0 +1,52 @@
+From 171ca8b1b8fd1670b4c102a9e7653e7d7d17c419 Mon Sep 17 00:00:00 2001
+From: Jacek Caban <jacek@codeweavers.com>
+Date: Tue, 19 May 2026 01:21:32 +0200
+Subject: [PATCH 09/48] ntdll: Use cooperative suspend for syscall callbacks.
+
+CW-Bug-Id: #27308
+
+(cherry picked from commit 211e7a3d3b59b8bd8c8810f063434849b1b5e616)
+---
+ dlls/ntdll/signal_arm64ec.c    | 11 ++++++++++-
+ dlls/ntdll/unix/signal_arm64.c |  3 ++-
+ 2 files changed, 12 insertions(+), 2 deletions(-)
+
+diff --git a/dlls/ntdll/signal_arm64ec.c b/dlls/ntdll/signal_arm64ec.c
+index eeb7617a1e7..8790f070948 100644
+--- a/dlls/ntdll/signal_arm64ec.c
++++ b/dlls/ntdll/signal_arm64ec.c
+@@ -89,7 +89,16 @@ static inline BOOL enter_syscall_callback(void)
+ 
+ static inline void leave_syscall_callback(void)
+ {
+-    get_arm64ec_cpu_area()->InSyscallCallback = 0;
++    CHPE_V2_CPU_AREA_INFO *cpu_area = get_arm64ec_cpu_area();
++    CONTEXT ctx;
++
++    cpu_area->InSyscallCallback = 0;
++
++    if (cpu_area->SuspendDoorbell && *cpu_area->SuspendDoorbell)
++    {
++        RtlCaptureContext( &ctx );
++        if (*cpu_area->SuspendDoorbell) NtContinue( &ctx, FALSE );
++    }
+ }
+ 
+ /**********************************************************************
+diff --git a/dlls/ntdll/unix/signal_arm64.c b/dlls/ntdll/unix/signal_arm64.c
+index 18426bc72bf..c7ed488f702 100644
+--- a/dlls/ntdll/unix/signal_arm64.c
++++ b/dlls/ntdll/unix/signal_arm64.c
+@@ -1339,7 +1339,8 @@ static void usr1_handler( int signal, siginfo_t *siginfo, void *sigcontext )
+     CHPE_V2_CPU_AREA_INFO *chpe;
+     CONTEXT context;
+ 
+-    if ((chpe = NtCurrentTeb()->ChpeV2CpuAreaInfo) && chpe->InSimulation && chpe->SuspendDoorbell)
++    if ((chpe = NtCurrentTeb()->ChpeV2CpuAreaInfo) && chpe->SuspendDoorbell &&
++             (chpe->InSimulation || chpe->InSyscallCallback))
+     {
+         NTSTATUS status = server_select( NULL, 0, SELECT_INTERRUPTIBLE | SELECT_COOPERATIVE_SUSPEND,
+                                          0, NULL, NULL );
+-- 
+2.55.0
+

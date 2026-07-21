@@ -1,0 +1,74 @@
+From c37dd7179b4c7716331d1f7ed401c469038fbe44 Mon Sep 17 00:00:00 2001
+From: Ryan Houdek <Sonicadvance1@gmail.com>
+Date: Wed, 24 Jun 2026 11:23:15 -0700
+Subject: [PATCH 02/48] wow64: Add BTCpuNotifyProcessExecuteFlagsChange
+ interface.
+
+Fixes games that toggle DEP at runtime. Like Bioshock.
+
+(cherry picked from commit c57ec80d21fef37c99e521c6a19e06ab7af64b88)
+---
+ dlls/wow64/process.c       | 7 ++++++-
+ dlls/wow64/syscall.c       | 2 ++
+ dlls/wow64/wow64_private.h | 1 +
+ 3 files changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/dlls/wow64/process.c b/dlls/wow64/process.c
+index 77393f00e52..af7a8eca7a5 100644
+--- a/dlls/wow64/process.c
++++ b/dlls/wow64/process.c
+@@ -931,13 +931,18 @@ NTSTATUS WINAPI wow64_NtSetInformationProcess( UINT *args )
+     case ProcessPriorityClass:   /* PROCESS_PRIORITY_CLASS */
+     case ProcessBasePriority:   /* ULONG */
+     case ProcessPriorityBoost:  /* ULONG */
+-    case ProcessExecuteFlags:   /* ULONG */
+     case ProcessPagePriority:   /* MEMORY_PRIORITY_INFORMATION */
+     case ProcessPowerThrottlingState:   /* PROCESS_POWER_THROTTLING_STATE */
+     case ProcessLeapSecondInformation:   /* PROCESS_LEAP_SECOND_INFO */
+     case ProcessWineGrantAdminToken:   /* NULL */
+         return NtSetInformationProcess( handle, class, ptr, len );
+ 
++    case ProcessExecuteFlags:   /* ULONG */
++        status = NtSetInformationProcess( handle, class, ptr, len );
++        if (!status && pBTCpuNotifyProcessExecuteFlagsChange)
++            pBTCpuNotifyProcessExecuteFlagsChange(*(ULONG *)ptr);
++        return status;
++
+     case ProcessAccessToken: /* PROCESS_ACCESS_TOKEN */
+         if (len == sizeof(PROCESS_ACCESS_TOKEN32))
+         {
+diff --git a/dlls/wow64/syscall.c b/dlls/wow64/syscall.c
+index 4720fe134fa..0508f4aab36 100644
+--- a/dlls/wow64/syscall.c
++++ b/dlls/wow64/syscall.c
+@@ -113,6 +113,7 @@ void     (WINAPI *pBTCpuNotifyMemoryAlloc)( void *, SIZE_T, ULONG, ULONG, BOOL,
+ void     (WINAPI *pBTCpuNotifyMemoryDirty)( void *, SIZE_T ) = NULL;
+ void     (WINAPI *pBTCpuNotifyMemoryFree)( void *, SIZE_T, ULONG, BOOL, NTSTATUS ) = NULL;
+ void     (WINAPI *pBTCpuNotifyMemoryProtect)( void *, SIZE_T, ULONG, BOOL, NTSTATUS ) = NULL;
++void     (WINAPI *pBTCpuNotifyProcessExecuteFlagsChange)(ULONG) = NULL;
+ void     (WINAPI *pBTCpuNotifyReadFile)( HANDLE, void *, SIZE_T, BOOL, NTSTATUS ) = NULL;
+ void     (WINAPI *pBTCpuNotifyUnmapViewOfSection)( void *, BOOL, NTSTATUS ) = NULL;
+ NTSTATUS (WINAPI *pBTCpuResetToConsistentState)( EXCEPTION_POINTERS * ) = NULL;
+@@ -869,6 +870,7 @@ static DWORD WINAPI process_init( RTL_RUN_ONCE *once, void *param, void **contex
+     GET_PTR( BTCpuNotifyMemoryDirty );
+     GET_PTR( BTCpuNotifyMemoryFree );
+     GET_PTR( BTCpuNotifyMemoryProtect );
++    GET_PTR( BTCpuNotifyProcessExecuteFlagsChange );
+     GET_PTR( BTCpuNotifyReadFile );
+     GET_PTR( BTCpuNotifyUnmapViewOfSection );
+     GET_PTR( BTCpuUpdateProcessorInformation );
+diff --git a/dlls/wow64/wow64_private.h b/dlls/wow64/wow64_private.h
+index deca72d445c..3b4d5907def 100644
+--- a/dlls/wow64/wow64_private.h
++++ b/dlls/wow64/wow64_private.h
+@@ -46,6 +46,7 @@ extern void     (WINAPI *pBTCpuNotifyMemoryAlloc)( void *, SIZE_T, ULONG, ULONG,
+ extern void     (WINAPI *pBTCpuNotifyMemoryDirty)( void *, SIZE_T );
+ extern void     (WINAPI *pBTCpuNotifyMemoryFree)( void *, SIZE_T, ULONG, BOOL, NTSTATUS );
+ extern void     (WINAPI *pBTCpuNotifyMemoryProtect)( void *, SIZE_T, ULONG, BOOL, NTSTATUS );
++extern void     (WINAPI *pBTCpuNotifyProcessExecuteFlagsChange)(ULONG);
+ extern void     (WINAPI *pBTCpuNotifyReadFile)( HANDLE, void *, SIZE_T, BOOL, NTSTATUS );
+ extern void     (WINAPI *pBTCpuNotifyUnmapViewOfSection)( void *, BOOL, NTSTATUS );
+ extern void     (WINAPI *pBTCpuUpdateProcessorInformation)( SYSTEM_CPU_INFORMATION * );
+-- 
+2.55.0
+

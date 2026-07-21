@@ -1,0 +1,81 @@
+From ffeb50305c6161843acdf29e0cbd48b324fc52f2 Mon Sep 17 00:00:00 2001
+From: Paul Gofman <pgofman@codeweavers.com>
+Date: Mon, 13 Jul 2026 18:17:17 -0600
+Subject: [PATCH 23/48] kernelbase: HACK: Force en-US locale for EAC launcher.
+
+CW-Bug-Id: #24326
+CW-Bug-Id: #27182
+CW-Bug-Id: #27326
+---
+ dlls/kernelbase/locale.c  | 15 +++++++++++++++
+ dlls/kernelbase/process.c | 14 +++++++++++---
+ 2 files changed, 26 insertions(+), 3 deletions(-)
+
+diff --git a/dlls/kernelbase/locale.c b/dlls/kernelbase/locale.c
+index 651f45be8c2..e1d71514514 100644
+--- a/dlls/kernelbase/locale.c
++++ b/dlls/kernelbase/locale.c
+@@ -6050,6 +6050,19 @@ INT WINAPI DECLSPEC_HOTPATCH GetLocaleInfoA( LCID lcid, LCTYPE lctype, char *buf
+     return ret;
+ }
+ 
++static void hack_spoof_locale( LCID *lcid )
++{
++    char *get_product_name( const WCHAR * );
++    static int cached = -1;
++
++    if (cached == -1)
++    {
++        const char *s = get_product_name( NULL );
++        cached = s && !strcmp( s, "Easy Anti-Cheat Bootstrapper (EOS)" );
++        if (cached) FIXME( "HACK: Forcing en-US locale.\n" );
++    }
++    if (cached) *lcid = MAKELCID(MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), SORT_DEFAULT);
++}
+ 
+ /******************************************************************************
+  *	GetLocaleInfoW   (kernelbase.@)
+@@ -6058,6 +6071,8 @@ INT WINAPI DECLSPEC_HOTPATCH GetLocaleInfoW( LCID lcid, LCTYPE lctype, WCHAR *bu
+ {
+     const NLS_LOCALE_DATA *locale;
+ 
++    hack_spoof_locale( &lcid );
++
+     if (len < 0 || (len && !buffer))
+     {
+         SetLastError( ERROR_INVALID_PARAMETER );
+diff --git a/dlls/kernelbase/process.c b/dlls/kernelbase/process.c
+index 8be6c7e785b..20dbf1382b8 100644
+--- a/dlls/kernelbase/process.c
++++ b/dlls/kernelbase/process.c
+@@ -501,7 +501,7 @@ done:
+     return ret;
+ }
+ 
+-static char *get_product_name( const WCHAR *app_name )
++char *get_product_name( const WCHAR *app_name )
+ {
+     WCHAR full_path[MAX_PATH];
+     char *product_name, *ret;
+@@ -510,8 +510,16 @@ static char *get_product_name( const WCHAR *app_name )
+     void *block;
+     UINT size;
+ 
+-    if (!GetLongPathNameW( app_name, full_path, MAX_PATH )) lstrcpynW( full_path, app_name, MAX_PATH );
+-    if (!GetFullPathNameW( full_path, MAX_PATH, full_path, NULL )) lstrcpynW( full_path, app_name, MAX_PATH );
++    if (app_name)
++    {
++        if (!GetLongPathNameW( app_name, full_path, MAX_PATH )) lstrcpynW( full_path, app_name, MAX_PATH );
++        if (!GetFullPathNameW( full_path, MAX_PATH, full_path, NULL )) lstrcpynW( full_path, app_name, MAX_PATH );
++    }
++    else
++    {
++        *full_path = 0;
++        GetModuleFileNameW( NULL, full_path, MAX_PATH );
++    }
+ 
+     size = GetFileVersionInfoSizeExW(0, full_path, NULL);
+     if (!size)
+-- 
+2.55.0
+

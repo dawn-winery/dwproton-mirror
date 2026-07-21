@@ -1,0 +1,29 @@
+From b9299d52e252d73c961f0606734210cef6534e2c Mon Sep 17 00:00:00 2001
+From: Mohamad Al-Jaf <mohamadaljaf@gmail.com>
+Date: Sun, 11 Jan 2026 17:13:30 -0500
+Subject: [PATCH 12/48] windows.ui: Stub IUISettings2::get_TextScaleFactor().
+
+(cherry picked from commit f19a7df7c026d00d425be5ee4d6ef9b0319f5d56)
+
+CW-Bug-Id: #27321
+---
+ dlls/windows.ui/uisettings.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/dlls/windows.ui/uisettings.c b/dlls/windows.ui/uisettings.c
+index a58becf3555..e94ec0916e9 100644
+--- a/dlls/windows.ui/uisettings.c
++++ b/dlls/windows.ui/uisettings.c
+@@ -235,7 +235,8 @@ DEFINE_IINSPECTABLE( uisettings2, IUISettings2, struct uisettings, IUISettings_i
+ static HRESULT WINAPI uisettings2_get_TextScaleFactor( IUISettings2 *iface, DOUBLE *value )
+ {
+     FIXME( "iface %p, value %p stub!\n", iface, value );
+-    return E_NOTIMPL;
++    *value = 1.0;
++    return S_OK;
+ }
+ 
+ static HRESULT WINAPI uisettings2_add_TextScaleFactorChanged( IUISettings2 *iface, ITypedEventHandler_UISettings_IInspectable *handler,
+-- 
+2.55.0
+

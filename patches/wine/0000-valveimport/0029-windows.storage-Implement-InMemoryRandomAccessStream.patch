@@ -1,0 +1,96 @@
+From b04dcc9b666de6c7686856f958001a8611916206 Mon Sep 17 00:00:00 2001
+From: Conor McCarthy <cmccarthy@codeweavers.com>
+Date: Wed, 1 Jul 2026 10:27:42 +1000
+Subject: [PATCH 29/48] windows.storage: Implement InMemoryRandomAccessStream
+ IRandomAccessStream::get_Size().
+
+(cherry picked from commit 338bd31e312cdae9ebc623acf24c9081b107ad39)
+
+CW-Bug-Id: #27221
+---
+ dlls/windows.storage/streams.c       | 5 +++--
+ dlls/windows.storage/tests/storage.c | 7 +------
+ 2 files changed, 4 insertions(+), 8 deletions(-)
+
+diff --git a/dlls/windows.storage/streams.c b/dlls/windows.storage/streams.c
+index 292b3d25748..e9ff6213cd2 100644
+--- a/dlls/windows.storage/streams.c
++++ b/dlls/windows.storage/streams.c
+@@ -291,7 +291,7 @@ static HRESULT WINAPI memory_stream_random_access_get_Size( IRandomAccessStream
+ {
+     struct memory_stream *impl = impl_from_IRandomAccessStream( iface );
+ 
+-    FIXME( "iface %p, value %p stub!\n", iface, value );
++    TRACE( "iface %p, value %p.\n", iface, value );
+ 
+     if (impl->closed)
+     {
+@@ -299,7 +299,8 @@ static HRESULT WINAPI memory_stream_random_access_get_Size( IRandomAccessStream
+         return RO_E_CLOSED;
+     }
+ 
+-    return E_NOTIMPL;
++    *value = impl->size;
++    return S_OK;
+ }
+ 
+ static HRESULT WINAPI memory_stream_random_access_put_Size( IRandomAccessStream *iface, UINT64 value )
+diff --git a/dlls/windows.storage/tests/storage.c b/dlls/windows.storage/tests/storage.c
+index 963781f6cee..ac6d76c2ce9 100644
+--- a/dlls/windows.storage/tests/storage.c
++++ b/dlls/windows.storage/tests/storage.c
+@@ -357,7 +357,6 @@ static void test_InMemoryRandomAccessStream(void)
+     data = buffer_get_data( buffer );
+ 
+     hr = IRandomAccessStream_get_Size( in_memory_stream, &value64 );
+-    todo_wine
+     ok( hr == S_OK, "got hr %#lx.\n", hr );
+     ok( value64 == 0, "got size %I64u.\n", value64 );
+     hr = IRandomAccessStream_get_Position( in_memory_stream, &value64 );
+@@ -368,7 +367,6 @@ static void test_InMemoryRandomAccessStream(void)
+     todo_wine
+     ok( hr == S_OK, "got hr %#lx.\n", hr );
+     hr = IRandomAccessStream_get_Size( in_memory_stream, &value64 );
+-    todo_wine
+     ok( hr == S_OK, "got hr %#lx.\n", hr );
+     ok( value64 == 0, "got size %I64u.\n", value64 );
+     hr = IRandomAccessStream_get_Position( in_memory_stream, &value64 );
+@@ -380,14 +378,12 @@ static void test_InMemoryRandomAccessStream(void)
+     /* Write 0 bytes at position 16 */
+     output_stream_write( output_stream, buffer, 0 );
+     hr = IRandomAccessStream_get_Size( in_memory_stream, &value64 );
+-    todo_wine
+     ok( hr == S_OK, "got hr %#lx.\n", hr );
+     ok( value64 == 0, "got size %I64u.\n", value64 );
+     /* Write 1 byte at position 16 */
+     data[0] = byte_value;
+     output_stream_write( output_stream, buffer, 1 );
+     hr = IRandomAccessStream_get_Size( in_memory_stream, &value64 );
+-    todo_wine
+     ok( hr == S_OK, "got hr %#lx.\n", hr );
+     todo_wine
+     ok( value64 == 17, "got size %I64u.\n", value64 );
+@@ -398,11 +394,11 @@ static void test_InMemoryRandomAccessStream(void)
+     hr = IRandomAccessStream_get_Position( in_memory_stream, &value64 );
+     todo_wine
+     ok( hr == S_OK, "got hr %#lx.\n", hr );
++    todo_wine
+     ok( value64 == 0, "got pos %I64u.\n", value64 );
+     memcpy( data, &uint64_value, 8 );
+     output_stream_write( output_stream, buffer, 8 );
+     hr = IRandomAccessStream_get_Size( in_memory_stream, &value64 );
+-    todo_wine
+     ok( hr == S_OK, "got hr %#lx.\n", hr );
+     todo_wine
+     ok( value64 == 17, "got size %I64u.\n", value64 );
+@@ -498,7 +494,6 @@ static void test_InMemoryRandomAccessStream(void)
+     todo_wine
+     ok( hr == S_OK, "got hr %#lx.\n", hr );
+     hr = IRandomAccessStream_get_Size( in_memory_stream, &value64 );
+-    todo_wine
+     ok( hr == S_OK, "got hr %#lx.\n", hr );
+     todo_wine
+     ok( value64 == 0x100000, "got size %I64u.\n", value64 );
+-- 
+2.55.0
+

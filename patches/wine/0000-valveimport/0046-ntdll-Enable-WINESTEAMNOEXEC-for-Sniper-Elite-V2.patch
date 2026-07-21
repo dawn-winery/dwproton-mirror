@@ -1,0 +1,25 @@
+From 91e9e8fbf62074ade996b167010dd27bf6a90d98 Mon Sep 17 00:00:00 2001
+From: Paul Gofman <pgofman@codeweavers.com>
+Date: Thu, 16 Jul 2026 11:33:53 -0600
+Subject: [PATCH 46/48] ntdll: Enable WINESTEAMNOEXEC for Sniper Elite V2.
+
+CW-Bug-Id: #27383
+---
+ dlls/ntdll/unix/loader.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/dlls/ntdll/unix/loader.c b/dlls/ntdll/unix/loader.c
+index f8aa468a3ab..f67fa07d366 100644
+--- a/dlls/ntdll/unix/loader.c
++++ b/dlls/ntdll/unix/loader.c
+@@ -2362,6 +2362,7 @@ static void hacks_init(void)
+     case 212910: /* CoD Black Ops II Zombies */
+     case 247910: /* Sniper Elite: Nazi Zombie Army 2 */
+     case 227100: /* Sniper Elite: Nazi Zombie Army */
++    case 63380:  /* Sniper Elite: V2 */
+         setenv( "WINESTEAMNOEXEC", "1", 0 );
+         break;
+     }
+-- 
+2.55.0
+

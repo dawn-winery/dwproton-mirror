@@ -1,0 +1,69 @@
+From ca592d163083b892edaa6f82c63b1d4b8ff574e5 Mon Sep 17 00:00:00 2001
+From: Conor McCarthy <cmccarthy@codeweavers.com>
+Date: Fri, 3 Jul 2026 11:08:49 +1000
+Subject: [PATCH 44/48] wintypes: Implement IDataWriter::DetachStream().
+
+(cherry picked from commit 4a4e1d0f17890954a666fe71d23a644fde33979e)
+---
+ dlls/wintypes/storage.c        | 6 ++++--
+ dlls/wintypes/tests/wintypes.c | 8 +-------
+ 2 files changed, 5 insertions(+), 9 deletions(-)
+
+diff --git a/dlls/wintypes/storage.c b/dlls/wintypes/storage.c
+index 8a90966b3b3..aaef09004f1 100644
+--- a/dlls/wintypes/storage.c
++++ b/dlls/wintypes/storage.c
+@@ -610,14 +610,16 @@ static HRESULT WINAPI data_writer_DetachStream(IDataWriter *iface, IOutputStream
+ {
+     struct data_writer *impl = impl_from_IDataWriter(iface);
+ 
+-    FIXME("iface %p, output_stream %p stub!\n", iface, output_stream);
++    TRACE("iface %p, output_stream %p.\n", iface, output_stream);
+ 
+     *output_stream = NULL;
+ 
+     if (impl->storing)
+         return HRESULT_FROM_WIN32(ERROR_INVALID_OPERATION);
+ 
+-    return E_NOTIMPL;
++    *output_stream = impl->stream;
++    impl->stream = NULL;
++    return S_OK;
+ }
+ 
+ static const struct IDataWriterVtbl data_writer_vtbl =
+diff --git a/dlls/wintypes/tests/wintypes.c b/dlls/wintypes/tests/wintypes.c
+index d30a4ba81c7..6e8ed8c3e77 100644
+--- a/dlls/wintypes/tests/wintypes.c
++++ b/dlls/wintypes/tests/wintypes.c
+@@ -1691,7 +1691,6 @@ static void test_DataWriter(void)
+     check_interface(data_writer, &IID_IAgileObject, TRUE);
+ 
+     hr = IDataWriter_DetachStream(data_writer, &output_stream);
+-    todo_wine
+     ok(hr == S_OK, "got hr %#lx.\n", hr);
+     ok(!output_stream, "got stream %p.\n", output_stream);
+ 
+@@ -1850,18 +1849,13 @@ static void test_DataWriter(void)
+     IOutputStream_Release(output_stream);
+ 
+     hr = IDataWriter_DetachStream(data_writer, &detached_stream);
+-    todo_wine
+     ok(hr == S_OK, "got hr %#lx.\n", hr);
+-    todo_wine
+     ok(detached_stream == output_stream, "got stream %p.\n", detached_stream);
+-    if (SUCCEEDED(hr)) IOutputStream_Release(detached_stream);
++    IOutputStream_Release(detached_stream);
+ 
+     hr = IDataWriter_StoreAsync(data_writer, &operation);
+-    todo_wine
+     ok(hr == HRESULT_FROM_WIN32(ERROR_INVALID_OPERATION), "got hr %#lx.\n", hr);
+-    if (SUCCEEDED(hr)) IAsyncOperation_UINT32_Release(operation);
+     hr = IDataWriter_FlushAsync(data_writer, &bool_op);
+-    todo_wine
+     ok(hr == HRESULT_FROM_WIN32(ERROR_INVALID_OPERATION), "got hr %#lx.\n", hr);
+ 
+     ref = IDataWriter_Release(data_writer);
+-- 
+2.55.0
+

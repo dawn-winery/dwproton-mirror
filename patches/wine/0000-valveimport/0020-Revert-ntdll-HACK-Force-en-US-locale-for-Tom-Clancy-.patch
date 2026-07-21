@@ -1,0 +1,30 @@
+From 0bd7c187f03b8627b28cce93481ddbad2272196a Mon Sep 17 00:00:00 2001
+From: Paul Gofman <pgofman@codeweavers.com>
+Date: Mon, 13 Jul 2026 18:18:18 -0600
+Subject: [PATCH 20/48] =?UTF-8?q?Revert=20"ntdll:=20HACK:=20Force=20en-US?=
+ =?UTF-8?q?=20locale=20for=20Tom=20Clancy=E2=80=99s=20The=20Division=202?=
+ =?UTF-8?q?=20EAC=20launcher."?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This reverts commit 0cffc20ee6abf525d1efb0b0d772d5ea4982e8f4.
+---
+ dlls/ntdll/unix/env.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/dlls/ntdll/unix/env.c b/dlls/ntdll/unix/env.c
+index b8ed539610f..25cacdfc8f4 100644
+--- a/dlls/ntdll/unix/env.c
++++ b/dlls/ntdll/unix/env.c
+@@ -747,7 +747,6 @@ static void init_locale(void)
+     if (main_argc > 1 && (
+             strstr(main_argv[1], "start_protected_game.exe")
+             || strstr(main_argv[1], "RocketLeague_EAC.exe")
+-            || strstr(main_argv[1], "EACLaunch.exe")
+        ))
+     {
+         FIXME( "HACK setting EN locale.\n" );
+-- 
+2.55.0
+

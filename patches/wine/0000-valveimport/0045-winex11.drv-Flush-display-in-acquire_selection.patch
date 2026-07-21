@@ -1,0 +1,25 @@
+From de45357409c54c59420e04aac826fd4a5816bc7e Mon Sep 17 00:00:00 2001
+From: Paul Gofman <pgofman@codeweavers.com>
+Date: Wed, 15 Jul 2026 16:48:35 -0600
+Subject: [PATCH 45/48] winex11.drv: Flush display in acquire_selection().
+
+CW-Bug-Id: #27331
+---
+ dlls/winex11.drv/clipboard.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/dlls/winex11.drv/clipboard.c b/dlls/winex11.drv/clipboard.c
+index 1ec7d006aec..cb1534bff77 100644
+--- a/dlls/winex11.drv/clipboard.c
++++ b/dlls/winex11.drv/clipboard.c
+@@ -1922,6 +1922,7 @@ static void acquire_selection( Display *display )
+ 
+     XSetSelectionOwner( display, x11drv_atom(CLIPBOARD), selection_window, CurrentTime );
+     if (use_primary_selection) XSetSelectionOwner( display, XA_PRIMARY, selection_window, CurrentTime );
++    XFlush( display );
+     TRACE( "win %lx\n", selection_window );
+ }
+ 
+-- 
+2.55.0
+

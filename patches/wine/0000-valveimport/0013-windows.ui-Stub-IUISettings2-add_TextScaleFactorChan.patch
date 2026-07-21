@@ -1,0 +1,28 @@
+From aaed31261096aa8eb3c5170e1633dd5ef42dc5a0 Mon Sep 17 00:00:00 2001
+From: Shaun Ren <sren@codeweavers.com>
+Date: Thu, 9 Jul 2026 21:25:58 -0400
+Subject: [PATCH 13/48] windows.ui: Stub
+ IUISettings2::add_TextScaleFactorChanged().
+
+CW-Bug-Id: #27321
+---
+ dlls/windows.ui/uisettings.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/dlls/windows.ui/uisettings.c b/dlls/windows.ui/uisettings.c
+index e94ec0916e9..c52bff8b90d 100644
+--- a/dlls/windows.ui/uisettings.c
++++ b/dlls/windows.ui/uisettings.c
+@@ -243,7 +243,8 @@ static HRESULT WINAPI uisettings2_add_TextScaleFactorChanged( IUISettings2 *ifac
+         EventRegistrationToken *cookie )
+ {
+     FIXME( "iface %p, handler %p, cookie %p stub!\n", iface, handler, cookie );
+-    return E_NOTIMPL;
++    *cookie = dummy_cookie;
++    return S_OK;
+ }
+ 
+ static HRESULT WINAPI uisettings2_remove_TextScaleFactorChanged( IUISettings2 *iface, EventRegistrationToken cookie )
+-- 
+2.55.0
+

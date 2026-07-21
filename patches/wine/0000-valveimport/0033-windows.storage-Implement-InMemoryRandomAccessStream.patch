@@ -1,0 +1,307 @@
+From fd4bbf826d58d208948199af83e5beaa034a3f03 Mon Sep 17 00:00:00 2001
+From: Conor McCarthy <cmccarthy@codeweavers.com>
+Date: Wed, 1 Jul 2026 12:06:47 +1000
+Subject: [PATCH 33/48] windows.storage: Implement InMemoryRandomAccessStream
+ IInputStream::ReadAsync().
+
+(cherry picked from commit 1faed53c48b678892010693416668e4c6504b7fb)
+
+CW-Bug-Id: #27221
+---
+ dlls/windows.storage/async.c         | 12 +++++
+ dlls/windows.storage/private.h       | 45 +++++++++++++++++
+ dlls/windows.storage/streams.c       | 72 +++++++++++++++++++++++++++-
+ dlls/windows.storage/tests/storage.c | 20 --------
+ 4 files changed, 127 insertions(+), 22 deletions(-)
+
+diff --git a/dlls/windows.storage/async.c b/dlls/windows.storage/async.c
+index 9c0b5aff62c..6a06a8577e8 100644
+--- a/dlls/windows.storage/async.c
++++ b/dlls/windows.storage/async.c
+@@ -517,6 +517,18 @@ HRESULT creation_fn( IUnknown *invoker, IUnknown *param,
+     return S_OK;                                                                                                    \
+ }                                                                                                                   \
+ 
++struct async_buffer_uint32
++{
++    IAsyncOperationWithProgress_IBuffer_UINT32 IAsyncOperationWithProgress_IBuffer_UINT32_iface;
++    IAsyncInfoImpl *IAsyncInfoImpl_inner;
++    LONG ref;
++};
++
++DEFINE_IASYNCOPERATIONWITHPROGRESS( IAsyncOperationWithProgress_IBuffer_UINT32, \
++        IAsyncOperationProgressHandler_IBuffer_UINT32, \
++        IAsyncOperationWithProgressCompletedHandler_IBuffer_UINT32, \
++        "IBuffer,UInt32", async_buffer_uint32, IBuffer*, VT_UNKNOWN, punkVal, async_operation_buffer_uint32_create )
++
+ struct async_uint32_uint32
+ {
+     IAsyncOperationWithProgress_UINT32_UINT32 IAsyncOperationWithProgress_UINT32_UINT32_iface;
+diff --git a/dlls/windows.storage/private.h b/dlls/windows.storage/private.h
+index fdf7ad48769..21ef87124e0 100644
+--- a/dlls/windows.storage/private.h
++++ b/dlls/windows.storage/private.h
+@@ -41,6 +41,8 @@
+ #include "robuffer.h"
+ #include "async_private.h"
+ 
++HRESULT async_operation_buffer_uint32_create( IUnknown *invoker, IUnknown *param, async_operation_callback callback,
++        IAsyncOperationWithProgress_IBuffer_UINT32 **out );
+ HRESULT async_operation_uint32_uint32_create( IUnknown *invoker, IUnknown *param, async_operation_callback callback,
+         IAsyncOperationWithProgress_UINT32_UINT32 **out );
+ 
+@@ -87,4 +89,47 @@ extern IActivationFactory *memory_stream_activation_factory;
+ #define DEFINE_IINSPECTABLE_OUTER( pfx, iface_type, impl_type, outer_iface )                       \
+     DEFINE_IINSPECTABLE_( pfx, iface_type, impl_type, impl_from_##iface_type, iface_type##_iface, impl->outer_iface )
+ 
++#define DEFINE_ASYNC_PARAMS( type )                                                                \
++    static struct type *type##_from_IUnknown( IUnknown *iface )                                    \
++    {                                                                                              \
++        return CONTAINING_RECORD( iface, struct type, IUnknown_iface );                            \
++    }                                                                                              \
++    static HRESULT WINAPI type##_QueryInterface( IUnknown *iface, REFIID iid, void **out )         \
++    {                                                                                              \
++        if (IsEqualIID( iid, &IID_IUnknown ))                                                      \
++        {                                                                                          \
++            IUnknown_AddRef( iface );                                                              \
++            *out = iface;                                                                          \
++            return S_OK;                                                                           \
++        }                                                                                          \
++        *out = NULL;                                                                               \
++        return E_NOINTERFACE;                                                                      \
++    }                                                                                              \
++    static ULONG WINAPI type##_AddRef( IUnknown *iface )                                           \
++    {                                                                                              \
++        struct type *object = type##_from_IUnknown( iface );                                       \
++        return InterlockedIncrement( &object->ref );                                               \
++    }                                                                                              \
++    static ULONG WINAPI type##_Release( IUnknown *iface )                                          \
++    {                                                                                              \
++        struct type *object = type##_from_IUnknown( iface );                                       \
++        ULONG ref = InterlockedDecrement( &object->ref );                                          \
++        if (!ref) type##_##destroy( object );                                                      \
++        return ref;                                                                                \
++    }                                                                                              \
++    static const IUnknownVtbl type##_vtbl =                                                        \
++    {                                                                                              \
++        type##_QueryInterface,                                                                     \
++        type##_AddRef,                                                                             \
++        type##_Release,                                                                            \
++    };                                                                                             \
++    static struct type *type##_alloc(void)                                                         \
++    {                                                                                              \
++        struct type *object;                                                                       \
++        if (!(object = calloc( 1, sizeof(*object) ))) return NULL;                                 \
++        object->IUnknown_iface.lpVtbl = &type##_vtbl;                                              \
++        object->ref = 1;                                                                           \
++        return object;                                                                             \
++    }
++
+ #endif
+diff --git a/dlls/windows.storage/streams.c b/dlls/windows.storage/streams.c
+index 15e13d1436e..f321ee55280 100644
+--- a/dlls/windows.storage/streams.c
++++ b/dlls/windows.storage/streams.c
+@@ -186,6 +186,21 @@ struct memory_stream
+     BOOL closed;
+ };
+ 
++static void memory_stream_read( struct memory_stream *impl, IBuffer *buffer, UINT32 count )
++{
++    IBufferByteAccess *access;
++    BYTE *data;
++
++    IBuffer_QueryInterface( buffer, &IID_IBufferByteAccess, (void **)&access );
++    IBufferByteAccess_Buffer( access, &data );
++    IBufferByteAccess_Release( access );
++
++    count = (impl->size >= impl->pos) ? min( count, impl->size - impl->pos ) : 0;
++    memcpy( data, &impl->buffer[impl->pos], count );
++    impl->pos += count;
++    IBuffer_put_Length( buffer, count );
++}
++
+ static HRESULT memory_stream_require_capacity( struct memory_stream *impl, size_t capacity )
+ {
+     BYTE *new_buffer;
+@@ -434,6 +449,22 @@ static const struct IClosableVtbl memory_stream_closable_vtbl =
+     memory_stream_closable_Close,
+ };
+ 
++struct read_async_params
++{
++    IUnknown IUnknown_iface;
++    LONG ref;
++
++    IBuffer *buffer;
++    UINT32 count;
++};
++
++static void read_async_params_destroy( struct read_async_params *params )
++{
++    IBuffer_Release( params->buffer );
++}
++
++DEFINE_ASYNC_PARAMS( read_async_params )
++
+ static inline struct memory_stream *impl_from_IInputStream( IInputStream *iface )
+ {
+     return CONTAINING_RECORD( iface, struct memory_stream, IInputStream_iface );
+@@ -478,19 +509,56 @@ static HRESULT WINAPI memory_stream_input_GetTrustLevel( IInputStream *iface, Tr
+     return E_NOTIMPL;
+ }
+ 
++static HRESULT memory_stream_input_async( IUnknown *invoker, IUnknown *param, PROPVARIANT *result, BOOL called_async )
++{
++    struct memory_stream *impl = impl_from_IInputStream( (IInputStream *)invoker );
++    struct read_async_params *params = read_async_params_from_IUnknown( param );
++    UINT32 capacity;
++    HRESULT hr;
++
++    assert( !called_async );
++
++    if (FAILED(hr = IBuffer_get_Capacity( params->buffer, &capacity )))
++        return hr;
++
++    if (capacity < params->count)
++        return E_INVALIDARG;
++
++    memory_stream_read( impl, params->buffer, params->count );
++    result->vt = VT_UNKNOWN;
++    IBuffer_AddRef( params->buffer );
++    result->punkVal = (IUnknown *)params->buffer;
++
++    return S_OK;
++}
++
+ static HRESULT WINAPI memory_stream_input_ReadAsync( IInputStream *iface, IBuffer *buffer, UINT32 count,
+         InputStreamOptions options, IAsyncOperationWithProgress_IBuffer_UINT32 **operation )
+ {
+     struct memory_stream *impl = impl_from_IInputStream( iface );
++    struct read_async_params *params;
+ 
+-    FIXME( "iface %p, buffer %p, count %u, options %d, operation %p stub!\n", iface, buffer, count, options, operation );
++    TRACE( "iface %p, buffer %p, count %u, options %d, operation %p.\n", iface, buffer, count, options, operation );
+ 
+     *operation = NULL;
+ 
++    if (!buffer)
++        return E_POINTER;
++
+     if (impl->closed)
+         return RO_E_CLOSED;
+ 
+-    return E_NOTIMPL;
++    if (!(params = read_async_params_alloc()))
++        return E_OUTOFMEMORY;
++
++    IBuffer_AddRef( buffer );
++    params->buffer = buffer;
++    params->count = count;
++    async_operation_buffer_uint32_create( (IUnknown *)iface, &params->IUnknown_iface, memory_stream_input_async, operation );
++
++    IUnknown_Release( &params->IUnknown_iface );
++
++    return S_OK;
+ }
+ 
+ static const struct IInputStreamVtbl memory_stream_input_vtbl =
+diff --git a/dlls/windows.storage/tests/storage.c b/dlls/windows.storage/tests/storage.c
+index e7172c41b89..e6a721f43ac 100644
+--- a/dlls/windows.storage/tests/storage.c
++++ b/dlls/windows.storage/tests/storage.c
+@@ -262,9 +262,7 @@ static void input_stream_read_( unsigned int line, IInputStream *input_stream, I
+     UINT res;
+ 
+     hr = IInputStream_ReadAsync( input_stream, buffer, count, 0, &operation );
+-    todo_wine
+     ok_(__FILE__, line)( hr == S_OK, "got hr %#lx.\n", hr );
+-    if (FAILED(hr)) return;
+     res = await_IAsyncOperationWithProgress_IBuffer_UINT32( operation, 1000 );
+     ok_(__FILE__, line)( res == 0, "await_IAsyncOperationWithProgress_IBuffer_UINT32 returned %#x\n", res );
+     check_async_info( operation, expect_status, expect_hr );
+@@ -408,38 +406,28 @@ static void test_InMemoryRandomAccessStream(void)
+     ok( hr == S_OK, "got hr %#lx.\n", hr );
+     res_buffer = NULL;
+     input_stream_read( input_stream, buffer, 0, Completed, S_OK, &res_buffer );
+-    todo_wine
+     ok( res_buffer == buffer, "got different buffer.\n" );
+-    if (!res_buffer) IBuffer_AddRef( res_buffer = buffer );
+     hr = IBuffer_get_Length( res_buffer, &value );
+     ok( hr == S_OK, "got hr %#lx.\n", hr );
+-    todo_wine
+     ok( value == 0, "got read %u.\n", value );
+     IBuffer_Release( res_buffer );
+ 
+     res_buffer = (void *)0xdeadbeef;
+     input_stream_read( input_stream, buffer, 20, Error, E_INVALIDARG, &res_buffer );
+-    todo_wine
+     ok( !res_buffer, "got res_buffer %p.\n", res_buffer );
+ 
+     res_buffer = NULL;
+     input_stream_read( input_stream, buffer, 17, Completed, S_OK, &res_buffer );
+-    todo_wine
+     ok( res_buffer == buffer, "got different buffer.\n" );
+-    if (!res_buffer) IBuffer_AddRef( res_buffer = buffer );
+     hr = IBuffer_get_Length( res_buffer, &value );
+     ok( hr == S_OK, "got hr %#lx.\n", hr );
+-    todo_wine
+     ok( value == 17, "got read %u.\n", value );
+     hr = IRandomAccessStream_get_Position( in_memory_stream, &value64 );
+     ok( hr == S_OK, "got hr %#lx.\n", hr );
+-    todo_wine
+     ok( value64 == 17, "got pos %I64u.\n", value64 );
+     data = buffer_get_data( res_buffer );
+     memcpy( &value64, data, sizeof(value64 ) );
+-    todo_wine
+     ok( value64 == uint64_value, "got value64 %#I64x.\n", value64 );
+-    todo_wine
+     ok ( data[16] == byte_value, "got byte value %#x.\n", data[16]);
+     IBuffer_Release( res_buffer );
+ 
+@@ -447,18 +435,14 @@ static void test_InMemoryRandomAccessStream(void)
+     ok( hr == S_OK, "got hr %#lx.\n", hr );
+     res_buffer = NULL;
+     input_stream_read( input_stream, buffer, 1, Completed, S_OK, &res_buffer );
+-    todo_wine
+     ok( res_buffer == buffer, "got different buffer.\n" );
+-    if (!res_buffer) IBuffer_AddRef( res_buffer = buffer );
+     hr = IBuffer_get_Length( res_buffer, &value );
+     ok( hr == S_OK, "got hr %#lx.\n", hr );
+-    todo_wine
+     ok( value == 0, "got read %u.\n", value );
+     IBuffer_Release( res_buffer );
+ 
+     operation = (void *)0xdeadbeef;
+     hr = IInputStream_ReadAsync( input_stream, NULL, 1, 0, &operation );
+-    todo_wine
+     ok( hr == E_POINTER, "got hr %#lx.\n", hr );
+     ok( !operation, "got operation %p.\n", operation );
+     /* Crashes on Windows if the op pointer is null
+@@ -489,15 +473,12 @@ static void test_InMemoryRandomAccessStream(void)
+     ok( hr == S_OK, "got hr %#lx.\n", hr );
+     res_buffer = NULL;
+     input_stream_read( input_stream, buffer, 8, Completed, S_OK, &res_buffer );
+-    todo_wine
+     ok( res_buffer == buffer, "got different buffer.\n" );
+-    if (!res_buffer) IBuffer_AddRef( res_buffer = buffer );
+     hr = IBuffer_get_Length( res_buffer, &value );
+     ok( hr == S_OK, "got hr %#lx.\n", hr );
+     ok( value == 8, "got read %u.\n", value );
+     data = buffer_get_data( res_buffer );
+     memcpy( &value64, data, sizeof(value64) );
+-    todo_wine
+     ok( value64 == 0, "got value64 %#I64x.\n", value64 );
+     IBuffer_Release( res_buffer );
+ 
+@@ -527,7 +508,6 @@ static void test_InMemoryRandomAccessStream(void)
+     value64 = uint64_value;
+     hr = IRandomAccessStream_get_Position( in_memory_stream, &value64 );
+     ok( hr == RO_E_CLOSED, "got hr %#lx.\n", hr );
+-    todo_wine
+     ok( value64 == 0x100000, "got pos %I64u.\n", value64 );
+     value_bool = 0;
+     hr = IRandomAccessStream_get_CanRead( in_memory_stream, &value_bool );
+-- 
+2.55.0
+

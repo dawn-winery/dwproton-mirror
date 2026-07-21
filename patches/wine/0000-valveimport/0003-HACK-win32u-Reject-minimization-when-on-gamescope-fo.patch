@@ -1,0 +1,45 @@
+From 9c60277d655bb8e5ba39c48216098a6349c88ab4 Mon Sep 17 00:00:00 2001
+From: Zhiyi Zhang <zzhang@codeweavers.com>
+Date: Tue, 7 Jul 2026 10:46:22 +0800
+Subject: [PATCH 03/48] HACK: win32u: Reject minimization when on gamescope for
+ some games.
+
+CW-Bug-Id: #26340
+---
+ dlls/win32u/window.c | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
+
+diff --git a/dlls/win32u/window.c b/dlls/win32u/window.c
+index 0fb8d74eaba..da1d31d0450 100644
+--- a/dlls/win32u/window.c
++++ b/dlls/win32u/window.c
+@@ -4816,6 +4816,26 @@ static BOOL show_window( HWND hwnd, INT cmd )
+         }
+     }
+ 
++    /* HACK for Bug 26340 - RPGMaker Engine games minimize out of interactivity on gamescope.
++     *
++     * Revert this when https://github.com/ValveSoftware/gamescope/pull/2237 has been widely deployed.
++     * */
++    if (cmd == SW_MINIMIZE && user_driver->pHasWindowManager( "steamcompmgr" ))
++    {
++        const char *sgi = getenv( "SteamGameId" );
++        if (sgi && (
++            !strcmp( sgi, "2939770" )       /* Labyrinth Flowers */
++            || !strcmp( sgi, "3531980" )    /* Obscurite Magie 3: The Divine Stones */
++            || !strcmp( sgi, "2997780" )    /* Pixel Pixie */
++            || !strcmp( sgi, "3561800" )    /* Hero in an All-Forgiving Fantasy World RPG */
++            || !strcmp( sgi, "2992490" )    /* Epic Quest - Definitive Edition */
++            || !strcmp( sgi, "2138140" )    /* Didactic Jesus Game */
++            || !strcmp( sgi, "2208730" )    /* Raiders of Ruin */
++            || !strcmp( sgi, "782330" )     /* DOOM Eternal */
++            ))
++            goto done;
++    }
++
+     switch(cmd)
+     {
+     case SW_HIDE:
+-- 
+2.55.0
+

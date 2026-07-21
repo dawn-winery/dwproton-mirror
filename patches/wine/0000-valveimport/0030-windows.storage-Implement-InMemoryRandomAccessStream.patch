@@ -1,0 +1,59 @@
+From 7dbbcc524b198c516f401e1434a7fe90f87cb78b Mon Sep 17 00:00:00 2001
+From: Conor McCarthy <cmccarthy@codeweavers.com>
+Date: Wed, 1 Jul 2026 10:39:07 +1000
+Subject: [PATCH 30/48] windows.storage: Implement InMemoryRandomAccessStream
+ IRandomAccessStream::put_Size().
+
+(cherry picked from commit 5730c058175cb9a8d9c2ff5a82f8bb445c70a9da)
+
+CW-Bug-Id: #27221
+---
+ dlls/windows.storage/streams.c       | 10 ++++++++--
+ dlls/windows.storage/tests/storage.c |  2 --
+ 2 files changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/dlls/windows.storage/streams.c b/dlls/windows.storage/streams.c
+index e9ff6213cd2..d61788fc0a8 100644
+--- a/dlls/windows.storage/streams.c
++++ b/dlls/windows.storage/streams.c
+@@ -306,13 +306,19 @@ static HRESULT WINAPI memory_stream_random_access_get_Size( IRandomAccessStream
+ static HRESULT WINAPI memory_stream_random_access_put_Size( IRandomAccessStream *iface, UINT64 value )
+ {
+     struct memory_stream *impl = impl_from_IRandomAccessStream( iface );
++    HRESULT hr;
+ 
+-    FIXME( "iface %p, value %I64u stub!\n", iface, value );
++    TRACE( "iface %p, value %I64u.\n", iface, value );
+ 
+     if (impl->closed)
+         return RO_E_CLOSED;
+ 
+-    return E_NOTIMPL;
++    /* Native truncates the size to 32 bits, which is not replicated here if size_t is 64 bits. */
++    if (FAILED(hr = memory_stream_require_capacity( impl, value )))
++        return hr;
++
++    impl->size = min( value, SIZE_MAX );
++    return S_OK;
+ }
+ 
+ static HRESULT WINAPI memory_stream_random_access_GetInputStreamAt( IRandomAccessStream *iface, UINT64 position,
+diff --git a/dlls/windows.storage/tests/storage.c b/dlls/windows.storage/tests/storage.c
+index ac6d76c2ce9..b9648582f50 100644
+--- a/dlls/windows.storage/tests/storage.c
++++ b/dlls/windows.storage/tests/storage.c
+@@ -491,11 +491,9 @@ static void test_InMemoryRandomAccessStream(void)
+      * but only allows reading from positions less than 1 << 31
+      * Both of these seem potentially subject to change, so are untested. */
+     hr = IRandomAccessStream_put_Size( in_memory_stream, 0x100000 );
+-    todo_wine
+     ok( hr == S_OK, "got hr %#lx.\n", hr );
+     hr = IRandomAccessStream_get_Size( in_memory_stream, &value64 );
+     ok( hr == S_OK, "got hr %#lx.\n", hr );
+-    todo_wine
+     ok( value64 == 0x100000, "got size %I64u.\n", value64 );
+     hr = IRandomAccessStream_get_Position( in_memory_stream, &value64 );
+     todo_wine
+-- 
+2.55.0
+

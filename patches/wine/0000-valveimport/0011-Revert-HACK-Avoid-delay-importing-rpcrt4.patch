@@ -1,0 +1,46 @@
+From 47d0f7e24d1e498dc12577e8012befc6b71d6712 Mon Sep 17 00:00:00 2001
+From: Jacek Caban <jacek@codeweavers.com>
+Date: Wed, 1 Jul 2026 15:11:34 +0200
+Subject: [PATCH 11/48] Revert "HACK: Avoid delay importing rpcrt4"
+
+This reverts commit be454c4d1d60cab325668c187f1318e75ec5fa52.
+
+We patch LLVM to produce proper exit thunks instead now.
+
+CW-Bug-Id: #27308
+---
+ dlls/advapi32/Makefile.in | 4 ++--
+ dlls/sechost/Makefile.in  | 3 ++-
+ 2 files changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/dlls/advapi32/Makefile.in b/dlls/advapi32/Makefile.in
+index 2877ec0fe79..57bb25feb9c 100644
+--- a/dlls/advapi32/Makefile.in
++++ b/dlls/advapi32/Makefile.in
+@@ -1,8 +1,8 @@
+ EXTRADEFS = -D_ADVAPI32_
+ MODULE    = advapi32.dll
+ IMPORTLIB = advapi32
+-IMPORTS   = kernelbase sechost msvcrt rpcrt4 
+-DELAYIMPORTS = cryptsp user32 userenv
++IMPORTS   = kernelbase sechost msvcrt
++DELAYIMPORTS = cryptsp rpcrt4 user32 userenv
+ 
+ SOURCES = \
+ 	advapi.c \
+diff --git a/dlls/sechost/Makefile.in b/dlls/sechost/Makefile.in
+index 25439e94090..ec1eb100683 100644
+--- a/dlls/sechost/Makefile.in
++++ b/dlls/sechost/Makefile.in
+@@ -1,6 +1,7 @@
+ MODULE    = sechost.dll
+ IMPORTLIB = sechost
+-IMPORTS   = kernelbase rpcrt4
++IMPORTS   = kernelbase
++DELAYIMPORTS = rpcrt4
+ 
+ SOURCES = \
+ 	plugplay.idl \
+-- 
+2.55.0
+
