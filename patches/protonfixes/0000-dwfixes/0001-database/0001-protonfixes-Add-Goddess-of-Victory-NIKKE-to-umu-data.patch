@@ -1,0 +1,21 @@
+From 1d1ae32d7e6ffa2e3999781d42da201fa932c6ba Mon Sep 17 00:00:00 2001
+From: NelloKudo <marshnelloosu@gmail.com>
+Date: Sun, 12 Jul 2026 18:04:35 +0200
+Subject: [PATCH] protonfixes: Add Goddess of Victory: NIKKE to umu-database.
+
+---
+ umu-database.csv | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/umu-database.csv b/umu-database.csv
+index 6224752..6939e7d 100644
+--- a/umu-database.csv
++++ b/umu-database.csv
+@@ -8,6 +8,7 @@ Grand Theft Auto V,none,none,umu-271590,gtav,Standalone Rockstar installer,
+ Genshin Impact,egs,41869934302e4b8cafac2d3c0e7c293d,umu-7d690c122fde4c60bed85405f343ad10,,,
+ Genshin Impact,none,playpc,umu-genshin,,Play Store PC,
+ Genshin Impact,none,none,umu-genshin,,Standalone PC installer,
++Goddess of Victory: NIKKE,none,none,umu-nikke,,Standalone PC installer,
+ Red Dead Redemption 2,egs,Heather,umu-1174180,rdr2,,
+ Red Dead Redemption 2,none,none,umu-1174180,rdr2,Standalone Rockstar installer,
+ Horizon Zero Dawn™ Complete Edition,gog,1209025141,umu-1151640,,,
