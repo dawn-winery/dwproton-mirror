@@ -1,0 +1,51 @@
+From c47a50a929ef6484d9741ecbc81cc875b87662af Mon Sep 17 00:00:00 2001
+From: NelloKudo <marshnelloosu@gmail.com>
+Date: Tue, 21 Jul 2026 18:42:48 +0200
+Subject: [PATCH] dwfixes: Also consider unset UMU_ID for non-hoyo games.
+
+Hoyo games (Genshin, ZZZ) force UMU_USE_STEAM in their protonfix, which
+we don't want applied automatically when a user is already running
+natively under Steam with UMU_ID unset. Other auto-detected games
+don't have that concern, so let them be routed even when UMU_ID is
+completely absent, not just when it's the umu-default fallback.
+---
+ dwfixes.py | 18 +++++++++++++++---
+ 1 file changed, 15 insertions(+), 3 deletions(-)
+
+diff --git a/dwfixes.py b/dwfixes.py
+index 32658bb..3d207da 100644
+--- a/dwfixes.py
++++ b/dwfixes.py
+@@ -15,6 +15,10 @@ UMU_IDS = {
+     "Endfield.exe":        "umu-endfield",
+ }
+ 
++# these force UMU_USE_STEAM (see gamefixes-umu/umu-genshin.py & umu-zenlesszonezero.py),
++# which we don't want to force on users already running natively under Steam
++HOYO_UMU_IDS = {"umu-genshin", "umu-zenlesszonezero"}
++
+ def apply_dwfixes(env: dict):
+     if len(sys.argv) < 3:
+         return
+@@ -29,7 +33,15 @@ def apply_dwfixes(env: dict):
+     else:
+         umu_id = UMU_IDS.get(exe)
+ 
+-    # only override the default fallback, not if the user explicitly set UMU_ID
+-    # or if running on steam (UMU_ID absent entirely)
+-    if umu_id and env.get("UMU_ID") == "umu-default":
++    if not umu_id:
++        return
++
++    current_id = env.get("UMU_ID")
++
++    # always override the default fallback; only treat a fully unset UMU_ID
++    # (i.e. running on steam) as overridable for non-hoyo games, and never
++    # override a user's explicit custom UMU_ID
++    if current_id == "umu-default" or (
++        current_id is None and umu_id not in HOYO_UMU_IDS
++    ):
+         env["UMU_ID"] = os.environ["UMU_ID"] = umu_id
+-- 
+2.55.0
+
