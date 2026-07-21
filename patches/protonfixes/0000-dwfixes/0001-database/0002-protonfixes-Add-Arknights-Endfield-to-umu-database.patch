@@ -1,0 +1,24 @@
+From 1fde9d5ec973d3dde4bce96a056e788a2773ee54 Mon Sep 17 00:00:00 2001
+From: dotnotation <dot.notation@outlook.com>
+Date: Mon, 20 Jul 2026 00:46:43 -0400
+Subject: [PATCH] protonfixes: Add Arknights: Endfield to umu-database.
+
+---
+ umu-database.csv | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/umu-database.csv b/umu-database.csv
+index 24ed351..f67743c 100644
+--- a/umu-database.csv
++++ b/umu-database.csv
+@@ -9,6 +9,7 @@ Genshin Impact,egs,41869934302e4b8cafac2d3c0e7c293d,umu-7d690c122fde4c60bed85405
+ Genshin Impact,none,playpc,umu-genshin,,Play Store PC,
+ Genshin Impact,none,none,umu-genshin,,Standalone PC installer,
+ Goddess of Victory: NIKKE,none,none,umu-nikke,,Standalone PC installer,
++Arknights: Endfield,none,none,umu-endfield,,Standalone PC installer,
+ Red Dead Redemption 2,egs,Heather,umu-1174180,rdr2,,
+ Red Dead Redemption 2,none,none,umu-1174180,rdr2,Standalone Rockstar installer,
+ Horizon Zero Dawn™ Complete Edition,gog,1209025141,umu-1151640,,,
+-- 
+2.55.0
+
