@@ -1,0 +1,100 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'dwproton*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release (e.g. dwproton-10.0-23)'
+        required: true
+
+jobs:
+  build-x86_64:
+    name: Build x86_64
+    runs-on: trixie
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          submodules: false
+
+      - name: Init submodules
+        run: |
+          git submodule update --init --filter=tree:0 --recursive
+          mkdir ./build
+
+      - name: Configure
+        working-directory: ./build
+        env:
+          RUSTFLAGS: -Copt-level=3 -Ctarget-cpu=nocona
+          USE_LTO: 0
+        run: |
+          ../configure.sh --build-name=${{ github.ref_name }}-x86_64 --without-tts
+
+      - name: Build
+        working-directory: ./build
+        run: |
+          make -j$(nproc) redist
+
+      - name: Upload artifact ${{ github.ref_name }}-x86_64.tar.xz
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ github.ref_name }}-x86_64.tar.xz
+          path: ./build/${{ github.ref_name }}-x86_64.tar.xz
+
+      - name: Upload artifact ${{ github.ref_name }}-x86_64.sha512sum
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ github.ref_name }}-x86_64.sha512sum
+          path: ./build/${{ github.ref_name }}-x86_64.sha512sum
+
+  release:
+    name: Release
+    needs: [build-x86_64]
+    runs-on: trixie
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract release notes from CHANGELOGS.md
+        id: notes
+        run: |
+          TAG="${{ github.ref_name }}"
+          touch /tmp/release-notes.md
+          if [ -f CHANGELOGS.md ]; then
+            awk -v tag="## [${TAG}]" '
+              found && /^## \[/ { exit }
+              found { print }
+              index($0, tag) > 0 { found=1 }
+            ' CHANGELOGS.md > /tmp/release-notes.md
+          fi
+          if [ ! -s /tmp/release-notes.md ]; then
+            echo "Release $TAG" > /tmp/release-notes.md
+          fi
+          {
+            echo 'notes<<NOTES_EOF'
+            cat /tmp/release-notes.md
+            echo 'NOTES_EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: ./artifacts
+
+      - name: Merge artifacts
+        run: |
+          mkdir upload
+          mv ./artifacts/*/* ./upload
+
+      - name: Create release
+        uses: actions/forgejo-release@v2.7.3
+        with:
+          direction: upload
+          tag: ${{ github.ref_name }}
+          release-dir: ./upload
+          release-notes: ${{ steps.notes.outputs.notes }}
