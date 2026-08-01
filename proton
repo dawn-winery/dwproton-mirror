@@ -2157,11 +2157,6 @@ class Session:
         if "disablelibglesv2" in self.compat_config:
             self.dlloverrides["libglesv2"] = "d"
 
-        if "nativeags" in self.compat_config:
-            self.dlloverrides["atiadlxx"] = "b"
-            self.dlloverrides["atidxx64"] = "b"
-            self.dlloverrides["amd_ags_x64"] = "n"
-
         if "nomfdxgiman" in self.compat_config:
             self.env["WINE_DO_NOT_CREATE_DXGI_DEVICE_MANAGER"] = "1"
 
@@ -2244,6 +2239,12 @@ class Session:
                     del self.env["SteamVirtualGamepadInfo"]
                 if "SDL_GAMECONTROLLER_ALLOW_STEAM_VIRTUAL_GAMEPAD" in self.env:
                     del self.env["SDL_GAMECONTROLLER_ALLOW_STEAM_VIRTUAL_GAMEPAD"]
+
+        if "nativeags" in self.compat_config:
+            self.dlloverrides["atiadlxx"] = "b"
+            self.dlloverrides["atidxx64"] = "b"
+            self.dlloverrides["amd_ags_x64"] = "n"
+            self.env["DXVK_NO_UE4_WORKAROUND"] = "1"
 
         if (os.environ.get("SteamGameId", 0) == "1183470"): # Imperiums: Greek Wars
             self.env.setdefault("WINE_MONO_HIDETYPES", "1")
