@@ -1,7 +1,7 @@
-From 655c1834b7b4b238586a91b3deb1e21c1cbac3da Mon Sep 17 00:00:00 2001
+From e44ce1b0db0b8baa39a3c0ffcfec1acb7dc8120c Mon Sep 17 00:00:00 2001
 From: Stelios Tsampas <loathingkernel@gmail.com>
 Date: Tue, 23 Jun 2026 12:40:43 +0300
-Subject: [PATCH 1/2] upscalers: add optiscaler downloader
+Subject: [PATCH 2/3] upscalers: add optiscaler downloader
 
 Config values are passed through the `PROTON_OPTISCALER_CONFIG` environment
 variable. The config is a semicolon (`;`) separated string of individual options.
@@ -23,11 +23,11 @@ a different config should be applied through the env variable.
 
 Using this will also remove any comments from the `OptiScaler.ini` file.
 ---
- upscalers.py | 209 ++++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 206 insertions(+), 3 deletions(-)
+ upscalers.py | 211 ++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 207 insertions(+), 4 deletions(-)
 
 diff --git a/upscalers.py b/upscalers.py
-index ab17ebd..06f551a 100644
+index ac0ac44..c827882 100644
 --- a/upscalers.py
 +++ b/upscalers.py
 @@ -1,9 +1,11 @@
@@ -264,7 +264,7 @@ index ab17ebd..06f551a 100644
  def get_version(env: dict, key: str, fallback: str) -> str:
      return env[key] if env.get(key, '0') not in {'0', '1'} else fallback
  
-@@ -436,16 +627,17 @@ def setup_upscalers(
+@@ -436,17 +627,18 @@ def setup_upscalers(
  
      fsr4_version = get_version(env, 'PROTON_FSR4_UPGRADE', 'default')
  
@@ -279,13 +279,15 @@ index ab17ebd..06f551a 100644
 +        ('dlss', dlss_version, 'dlss' in compat_config or 'optiscaler' in compat_config),
 +        ('xess', xess_version, 'xess' in compat_config or 'optiscaler' in compat_config),
          # amdxcffx64 4.1.1
-         ('fsr4', fsr4_version, True),
+-        ('fsr4', fsr4_version, 'fsr4' in compat_config),
++        ('fsr4', fsr4_version, 'fsr4' in compat_config or 'optiscaler' in compat_config),
+         # fidelityfx sdk
 -        ('ffx3', ffx3_version, 'ffx3' in compat_config),
 +        ('ffx3', ffx3_version, 'ffx3' in compat_config or 'optiscaler' in compat_config),
          ('ffx4', ffx4_version, 'ffx4' in compat_config),
      )
      for upscaler in upscalers:
-@@ -454,6 +646,17 @@ def setup_upscalers(
+@@ -455,6 +647,17 @@ def setup_upscalers(
              log.info(f'Automatic {name.upper()} upgrade enabled.')
              upscaler_replace.add(name)
  
@@ -301,8 +303,8 @@ index ab17ebd..06f551a 100644
 +            upscaler_replace.clear()
 +
      if 'fsr4' in upscaler_replace:
-         if 'fsr4' in compat_config:
-             env['FSR4_UPGRADE'] = '1'
+         pass
+ 
 -- 
 2.55.0
 

@@ -1,7 +1,7 @@
-From c9a3d5b0d6ca5f932b8e98a2df0047683ef21728 Mon Sep 17 00:00:00 2001
+From 90fb47ccca8e6b29afb83ae7dd4a561a87dba3f6 Mon Sep 17 00:00:00 2001
 From: Stelios Tsampas <loathingkernel@gmail.com>
 Date: Thu, 2 Jul 2026 12:38:15 +0300
-Subject: [PATCH 2/2] upscalers: control ffx4 version through fsr4 version when
+Subject: [PATCH 3/3] upscalers: control ffx4 version through fsr4 version when
  optiscaler is used
 
 ---
@@ -9,7 +9,7 @@ Subject: [PATCH 2/2] upscalers: control ffx4 version through fsr4 version when
  1 file changed, 8 insertions(+), 4 deletions(-)
 
 diff --git a/upscalers.py b/upscalers.py
-index 06f551a..9109c99 100644
+index c827882..6f83cca 100644
 --- a/upscalers.py
 +++ b/upscalers.py
 @@ -627,10 +627,14 @@ def setup_upscalers(
@@ -28,7 +28,7 @@ index 06f551a..9109c99 100644
      upscaler_replace = set()
      upscalers = (
          ('dlss', dlss_version, 'dlss' in compat_config or 'optiscaler' in compat_config),
-@@ -650,10 +654,10 @@ def setup_upscalers(
+@@ -651,10 +655,10 @@ def setup_upscalers(
          if setup_optiscaler(env, compat_dir, prefix_dir, optiscaler_version):
              log.info('OptiScaler enabled.')
              if 'fsr4' in compat_config:
