@@ -163,3 +163,6 @@
 [submodule "vklayers/vkbasalt"]
 	path = vklayers/vkbasalt
 	url = https://github.com/DadSchoorse/vkBasalt.git
+[submodule "steamrtdeps/7zip"]
+	path = steamrtdeps/7zip
+	url = https://github.com/ip7z/7zip
