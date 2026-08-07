@@ -1,0 +1,176 @@
+From c3f051b1f57aa5f0d56946ddd31fc89de5597b34 Mon Sep 17 00:00:00 2001
+From: NelloKudo <marshnelloosu@gmail.com>
+Date: Fri, 7 Aug 2026 00:25:03 +0200
+Subject: [PATCH] protonfixes: Add protonfix for hololive Dreams.
+
+---
+ gamefixes-steam/4282500.py | 157 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 157 insertions(+)
+ create mode 100644 gamefixes-steam/4282500.py
+
+diff --git a/gamefixes-steam/4282500.py b/gamefixes-steam/4282500.py
+new file mode 100644
+index 0000000..5dc115d
+--- /dev/null
++++ b/gamefixes-steam/4282500.py
+@@ -0,0 +1,157 @@
++"""Game fix for hololive Dreams
++
++The game expects a real Windows version.dll.
++"""
++
++import hashlib
++import os
++import shutil
++import subprocess
++import tempfile
++import urllib.request
++
++from pathlib import Path
++
++from protonfixes import util
++from protonfixes.config import config
++from protonfixes.logger import log
++
++ISO_URL = (
++    'http://software-static.download.prss.microsoft.com/pr/download/'
++    '19042.631.201119-0144.20h2_release_svc_refresh_'
++    'CLIENTENTERPRISEEVAL_OEMRET_x64FRE_en-us.iso'
++)
++
++# where sources/boot.wim sits inside the iso
++WIM_OFFSET = 22654976
++WIM_SIZE = 600409266
++
++# the only parts of the wim 7z needs to reach version.dll, the rest of the
++# file is left as a hole so it never gets downloaded
++WIM_RANGES = (
++    (0, 65536),
++    (430309376, 65536),
++    (571998208, 983040),
++    (598802432, 1606834),
++)
++
++WIM_MEMBER = '1/Windows/System32/version.dll'
++DLL_SHA256 = 'e549d528fee40208df2dd911c2d96b29d02df7bef9b30c93285f4a2f3e1ad5b0'
++
++CHUNK = 1024 * 1024
++
++
++def _sha256(path: Path) -> str:
++    digest = hashlib.sha256()
++    with path.open('rb') as file:
++        for block in iter(lambda: file.read(CHUNK), b''):
++            digest.update(block)
++    return digest.hexdigest()
++
++
++def _find_7z() -> str:
++    # dwproton builds and ships 7zz in files/utils
++    sevenzip = util.protondir() / 'files' / 'utils' / '7zz'
++    if not sevenzip.is_file():
++        raise RuntimeError('no 7z to unpack the windows image')
++    return str(sevenzip)
++
++
++def _fetch_wim(wim: Path) -> None:
++    """download the wim ranges into a sparse file"""
++    with wim.open('wb') as out:
++        out.truncate(WIM_SIZE)
++        for offset, length in WIM_RANGES:
++            start = WIM_OFFSET + offset
++            request = urllib.request.Request(
++                ISO_URL, headers={'Range': f'bytes={start}-{start + length - 1}'}
++            )
++            with urllib.request.urlopen(request, timeout=30) as response:
++                # a 200 means the range was ignored and the whole iso is coming
++                if response.status != 206:
++                    raise RuntimeError(f'range request refused (http {response.status})')
++                out.seek(offset)
++                left = length
++                while left:
++                    block = response.read(min(CHUNK, left))
++                    if not block:
++                        raise RuntimeError(f'short read at {offset}')
++                    out.write(block)
++                    left -= len(block)
++
++
++def _download(cache_dir: Path, dest: Path) -> None:
++    """unpack version.dll out of the image and cache it"""
++    sevenzip = _find_7z()
++
++    if not util.check_internet():
++        raise RuntimeError('no internet connection')
++
++    cache_dir.mkdir(parents=True, exist_ok=True)
++    with tempfile.TemporaryDirectory(dir=cache_dir) as tmp:
++        tmpdir = Path(tmp)
++        wim = tmpdir / 'boot.wim'
++
++        log.info('Downloading version.dll from the Windows 10 20H2 image')
++        _fetch_wim(wim)
++
++        result = subprocess.run(
++            [sevenzip, 'e', '-y', f'-o{tmpdir}', str(wim), WIM_MEMBER],
++            stdout=subprocess.PIPE,
++            stderr=subprocess.STDOUT,
++            text=True,
++            check=False,
++        )
++
++        dll = tmpdir / 'version.dll'
++        if not dll.is_file():
++            log.debug(result.stdout)
++            raise RuntimeError(f'7z could not extract "{WIM_MEMBER}"')
++
++        checksum = _sha256(dll)
++        if checksum != DLL_SHA256:
++            raise RuntimeError(f'checksum mismatch, got "{checksum}"')
++
++        os.replace(dll, dest)
++
++
++def _install(dll: Path) -> None:
++    """drop the dll into system32"""
++    system32 = util.protonprefix() / 'drive_c' / 'windows' / 'system32'
++    target = system32 / 'version.dll'
++
++    if not target.is_symlink() and target.is_file() and _sha256(target) == DLL_SHA256:
++        log.debug('Native version.dll is already installed in the prefix')
++        return
++
++    # builtin dlls are symlinks into proton's shared directory, writing through
++    # one would replace the dll for every prefix, so rename over the link
++    staged = system32 / 'version.dll.protonfix'
++    shutil.copyfile(dll, staged)
++    os.replace(staged, target)
++    log.info('Installed native version.dll into the prefix')
++
++
++def main() -> None:
++    # game requires services.exe to be in session 0
++    # see: https://dawn.wine/dawn-winery/wine-dwproton/commit/3823c848bfb4a2cc5b6313c57b5b04b82aa70555
++    util.set_environment('WINE_SERVICES_SESSION0', '1')
++
++    cache_dir = config.path.cache_dir / 'win10-version-dll'
++    cached = cache_dir / 'version.dll'
++
++    try:
++        if not cached.is_file() or _sha256(cached) != DLL_SHA256:
++            _download(cache_dir, cached)
++    except Exception as ex:
++        # not fatal on its own, an earlier run may have installed it already
++        log.warn(f'Could not fetch version.dll: {ex}')
++
++    try:
++        _install(cached)
++    except Exception as ex:
++        # leave the builtin in place, the game will probably refuse to start
++        log.warn(f'Could not install version.dll: {ex}')
++        return
++
++    util.winedll_override('version', util.OverrideOrder.NATIVE)
+-- 
+2.55.0
+
