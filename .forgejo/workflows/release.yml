@@ -33,7 +33,7 @@ jobs:
           RUSTFLAGS: -Copt-level=3 -Ctarget-cpu=nocona
           USE_LTO: 0
         run: |
-          ../configure.sh --build-name=${{ github.ref_name }}-x86_64 --without-tts
+          ../configure.sh --build-name=${{ github.ref_name }}-x86_64
 
       - name: Build
         working-directory: ./build
