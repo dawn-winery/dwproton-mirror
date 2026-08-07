@@ -22,7 +22,7 @@ jobs:
           echo "ccache dir: $CCACHE_DIR ($(du -sh "$CCACHE_DIR" | cut -f1))"
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           fetch-tags: true
@@ -64,7 +64,7 @@ jobs:
           du -sh "$CCACHE_DIR" || true
 
       - name: Upload snapshot artifact
-        uses: actions/upload-artifact@v3
+        uses: https://data.forgejo.org/forgejo/upload-artifact@v4
         with:
           name: dwproton-${{ steps.vars.outputs.tag }}-${{ steps.vars.outputs.sha_short }}-x86_64
           path: |
