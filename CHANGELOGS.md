@@ -1,5 +1,8 @@
 # Changelog
 
+## [dwproton-11.0-11]
+- Implemented missing features and fixed blockers preventing hololive Dreams from launching. Game now works out of the box!
+
 ## [dwproton-11.0-10]
 - Added signature workaround for HSR. Game now works out of the box!
   - This is the same method we were using in our launchers for 3 years, and technically a less proper solution than [signed](https://github.com/dawn-winery/dawn-signed), but unlike locking the build to our signing key, it allows for community effort in dwproton development.
