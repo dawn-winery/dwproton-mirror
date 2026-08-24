@@ -1,0 +1,76 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'dwproton*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release (e.g. dwproton-10.0-23)'
+        required: true
+
+jobs:
+  release-x86_64:
+    name: Build and Release x86_64
+    runs-on: trixie
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          submodules: false
+
+      - name: Init submodules
+        run: |
+          git submodule update --init --filter=tree:0 --recursive
+          mkdir ./build
+
+      - name: Configure
+        working-directory: ./build
+        env:
+          RUSTFLAGS: -Copt-level=3 -Ctarget-cpu=nocona
+          USE_LTO: 0
+        run: |
+          ../configure.sh --build-name=${{ github.ref_name }}-x86_64
+
+      - name: Build
+        working-directory: ./build
+        run: |
+          make -j$(nproc) redist
+
+      - name: Extract release notes from CHANGELOGS.md
+        id: notes
+        run: |
+          TAG="${{ github.ref_name }}"
+          touch /tmp/release-notes.md
+          if [ -f CHANGELOGS.md ]; then
+            awk -v tag="## [${TAG}]" '
+              found && /^## \[/ { exit }
+              found { print }
+              index($0, tag) > 0 { found=1 }
+            ' CHANGELOGS.md > /tmp/release-notes.md
+          fi
+          if [ ! -s /tmp/release-notes.md ]; then
+            echo "Release $TAG" > /tmp/release-notes.md
+          fi
+          {
+            echo 'notes<<NOTES_EOF'
+            cat /tmp/release-notes.md
+            echo 'NOTES_EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Collect release assets
+        run: |
+          mkdir upload
+          mv ./build/${{ github.ref_name }}-x86_64.tar.xz ./upload
+          mv ./build/${{ github.ref_name }}-x86_64.sha512sum ./upload
+
+      - name: Create release
+        uses: actions/forgejo-release@v2.13.4
+        with:
+          direction: upload
+          tag: ${{ github.ref_name }}
+          release-dir: ./upload
+          release-notes: ${{ steps.notes.outputs.notes }}

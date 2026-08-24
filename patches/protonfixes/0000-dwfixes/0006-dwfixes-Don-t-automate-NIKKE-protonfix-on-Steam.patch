@@ -1,0 +1,43 @@
+From 7e94fa76185f0950db95d8f9fabc08ab0ef242be Mon Sep 17 00:00:00 2001
+From: NelloKudo <marshnelloosu@gmail.com>
+Date: Tue, 4 Aug 2026 13:41:38 +0200
+Subject: [PATCH] dwfixes: Don't automate NIKKE protonfix on Steam.
+
+---
+ dwfixes.py | 13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
+
+diff --git a/dwfixes.py b/dwfixes.py
+index 3d207da..054a4ae 100644
+--- a/dwfixes.py
++++ b/dwfixes.py
+@@ -15,9 +15,10 @@ UMU_IDS = {
+     "Endfield.exe":        "umu-endfield",
+ }
+ 
+-# these force UMU_USE_STEAM (see gamefixes-umu/umu-genshin.py & umu-zenlesszonezero.py),
+-# which we don't want to force on users already running natively under Steam
+-HOYO_UMU_IDS = {"umu-genshin", "umu-zenlesszonezero"}
++# umu-genshin & umu-zenlesszonezero force UMU_USE_STEAM, umu-nikke breaks running
++# under Steam by stripping SteamGameId/SteamAppId. Don't apply any of them behind
++# the back of users already running natively under Steam
++STEAM_SENSITIVE_UMU_IDS = {"umu-genshin", "umu-zenlesszonezero", "umu-nikke"}
+ 
+ def apply_dwfixes(env: dict):
+     if len(sys.argv) < 3:
+@@ -39,9 +40,9 @@ def apply_dwfixes(env: dict):
+     current_id = env.get("UMU_ID")
+ 
+     # always override the default fallback; only treat a fully unset UMU_ID
+-    # (i.e. running on steam) as overridable for non-hoyo games, and never
+-    # override a user's explicit custom UMU_ID
++    # (i.e. running on steam) as overridable for games that don't touch the
++    # Steam environment, and never override a user's explicit custom UMU_ID
+     if current_id == "umu-default" or (
+-        current_id is None and umu_id not in HOYO_UMU_IDS
++        current_id is None and umu_id not in STEAM_SENSITIVE_UMU_IDS
+     ):
+         env["UMU_ID"] = os.environ["UMU_ID"] = umu_id
+-- 
+2.55.0
+

@@ -1548,8 +1548,6 @@ def default_compat_config():
     ):
         ret.add("dxvksarek")
 
-    ret.add("pipewire")
-
     if "STEAM_COMPAT_APP_ID" in os.environ:
         appid = os.environ["STEAM_COMPAT_APP_ID"]
 
@@ -1700,6 +1698,16 @@ class Session:
 
         self.env["GST_PLUGIN_SYSTEM_PATH_1_0"] = ':'.join([lib + "/gstreamer-1.0" for lib in ld_library_path])
         self.env["WINE_GST_REGISTRY_DIR"] = g_compatdata.path("gstreamer-1.0/")
+
+        # libsoup/souphttpsrc need a gio tls backend (glib-networking) for https.
+        # the steam runtime ships it, but the bundled libsoup won't pick it up
+        # unless gio is pointed at the module dir explicitly.
+        gio_module_dirs = [
+            "/usr/lib/x86_64-linux-gnu/gio/modules",
+            "/usr/lib/i386-linux-gnu/gio/modules",
+            "/usr/lib/aarch64-linux-gnu/gio/modules",
+        ]
+        prepend_to_env_str(self.env, "GIO_EXTRA_MODULES", ":".join(gio_module_dirs), ":")
 
         if "STEAM_COMPAT_MEDIA_PATH" in os.environ:
             old_audiofoz_path = os.environ["STEAM_COMPAT_MEDIA_PATH"] + "/audio.foz"
@@ -1868,6 +1876,8 @@ class Session:
         self.check_environment("PROTON_NO_D3D11", "nod3d11")
         self.check_environment("PROTON_NO_D3D10", "nod3d10")
         self.check_environment("PROTON_DXVK_SAREK", "dxvksarek")
+        self.check_environment("PROTON_DXVK_LLASYNC", "dxvkllasync")
+        self.check_environment("PROTON_DXVK_GPLASYNC", "dxvkgplasync")
         self.check_environment("PROTON_DXVK_LOWLATENCY", "dxvklowlatency")
         self.check_environment("PROTON_VKD3D_LOWLATENCY", "vkd3dlowlatency")
         self.check_environment("PROTON_NO_ESYNC", "noesync")
@@ -1922,6 +1932,9 @@ class Session:
             self.compat_config.add("dxvkllasync")
             self.env["DXVK_ASYNC"] = "0"
             append_to_env_str(self.env, "DXVK_CONFIG", "dxvk.enableAsync=False", ";")
+        elif "dxvkgplasync" in self.compat_config:
+            self.compat_config.add("dxvkllasync")
+            append_to_env_str(self.env, "DXVK_CONFIG", "dxvk.framePace=max-frame-latency", ";")
 
         if "dxvkllasync" in self.compat_config:
             threads = os.cpu_count() - (2 if os.cpu_count() > 4 else (1 if os.cpu_count() > 2 else 0))
@@ -1934,8 +1947,8 @@ class Session:
             self.compat_config.add("nvml")
             self.compat_config.add("nvoptix")
 
-        if "pipewire" not in self.compat_config:
-            self.env.setdefault("WINE_AUDIO_DRIVER", "pulse,alsa")
+        if "pipewire" in self.compat_config:
+            self.env.setdefault("WINE_AUDIO_DRIVER", "pipewire,pulse,alsa")
 
         if os.environ.get("SteamGameId", 0) in [
                 "462780", #Darksiders Warmastered Edition
