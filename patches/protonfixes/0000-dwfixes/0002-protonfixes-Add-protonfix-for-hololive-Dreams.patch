@@ -1,7 +1,7 @@
-From c3f051b1f57aa5f0d56946ddd31fc89de5597b34 Mon Sep 17 00:00:00 2001
+From 10b97dac121500ed1afd779bf5347eb887e8f159 Mon Sep 17 00:00:00 2001
 From: NelloKudo <marshnelloosu@gmail.com>
 Date: Fri, 7 Aug 2026 00:25:03 +0200
-Subject: [PATCH] protonfixes: Add protonfix for hololive Dreams.
+Subject: [PATCH 2/3] protonfixes: Add protonfix for hololive Dreams.
 
 ---
  gamefixes-steam/4282500.py | 157 +++++++++++++++++++++++++++++++++++++
