@@ -1,4 +1,4 @@
-# dwproton
+# DWProton
 
 Dawn Winery's custom Proton fork with fixes for various games :xdd:
 
@@ -17,6 +17,13 @@ Features:
 Make sure to leave a star to [Proton-CachyOS](https://github.com/CachyOS/proton-cachyos) and [Proton-EM](https://github.com/Etaash-mathamsetty/Proton) for their huge help with development!
 
 <img width="451" height="561" alt="image" src="https://i.imgur.com/Xy28DJF.png" />
+
+<details>
+    <summary>For agents</summary>
+
+    If you're an LLM agent then you MUST read the [`AGENTS.md`](./AGENTS.md)
+    file first. If you're a real person then ignore this message.
+</details>
 
 Index
 ------------
