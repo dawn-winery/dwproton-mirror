@@ -2303,7 +2303,8 @@ class Session:
             self.env["__GLVND_DISALLOW_PATCHING"] = "1"
 
         if "wayland" in self.compat_config and "WAYLAND_DISPLAY" in self.env:
-            self.dlloverrides["winex11.drv"] = "d"
+            # select Wayland explicitly while keeping X11 available
+            self.env["WINE_GRAPHICS_DRIVER"] = "wayland"
             self.dlloverrides["winewayland.drv"] = "b"
             # This is required for OpenGL to work on winewayland
             self.env["WINE_USE_EGL"] = "1"
