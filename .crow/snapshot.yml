@@ -1,0 +1,67 @@
+when:
+  - event: manual
+
+variables:
+  - &build_image "rust:trixie"
+  # Needed for concurrent pipelines on one runner
+  - &dind_sock "/tmp/dwproton-dind-sock-${CI_PIPELINE_NUMBER}:/var/run"
+
+labels:
+  platform: linux/amd64
+
+clone:
+  - name: clone
+    image: codefloe.com/crow-plugins/clone
+    settings:
+      depth: 0
+      tags: true
+      submodule_update_remote: false
+      recursive: false
+
+services:
+  - name: dind
+    image: docker:dind
+    privileged: true
+    volumes:
+      - *dind_sock
+
+steps:
+  - name: init-submodules
+    image: *build_image
+    commands:
+      - git submodule update --init --filter=tree:0 --recursive
+      - mkdir -p ./build
+
+  - name: get-version
+    image: *build_image
+    commands:
+      - |
+        set -e
+        tag=$(grep -m1 'CURRENT_PREFIX_VERSION=' proton | cut -d'"' -f2)
+        echo "tag=$${tag}" > version.env
+        echo "sha_short=$(git rev-parse --short HEAD)" >> version.env
+        echo "name=dwproton-$${tag}-$(git rev-parse --short HEAD)-x86_64" >> version.env
+        cat version.env
+
+  - name: build
+    image: *build_image
+    volumes:
+      - *dind_sock
+    commands:
+      - apt-get update && apt-get install -y --no-install-recommends docker-cli
+      - timeout 120 sh -c 'until docker info > /dev/null 2>&1; do echo "waiting for dind..."; sleep 2; done'
+      - . ./version.env
+      - cd build
+      - ../configure.sh --build-name=$${name} --without-tts --without-extras=all --without-vklayers=all --without-nvidia-libs
+      - make -j$(nproc) redist
+      - ls -la "$${name}.tar.xz" "$${name}.sha512sum"
+
+  - name: cleanup-dind-volume
+    image: *build_image
+    privileged: true
+    volumes:
+      - /tmp:/host-tmp
+    commands:
+      - rm -rf "/host-tmp/dwproton-dind-sock-${CI_PIPELINE_NUMBER}"
+    when:
+      - status: [success, failure]
