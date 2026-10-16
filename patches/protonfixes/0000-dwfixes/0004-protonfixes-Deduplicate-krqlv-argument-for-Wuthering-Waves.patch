@@ -1,0 +1,35 @@
+diff --git a/gamefixes-steam/3513350.py b/gamefixes-steam/3513350.py
+index 0a7b5de..0840a63 100644
+--- a/gamefixes-steam/3513350.py
++++ b/gamefixes-steam/3513350.py
+@@ -15,3 +15,6 @@ def main() -> None:
+     """Unsetting them to also prevent issues on Steam Decks where they are set by default."""
+     util.del_environment('SteamOS')
+     util.del_environment('SteamDeck')
++
++    """Deduplicate krqlv from command line arguments."""
++    util.deduplicate_argument("-krqlv")
+diff --git a/util.py b/util.py
+index ea1d730..2973d85 100644
+--- a/util.py
++++ b/util.py
+@@ -1204,3 +1204,19 @@ def create_dos_device(
+         'HKLM\\Software\\Wine\\Drives', f'{letter}:', 'REG_SZ', dev_type.value, True
+     )
+     return True
++
++def deduplicate_argument(begins_with: str) -> None:
++    """Clean up duplicate arguments in sys.argv"""
++    log.info("Deduplicating %s from sys.argv" % begins_with)
++    dedup_target = -1
++    cleaned_argv = []
++    for arg in sys.argv:
++        if arg.startswith(begins_with):
++            if dedup_target != -1:
++                cleaned_argv[dedup_target] = arg
++                continue
++            dedup_target = len(cleaned_argv)
++        cleaned_argv.append(arg)
++    # Replace argv with cleaned up arguments if user provides an argument override
++    sys.argv = cleaned_argv
++    log.debug('Deduplicated commandline: ' + str(sys.argv))
