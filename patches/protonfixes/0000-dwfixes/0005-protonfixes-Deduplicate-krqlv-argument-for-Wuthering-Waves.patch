@@ -1,0 +1,35 @@
+diff --git a/gamefixes-steam/3513350.py b/gamefixes-steam/3513350.py
+index 03b4a1d..14e2270 100644
+--- a/gamefixes-steam/3513350.py
++++ b/gamefixes-steam/3513350.py
+@@ -20,3 +20,6 @@ def main() -> None:
+     """Force its bitmap fallback."""
+     for exe in Path(util.get_game_install_path()).glob('**/KRSDKWebViewOSR/KRWebClient.exe'):
+         exe.with_name('usebitmap.flag').touch()
++
++    """Deduplicate krqlv from command line arguments."""
++    util.deduplicate_argument("-krqlv")
+diff --git a/util.py b/util.py
+index cb7b44c..738d119 100644
+--- a/util.py
++++ b/util.py
+@@ -1130,3 +1130,19 @@ def check_verb_requirements() -> None:
+ 
+     if verbs and any(canary in verb for verb in verbs for canary in DLL_COPY_VERBS):
+         os.environ['PROTON_DLL_COPY'] = '*'
++
++def deduplicate_argument(begins_with: str) -> None:
++    """Clean up duplicate arguments in sys.argv"""
++    log.info("Deduplicating %s from sys.argv" % begins_with)
++    dedup_target = -1
++    cleaned_argv = []
++    for arg in sys.argv:
++        if arg.startswith(begins_with):
++            if dedup_target != -1:
++                cleaned_argv[dedup_target] = arg
++                continue
++            dedup_target = len(cleaned_argv)
++        cleaned_argv.append(arg)
++    # Replace argv with cleaned up arguments if user provides an argument override
++    sys.argv = cleaned_argv
++    log.debug('Deduplicated commandline: ' + str(sys.argv))
