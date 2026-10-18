@@ -40,6 +40,17 @@ jobs:
         run: |
           make -j$(nproc) redist
 
+      - name: Collect release assets
+        run: |
+          mkdir upload
+          mv ./build/${{ github.ref_name }}-x86_64.tar.xz ./upload
+          mv ./build/${{ github.ref_name }}-x86_64.sha512sum ./upload
+
+      - name: Create torrent
+        run: |
+          python3 .forgejo/make-torrent.py "./upload/${{ github.ref_name }}-x86_64.tar.xz" > /tmp/magnet-link.txt
+          cat /tmp/magnet-link.txt
+
       - name: Extract release notes from CHANGELOGS.md
         id: notes
         run: |
@@ -55,17 +66,16 @@ jobs:
           if [ ! -s /tmp/release-notes.md ]; then
             echo "Release $TAG" > /tmp/release-notes.md
           fi
+          if [ -s /tmp/magnet-link.txt ]; then
+            printf '%s\n' "$(cat /tmp/release-notes.md)" > /tmp/release-notes.md.tmp
+            mv /tmp/release-notes.md.tmp /tmp/release-notes.md
+            printf '\n[Magnet link](%s)\n' "$(cat /tmp/magnet-link.txt)" >> /tmp/release-notes.md
+          fi
           {
             echo 'notes<<NOTES_EOF'
             cat /tmp/release-notes.md
             echo 'NOTES_EOF'
           } >> "$GITHUB_OUTPUT"
-
-      - name: Collect release assets
-        run: |
-          mkdir upload
-          mv ./build/${{ github.ref_name }}-x86_64.tar.xz ./upload
-          mv ./build/${{ github.ref_name }}-x86_64.sha512sum ./upload
 
       - name: Create release
         uses: actions/forgejo-release@v2.13.4
