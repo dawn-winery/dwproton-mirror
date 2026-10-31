@@ -26,7 +26,7 @@ $(OBJ)/.discord-rpc-bridge-x86_64-post-build:
 
 $(OBJ)/.discord-rpc-bridge-x86_64-dist:
 	mkdir -p $(DST_DIR)/lib/wine/discord-rpc-bridge
-	cp -a $(DISCORD_RPC_BRIDGE_x86_64_DST)/lib/wine/discord-rpc-bridge/bridge.exe $(DST_DIR)/lib/wine/discord-rpc-bridge/
+	cp -af $(DISCORD_RPC_BRIDGE_x86_64_DST)/lib/wine/discord-rpc-bridge/bridge.exe $(DST_DIR)/lib/wine/discord-rpc-bridge/
 	touch $@
 
 $(OBJ)/.discord-rpc-bridge-aarch64-build:
