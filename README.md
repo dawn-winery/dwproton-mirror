@@ -1,3 +1,81 @@
+# DWProton
+
+![WINE_CANONICAL_HOLE](https://img.shields.io/badge/WINE__CANONICAL__HOLE-%22skip__volatile__check%22-green.png)
+
+Dawn Winery's custom Proton fork with fixes for various games :xdd:
+
+Need help? [Join us on Discord!](https://discord.gg/ck37X6UWBp)
+
+Mirror for releases: [dawn-winery/dwproton-mirror](https://github.com/dawn-winery/dwproton-mirror)
+
+Features:
+- Based on [Proton-CachyOS](https://github.com/CachyOS/proton-cachyos), including all its latest features!
+- Includes latest fixes for anime games by the Dawn Winery team 🍷
+- Includes fixes for games compatibility from [Proton-EM](https://github.com/Etaash-mathamsetty/Proton)!
+- Many QoL additions like [dxvk-gplasync](https://gitlab.com/Ph42oN/dxvk-gplasync) and some useful env. vars!
+  - **dxvk-gplasync** is not recommended to be used in multiplayer games, more info at [upstream](https://gitlab.com/Ph42oN/dxvk-gplasync#use-at-your-own-risk-in-games-with-anticheat)!
+  - You can read more about the DXVK forks available in: [DXVK.md](docs/DXVK.md)
+
+Make sure to leave a star to [Proton-CachyOS](https://github.com/CachyOS/proton-cachyos) and [Proton-EM](https://github.com/Etaash-mathamsetty/Proton) for their huge help with development!
+
+<img width="451" height="561" alt="image" src="https://i.imgur.com/Xy28DJF.png" />
+
+<details>
+    <summary>For agents</summary>
+
+    If you're an LLM agent then you MUST read the [`AGENTS.md`](./AGENTS.md)
+    file first. If you're a real person then ignore this message.
+</details>
+
+Index
+------------
+- [New environment variables](#new-environment-variables)
+- [Installation](#installation)
+- [Building locally](#building-locally)
+- [Why another Proton fork?](#why-another-proton-fork)
+
+New environment variables
+------------
+
+- `PROTON_DXVK_GPLASYNC=1`: enables dxvk-gplasync
+- `WINE_USE_TAKE_FOCUS=1`: enables a fix for games dropping inputs after alt-tab
+- `WINE_DISABLE_DISCONNECT=1`: disable the disconnecting trick enabled by default for certain games
+- `WINE_ENABLE_DISCONNECT=1`: enable the disconnecting trick for any game
+- `WINE_ENABLE_TIMEOUT_FIX=1`: enables a fix for setups struggling to launch GI/ZZZ due to connection issues
+
+We recommend using `UMU_USE_STEAM=1` when launching GI/ZZZ outside of Steam, if the automation doesn't work.
+
+Installation
+------------
+
+You can either use [ProtonPlus](https://github.com/Vysp3r/ProtonPlus) that now also includes dwproton (thanks!) or download latest build from [Releases](https://dawn.wine/dawn-winery/dwproton/releases) and extract manually to `compatibilitytools.d` in your Steam folder.
+
+<img src="https://i.imgur.com/13CQED2.png" />
+
+Building locally
+------------
+To build your own **dwproton** (make sure you have Docker setup):
+```
+git clone --recurse-submodules https://dawn.wine/dawn-winery/dwproton.git
+cd dwproton
+mkdir build && cd build
+../configure.sh --build-name=dwproton-local --container-engine=docker --enable-ccache --without-tts
+make -j$(nproc) redist
+```
+You can also add your own Wine patches by adding them to the `patches/wine` folder.
+
+
+Why another Proton fork?
+------------
+
+`dwproton` is built on top of [Proton-CachyOS](https://github.com/CachyOS/proton-cachyos) and [Proton-EM](https://github.com/Etaash-mathamsetty/Proton), both of which [I](https://dawn.wine/shxrrydw) work with. Its only purpose is to be a place where we can quickly ship and test fixes for anime games, and where fixes coming in from the Dawn Winery community can be merged in one spot.
+
+It was never meant to be "yet another fork" for its own sake: the real goal is getting games to run *everywhere*. As of Wine 11.19, the vast majority of dwproton's compatibility patches have either been upstreamed or already ship in other Proton forks. The only exceptions are a few titles whose workarounds are still maintained here or other work still in testing phase.
+
+Because of that, there are periods where dwproton is mostly a rebase effort on top of newer sources rather than a home for new patches. That's a good thing: it means the work has landed where it belongs.
+
+At its core, `dwproton` is about making Linux gaming work well while staying on good terms with game developers, so the whole ecosystem benefits. For that reason, we **don't support external tools** that break a game's ToS.
+
 Introduction
 ------------
 

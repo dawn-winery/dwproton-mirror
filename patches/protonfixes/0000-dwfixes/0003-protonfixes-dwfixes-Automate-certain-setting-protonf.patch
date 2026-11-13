@@ -1,0 +1,90 @@
+From 76cdf079a94379bd19d36fd3aabc093d5bc18019 Mon Sep 17 00:00:00 2001
+From: NelloKudo <marshnelloosu@gmail.com>
+Date: Sun, 13 Sep 2026 20:36:58 +0200
+Subject: [PATCH 3/3] protonfixes/dwfixes: Automate certain setting protonfixes
+ based on game executable.
+
+---
+ __init__.py |  3 ++-
+ dwfixes.py  | 48 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 50 insertions(+), 1 deletion(-)
+ create mode 100644 dwfixes.py
+
+diff --git a/__init__.py b/__init__.py
+index 92370bc..ad1db3e 100644
+--- a/__init__.py
++++ b/__init__.py
+@@ -16,6 +16,7 @@ from .utilities import (
+     winetricks,
+ )
+ from .zenity import ZenityWaitDialog
++from .dwfixes import apply_dwfixes
+ 
+ sys.path.insert(
+     0,
+@@ -69,7 +70,7 @@ def execute_early() -> None:
+         check_verb_requirements()
+         fix.early()
+ 
+-
++apply_dwfixes(os.environ)
+ execute_early()
+ 
+ 
+diff --git a/dwfixes.py b/dwfixes.py
+new file mode 100644
+index 0000000..b59ad54
+--- /dev/null
++++ b/dwfixes.py
+@@ -0,0 +1,48 @@
++## dwfixes - automate settings certain protonfixes based on game executables
++import os
++import sys
++
++def _is_hoyo_launcher(exe_path: str) -> bool:
++    return "HoYoPlay" in exe_path.split(os.sep)
++
++def _is_gryphlink_launcher(exe_path: str) -> bool:
++    return "GRYPHLINK" in exe_path.split(os.sep)
++
++UMU_IDS = {
++    "GenshinImpact.exe":   "umu-genshin",
++    "ZenlessZoneZero.exe": "umu-zenlesszonezero",
++    "BH3.exe": "umu-zenlesszonezero", # same dependency on UMU_USE_STEAM=1 since 9.0
++    "nikke_launcher.exe":  "umu-nikke",
++    "Endfield.exe":        "umu-endfield",
++}
++
++# - don't force protonfixes using UMU_USE_STEAM when user is running on Steam
++# - don't apply NIKKE protonfix on Steam, stripping SteamGameId there breaks launcher
++STEAM_SENSITIVE_UMU_IDS = {"umu-genshin", "umu-zenlesszonezero", "umu-nikke"}
++
++def apply_dwfixes(env: dict):
++    if len(sys.argv) < 3:
++        return
++
++    exe_path = sys.argv[2]
++    exe = os.path.basename(exe_path)
++
++    if exe == "launcher.exe" and _is_hoyo_launcher(exe_path):
++        umu_id = "umu-zenlesszonezero"
++    elif exe == "Launcher.exe" and _is_gryphlink_launcher(exe_path):
++        umu_id = "umu-endfield"
++    else:
++        umu_id = UMU_IDS.get(exe)
++
++    if not umu_id:
++        return
++
++    current_id = env.get("UMU_ID")
++
++    # - always override the default fallback
++    # - only treat a fully unset UMU_ID (i.e. running on steam) as overridable for games that don't touch the Steam environment
++    # - never override a user's explicit custom UMU_ID
++    if current_id == "umu-default" or (
++        current_id is None and umu_id not in STEAM_SENSITIVE_UMU_IDS
++    ):
++        env["UMU_ID"] = os.environ["UMU_ID"] = umu_id
+-- 
+2.55.0
+
